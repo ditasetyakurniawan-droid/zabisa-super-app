@@ -1,0 +1,10 @@
+export type User = {id: string; email: string; phone?: string; name: string; role: string; status: string};
+export type Kajian = {id: string; title: string; slug: string; description: string; speaker: string; start_at: string; end_at?: string | null; location: string; map_url?: string; live_url?: string; poster_url?: string; status: string};
+export type Campaign = {id: string; name: string; slug: string; description: string; category: string; target_amount: number | null; collected_amount: number; cover_url?: string; deadline?: string | null; status: string};
+export type Student = {id: string; student_no: string; full_name: string; class_name: string; program_name: string; academic_year: string; status: string};
+export type NotificationItem = {id: string; type: string; title: string; message: string; deep_link?: string; read: boolean; created_at: string};
+export type PaymentMethod = {method_code: string; display_name: string; bank_name: string; account_number: string; account_holder: string; instructions: string};
+export type TahfidzEntry = {id: string; surah: string; ayah_start: number; ayah_end: number; activity_type: string; activity_date?: string; date?: string; teacher_note?: string};
+export type Grade = {id: string; subject_name: string; score?: number | string; grade?: string; assessment_type?: string; semester?: string | number; teacher_note?: string};
+export type Attendance = {date: string; status: string; note?: string};
+export type StudentReport = {id: string; report_type: string; academic_year: string; semester: string | number; status: string};

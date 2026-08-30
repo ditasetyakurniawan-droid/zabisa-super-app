@@ -1,0 +1,82 @@
+services:
+  mysql:
+    image: mysql:8.4
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: local-root-change-me
+      MYSQL_USER: zabisa
+      MYSQL_PASSWORD: local-zabisa-change-me
+    ports: ["3307:3306"]
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./deploy/local/mysql:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD","mysqladmin","ping","-h","localhost","-plocal-root-change-me"]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+  nats:
+    image: nats:2.11-alpine
+    restart: unless-stopped
+    command: ["-js","-m","8222"]
+    ports: ["4222:4222","8222:8222"]
+  minio:
+    image: minio/minio:latest
+    restart: unless-stopped
+    command: server /data --console-address :9001
+    environment:
+      MINIO_ROOT_USER: minio
+      MINIO_ROOT_PASSWORD: local-minio-change-me
+    ports: ["9000:9000","9001:9001"]
+  identity: &go_service
+    build: {context: ., dockerfile: services/identity/Dockerfile}
+    restart: unless-stopped
+    environment: &common_env
+      ENVIRONMENT: local
+      MYSQL_HOST: mysql
+      MYSQL_PORT: 3306
+      MYSQL_USER: zabisa
+      MYSQL_PASSWORD: local-zabisa-change-me
+      JWT_SIGNING_KEY: local-development-signing-key-change-me-now
+      INTERNAL_SERVICE_KEY: local-internal-key-change-me-now
+      AUDIT_SERVICE_URL: http://identity:8081/internal/v1/audit-events
+      CORS_ALLOWED_ORIGINS: http://localhost:3001,http://127.0.0.1:3001,http://localhost:8081
+      NATS_URL: nats://nats:4222
+      MINIO_ENDPOINT: minio:9000
+      FCM_MODE: log
+      PAYMENT_PROVIDER: manual
+    depends_on: {mysql: {condition: service_healthy}}
+  content:
+    <<: *go_service
+    build: {context: ., dockerfile: services/content/Dockerfile}
+  student:
+    <<: *go_service
+    build: {context: ., dockerfile: services/student/Dockerfile}
+  tahfidz:
+    <<: *go_service
+    build: {context: ., dockerfile: services/tahfidz/Dockerfile}
+  academic:
+    <<: *go_service
+    build: {context: ., dockerfile: services/academic/Dockerfile}
+  donation:
+    <<: *go_service
+    build: {context: ., dockerfile: services/donation/Dockerfile}
+  notification:
+    <<: *go_service
+    build: {context: ., dockerfile: services/notification/Dockerfile}
+  api-gateway:
+    <<: *go_service
+    build: {context: ., dockerfile: services/api-gateway/Dockerfile}
+    ports: ["8088:8080"]
+    depends_on: [identity,content,student,tahfidz,academic,donation,notification]
+  admin-web:
+    build: {context: ., dockerfile: apps/admin-web/Dockerfile}
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      BACKEND_INTERNAL_URL: http://api-gateway:8080
+      ZABISA_COOKIE_SECURE: "false"
+    ports: ["3001:3000"]
+    depends_on: [api-gateway]
+volumes:
+  mysql_data:

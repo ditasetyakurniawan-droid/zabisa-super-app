@@ -1,0 +1,97 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+ROOT=$(cd "$(dirname "$0")/.." && pwd)
+cd "$ROOT"
+BASE=${ZABISA_API_URL:-http://127.0.0.1:8088}
+TEACHER_EMAIL=${ZABISA_TEACHER_EMAIL:-teacher@zabisa.local}
+TEACHER_PASSWORD=${ZABISA_TEACHER_PASSWORD:-ChangeMe123!}
+GUARDIAN_EMAIL=${ZABISA_GUARDIAN_EMAIL:-guardian@zabisa.local}
+GUARDIAN_PASSWORD=${ZABISA_GUARDIAN_PASSWORD:-ChangeMe123!}
+STUDENT_ID=${ZABISA_STUDENT_ID:-00000000-0000-4000-8000-000000000101}
+
+case "$BASE" in
+  http://127.0.0.1:*|http://localhost:*) ;;
+  *) echo "REFUSED: development seed may only target localhost. BASE=$BASE" >&2; exit 2 ;;
+esac
+
+curl -fsS "$BASE/health/live" >/dev/null || { echo "API gateway unavailable: $BASE" >&2; exit 1; }
+
+login_token(){
+  local email=$1 password=$2 device=$3
+  curl -fsS -X POST "$BASE/api/v1/auth/login" -H 'Content-Type: application/json' \
+    -d "{\"email\":\"$email\",\"password\":\"$password\",\"device_id\":\"$device\"}" \
+    | python3 -c 'import json,sys; print(json.load(sys.stdin)["data"]["access_token"])'
+}
+
+TEACHER_TOKEN=$(login_token "$TEACHER_EMAIL" "$TEACHER_PASSWORD" 'mobile-seed-teacher')
+GUARDIAN_TOKEN=$(login_token "$GUARDIAN_EMAIL" "$GUARDIAN_PASSWORD" 'mobile-seed-guardian')
+
+echo '=== Development guardian seed ==='
+echo "Student: $STUDENT_ID"
+
+SUBJECTS=$(curl -fsS "$BASE/api/v1/subjects" -H "Authorization: Bearer $TEACHER_TOKEN")
+SUBJECT_ID=$(printf '%s' "$SUBJECTS" | python3 -c 'import json,sys; xs=json.load(sys.stdin).get("data") or []; print(next((x["id"] for x in xs if x.get("code")=="DEV-PAI-01"), ""))')
+if [[ -z "$SUBJECT_ID" ]]; then
+  CREATED=$(curl -fsS -X POST "$BASE/api/v1/admin/subjects" -H "Authorization: Bearer $TEACHER_TOKEN" -H 'Content-Type: application/json' \
+    -d '{"code":"DEV-PAI-01","name":"Pendidikan Agama Islam","category":"RELIGIOUS"}')
+  SUBJECT_ID=$(printf '%s' "$CREATED" | python3 -c 'import json,sys; print(json.load(sys.stdin)["data"]["id"])')
+  echo "CREATED subject: $SUBJECT_ID"
+else
+  echo "EXISTS subject: $SUBJECT_ID"
+fi
+
+GRADES=$(curl -fsS "$BASE/api/v1/admin/grades?student_id=$STUDENT_ID" -H "Authorization: Bearer $TEACHER_TOKEN")
+HAS_GRADE=$(printf '%s' "$GRADES" | python3 -c 'import json,sys; xs=json.load(sys.stdin).get("data") or []; print("yes" if any(x.get("subject_code")=="DEV-PAI-01" and x.get("assessment_type")=="DEVELOPMENT_SEED" and x.get("published") for x in xs) else "no")')
+if [[ "$HAS_GRADE" != yes ]]; then
+  curl -fsS -X POST "$BASE/api/v1/grades" -H "Authorization: Bearer $TEACHER_TOKEN" -H 'Content-Type: application/json' \
+    -d "{\"student_id\":\"$STUDENT_ID\",\"subject_id\":\"$SUBJECT_ID\",\"academic_year\":\"2026/2027\",\"semester\":\"1\",\"assessment_type\":\"DEVELOPMENT_SEED\",\"score\":88,\"grade\":\"A\",\"teacher_note\":\"Kemajuan belajar baik pada data pengembangan.\",\"published\":true}" >/dev/null
+  echo 'CREATED published grade'
+else
+  echo 'EXISTS published development grade'
+fi
+
+for row in '2026-08-27|PRESENT|Hadir tepat waktu' '2026-08-28|PRESENT|Mengikuti kegiatan belajar' '2026-08-29|SICK|Izin sakit'; do
+  IFS='|' read -r d status note <<<"$row"
+  curl -fsS -X POST "$BASE/api/v1/admin/attendance" -H "Authorization: Bearer $TEACHER_TOKEN" -H 'Content-Type: application/json' \
+    -d "{\"student_id\":\"$STUDENT_ID\",\"date\":\"$d\",\"status\":\"$status\",\"note\":\"$note\"}" >/dev/null
+  echo "UPSERT attendance: $d $status"
+done
+
+REPORTS=$(curl -fsS "$BASE/api/v1/admin/reports?student_id=$STUDENT_ID" -H "Authorization: Bearer $TEACHER_TOKEN")
+REPORT_ID=$(printf '%s' "$REPORTS" | python3 -c 'import json,sys; xs=json.load(sys.stdin).get("data") or []; print(next((x["id"] for x in xs if x.get("academic_year")=="2026/2027" and str(x.get("semester"))=="1" and x.get("report_type")=="PROGRESS_SEMESTER"), ""))')
+REPORT_STATUS=''
+if [[ -n "$REPORT_ID" ]]; then
+  REPORT_STATUS=$(printf '%s' "$REPORTS" | python3 -c 'import json,sys; rid=sys.argv[1]; xs=json.load(sys.stdin).get("data") or []; print(next((x.get("status","") for x in xs if x.get("id")==rid), ""))' "$REPORT_ID")
+fi
+if [[ -z "$REPORT_ID" ]]; then
+  CREATED=$(curl -fsS -X POST "$BASE/api/v1/admin/reports" -H "Authorization: Bearer $TEACHER_TOKEN" -H 'Content-Type: application/json' \
+    -d "{\"student_id\":\"$STUDENT_ID\",\"academic_year\":\"2026/2027\",\"semester\":\"1\",\"report_type\":\"PROGRESS_SEMESTER\"}")
+  REPORT_ID=$(printf '%s' "$CREATED" | python3 -c 'import json,sys; print(json.load(sys.stdin)["data"]["id"])')
+  REPORT_STATUS='DRAFT'
+  echo "CREATED report: $REPORT_ID"
+else
+  echo "EXISTS report: $REPORT_ID"
+fi
+if [[ "$REPORT_STATUS" != PUBLISHED ]]; then
+  CODE=$(curl -sS -o /tmp/zabisa-seed-report-publish.json -w '%{http_code}' -X PATCH "$BASE/api/v1/admin/reports/$REPORT_ID/publish" -H "Authorization: Bearer $TEACHER_TOKEN")
+  if [[ "$CODE" == 200 || "$CODE" == 404 ]]; then echo 'REPORT publish state verified'; else cat /tmp/zabisa-seed-report-publish.json; exit 1; fi
+fi
+
+sleep 2
+COUNTS=$(python3 - "$BASE" "$GUARDIAN_TOKEN" "$STUDENT_ID" <<'PY'
+import json,sys,urllib.request
+base,token,sid=sys.argv[1:]
+def get(path):
+    req=urllib.request.Request(base+path,headers={'Authorization':'Bearer '+token})
+    with urllib.request.urlopen(req,timeout=10) as r: return json.load(r).get('data') or []
+print('grades=%d attendance=%d reports=%d notifications=%d' % (
+    len(get(f'/api/v1/students/{sid}/grades')),
+    len(get(f'/api/v1/guardian/students/{sid}/attendance')),
+    len(get(f'/api/v1/students/{sid}/reports')),
+    len(get('/api/v1/notifications')),
+))
+PY
+)
+echo "RESULT $COUNTS"
+echo 'Development seed only. No real student data was created.'

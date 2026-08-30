@@ -1,0 +1,64 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: notification
+  namespace: zabisa-dt
+spec:
+  replicas: 2
+  selector:
+    matchLabels: {app: notification}
+  template:
+    metadata:
+      labels: {app: notification, tier: backend}
+    spec:
+      serviceAccountName: zabisa-app
+      securityContext:
+        seccompProfile: {type: RuntimeDefault}
+      containers:
+        - name: notification
+          image: harbor-dt.co.id/zabisa/notification:REPLACE_SHA
+          ports: [{containerPort: 8087}]
+          env:
+            - {name: ENVIRONMENT, value: dt}
+            - {name: MYSQL_HOST, value: db-dt}
+          envFrom:
+            - secretRef: {name: notification-runtime}
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            runAsNonRoot: true
+            capabilities: {drop: ["ALL"]}
+          resources:
+            requests: {cpu: 50m, memory: 64Mi}
+            limits: {cpu: 500m, memory: 256Mi}
+          livenessProbe:
+            httpGet: {path: /health/live, port: 8087}
+            initialDelaySeconds: 10
+            periodSeconds: 15
+          readinessProbe:
+            httpGet: {path: /health/ready, port: 8087}
+            initialDelaySeconds: 5
+            periodSeconds: 10
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: kubernetes.io/hostname
+          whenUnsatisfiable: ScheduleAnyway
+          labelSelector: {matchLabels: {app: notification}}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: notification
+  namespace: zabisa-dt
+spec:
+  selector: {app: notification}
+  ports: [{port: 8087, targetPort: 8087}]
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: notification
+  namespace: zabisa-dt
+spec:
+  minAvailable: 1
+  selector: {matchLabels: {app: notification}}

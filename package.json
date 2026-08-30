@@ -1,0 +1,45 @@
+{
+  "name": "zabisa-platform",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "lint": "npm run lint --workspaces --if-present",
+    "test": "npm run test --workspaces --if-present",
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "mobile:device": "./scripts/mobile-device.sh",
+    "mobile:doctor": "./scripts/mobile-doctor.sh",
+    "mobile:e2e:guardian": "./scripts/mobile-e2e-guardian.sh",
+    "mobile:env": "./scripts/mobile-env.sh",
+    "mobile:quality": "./scripts/mobile-quality.sh",
+    "mobile:e2e:guardian:populated": "ZABISA_REQUIRE_POPULATED=1 ./scripts/mobile-e2e-guardian.sh",
+    "mobile:seed:guardian": "./scripts/mobile-seed-guardian.sh",
+    "demo:seed": "./scripts/mobile-seed-demo-all.sh",
+    "demo:verify": "./scripts/mobile-e2e-demo-all.sh",
+    "demo:refresh": "npm run demo:seed && npm run demo:verify",
+    "mobile:demo": "npm run demo:refresh && npm run mobile:device",
+    "admin:typecheck": "npm run typecheck --workspace=@zabisa/admin-web",
+    "admin:lint": "npm run lint --workspace=@zabisa/admin-web",
+    "admin:build": "npm run build --workspace=@zabisa/admin-web",
+    "admin:quality": "npm run admin:typecheck && npm run admin:lint && npm run admin:build",
+    "phase34:verify": "./scripts/verify-phase34-rbac.sh",
+    "admin:source-invariants": "./scripts/verify-admin-source-invariants.sh",
+    "phase35:verify": "./scripts/verify-phase35-operational.sh",
+    "admin:session-invariant": "./scripts/verify-admin-session-cache.sh apps/admin-web",
+    "phase35:guardian-verify": "./scripts/verify-guardian-onboarding.sh",
+    "admin:e2e": "./scripts/admin-browser-e2e.sh",
+    "phase36:audit": "./scripts/verify-phase36-audit.sh",
+    "phase36:audit-invariants": "./scripts/verify-phase36-audit-invariants.sh",
+    "phase36:verify": "npm run phase36:audit-invariants && npm run phase36:audit && npm run admin:e2e",
+    "phase37:invariants": "./scripts/verify-phase37-contract-invariants.sh",
+    "phase37:contracts": "./scripts/verify-phase37-api-contracts.sh",
+    "phase37:audit": "./scripts/verify-phase37-audit-coverage.sh",
+    "phase37:verify": "npm run phase37:invariants && npm run phase37:contracts && npm run phase35:verify && npm run phase35:guardian-verify && npm run phase36:audit && npm run phase37:audit && npm run phase34:verify && npm run demo:verify && ./scripts/verify-admin-runtime.sh && ./scripts/verify-admin-session-cache.sh apps/admin-web && npm run admin:e2e",
+    "admin:form-invariant": "./scripts/verify-admin-form-lifecycle.sh apps/admin-web"
+  },
+  "engines": {
+    "node": ">=22"
+  }
+}

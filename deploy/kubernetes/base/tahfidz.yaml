@@ -1,0 +1,64 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: tahfidz
+  namespace: zabisa-dt
+spec:
+  replicas: 2
+  selector:
+    matchLabels: {app: tahfidz}
+  template:
+    metadata:
+      labels: {app: tahfidz, tier: backend}
+    spec:
+      serviceAccountName: zabisa-app
+      securityContext:
+        seccompProfile: {type: RuntimeDefault}
+      containers:
+        - name: tahfidz
+          image: harbor-dt.co.id/zabisa/tahfidz:REPLACE_SHA
+          ports: [{containerPort: 8084}]
+          env:
+            - {name: ENVIRONMENT, value: dt}
+            - {name: MYSQL_HOST, value: db-dt}
+          envFrom:
+            - secretRef: {name: tahfidz-runtime}
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            runAsNonRoot: true
+            capabilities: {drop: ["ALL"]}
+          resources:
+            requests: {cpu: 50m, memory: 64Mi}
+            limits: {cpu: 500m, memory: 256Mi}
+          livenessProbe:
+            httpGet: {path: /health/live, port: 8084}
+            initialDelaySeconds: 10
+            periodSeconds: 15
+          readinessProbe:
+            httpGet: {path: /health/ready, port: 8084}
+            initialDelaySeconds: 5
+            periodSeconds: 10
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: kubernetes.io/hostname
+          whenUnsatisfiable: ScheduleAnyway
+          labelSelector: {matchLabels: {app: tahfidz}}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: tahfidz
+  namespace: zabisa-dt
+spec:
+  selector: {app: tahfidz}
+  ports: [{port: 8084, targetPort: 8084}]
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: tahfidz
+  namespace: zabisa-dt
+spec:
+  minAvailable: 1
+  selector: {matchLabels: {app: tahfidz}}

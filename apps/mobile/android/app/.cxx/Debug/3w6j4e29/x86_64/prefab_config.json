@@ -1,0 +1,9 @@
+{
+  "enabled": true,
+  "prefabPath": "/home/dita/.gradle/caches/modules-2/files-2.1/com.google.prefab/cli/2.1.0/aa32fec809c44fa531f01dcfb739b5b3304d3050/cli-2.1.0-all.jar",
+  "packages": [
+    "/home/dita/.gradle/caches/9.4.1/transforms/20ad2d019970f8e91fa7eb3c7227b106/transformed/react-android-0.87.0-debug/prefab",
+    "/home/dita/.gradle/caches/9.4.1/transforms/82e12f5657b78a2f3001648586ffcf26/transformed/hermes-android-250829098.0.16-debug/prefab",
+    "/home/dita/.gradle/caches/9.4.1/transforms/3cb1792e16d0777e9535521c99f0b7b5/transformed/fbjni-0.7.0/prefab"
+  ]
+}

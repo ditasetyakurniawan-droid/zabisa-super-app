@@ -1,0 +1,64 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: donation
+  namespace: zabisa-dt
+spec:
+  replicas: 2
+  selector:
+    matchLabels: {app: donation}
+  template:
+    metadata:
+      labels: {app: donation, tier: backend}
+    spec:
+      serviceAccountName: zabisa-app
+      securityContext:
+        seccompProfile: {type: RuntimeDefault}
+      containers:
+        - name: donation
+          image: harbor-dt.co.id/zabisa/donation:REPLACE_SHA
+          ports: [{containerPort: 8086}]
+          env:
+            - {name: ENVIRONMENT, value: dt}
+            - {name: MYSQL_HOST, value: db-dt}
+          envFrom:
+            - secretRef: {name: donation-runtime}
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            runAsNonRoot: true
+            capabilities: {drop: ["ALL"]}
+          resources:
+            requests: {cpu: 50m, memory: 64Mi}
+            limits: {cpu: 500m, memory: 256Mi}
+          livenessProbe:
+            httpGet: {path: /health/live, port: 8086}
+            initialDelaySeconds: 10
+            periodSeconds: 15
+          readinessProbe:
+            httpGet: {path: /health/ready, port: 8086}
+            initialDelaySeconds: 5
+            periodSeconds: 10
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: kubernetes.io/hostname
+          whenUnsatisfiable: ScheduleAnyway
+          labelSelector: {matchLabels: {app: donation}}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: donation
+  namespace: zabisa-dt
+spec:
+  selector: {app: donation}
+  ports: [{port: 8086, targetPort: 8086}]
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: donation
+  namespace: zabisa-dt
+spec:
+  minAvailable: 1
+  selector: {matchLabels: {app: donation}}

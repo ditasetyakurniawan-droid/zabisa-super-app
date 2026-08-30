@@ -1,0 +1,59 @@
+openapi: 3.1.0
+info:
+  title: Zabisa API
+  version: 1.3.1
+servers: [{url: /api/v1}]
+paths:
+  /auth/login: {post: {summary: Login, responses: {'200': {description: Authenticated}}}}
+  /auth/refresh: {post: {summary: Rotate refresh token, responses: {'200': {description: Rotated}}}}
+  /auth/logout: {post: {summary: Revoke current session, security: [{bearerAuth: []}], responses: {'204': {description: Logged out}}}}
+  /auth/me: {get: {summary: Current user, security: [{bearerAuth: []}], responses: {'200': {description: OK}}}}
+  /kajian: {get: {summary: Published kajian, responses: {'200': {description: OK}}}}
+  /content: {get: {summary: Published CMS content, responses: {'200': {description: OK}}}}
+  /donation/campaigns: {get: {summary: Active campaigns, responses: {'200': {description: OK}}}}
+  /donation/payment-methods: {get: {summary: Active payment methods, responses: {'200': {description: OK}}}}
+  /donations:
+    post:
+      summary: Create idempotent donation
+      parameters: [{in: header, name: Idempotency-Key, required: true, schema: {type: string}}]
+      responses: {'201': {description: Created}}
+  /donations/history: {get: {summary: Authenticated donor history, security: [{bearerAuth: []}], responses: {'200': {description: OK}}}}
+  /guardian/students: {get: {summary: Approved linked students, security: [{bearerAuth: []}], responses: {'200': {description: OK}}}}
+  /tahfidz/students/{id}/entries: {get: {summary: Student tahfidz history, security: [{bearerAuth: []}], responses: {'200': {description: OK}}}}
+  /students/{id}/grades: {get: {summary: Published student grades, security: [{bearerAuth: []}], responses: {'200': {description: OK}}}}
+  /students/{id}/reports: {get: {summary: Published student reports, security: [{bearerAuth: []}], responses: {'200': {description: OK}}}}
+  /notifications: {get: {summary: Notification inbox, security: [{bearerAuth: []}], responses: {'200': {description: OK}}}}
+  /admin/users: {get: {summary: Authorized user list, security: [{bearerAuth: []}], responses: {'200': {description: OK}, '403': {description: Forbidden}}}, post: {summary: Create user within RBAC boundary, description: Guardian accounts use role GUARDIAN; duplicate email returns EMAIL_EXISTS., security: [{bearerAuth: []}], responses: {'201': {description: Created}, '400': {description: Validation error}, '403': {description: Forbidden}, '409': {description: Email already exists}}}}
+  /admin/guardian-candidates: {get: {summary: Narrow active guardian directory for guardian-link workflows, security: [{bearerAuth: []}], responses: {'200': {description: OK}, '403': {description: Forbidden}}}}
+  /admin/notification-candidates: {get: {summary: Narrow active notification audience directory, security: [{bearerAuth: []}], responses: {'200': {description: OK}, '403': {description: Forbidden}}}}
+  /admin/users/{id}: {patch: {summary: SUPER_ADMIN role/status update with session revocation and audit, security: [{bearerAuth: []}], responses: {'200': {description: Updated}, '403': {description: Forbidden}, '409': {description: Lockout protection}}}}
+  /admin/content: {get: {summary: CMS content list, security: [{bearerAuth: []}], responses: {'200': {description: OK}}}, post: {summary: Create CMS content, security: [{bearerAuth: []}], responses: {'201': {description: Created}}}}
+  /admin/content/{id}: {patch: {summary: Edit, publish or unpublish CMS content, security: [{bearerAuth: []}], responses: {'200': {description: Updated}, '404': {description: Not found}}}}
+  /admin/kajian: {get: {summary: Admin kajian list, security: [{bearerAuth: []}], responses: {'200': {description: OK}}}, post: {summary: Create kajian, security: [{bearerAuth: []}], responses: {'201': {description: Created}}}}
+  /admin/kajian/{id}: {patch: {summary: Edit or publish kajian; draft-to-published emits outbox event, security: [{bearerAuth: []}], responses: {'200': {description: Updated}, '404': {description: Not found}}}}
+  /admin/students: {get: {summary: Admin students, security: [{bearerAuth: []}], responses: {'200': {description: OK}}}, post: {summary: Create student, description: Strict body fields are student_no full_name photo_url class_name program_name academic_year status., security: [{bearerAuth: []}], responses: {'201': {description: Created}, '400': {description: Invalid or unknown field}, '409': {description: Student number conflict}}}}
+  /admin/guardian-links: {get: {summary: Guardian links, security: [{bearerAuth: []}], responses: {'200': {description: OK}}}, post: {summary: Create or re-request guardian link as PENDING, description: REVOKED or REJECTED relationships may be requested again but require approval again., security: [{bearerAuth: []}], responses: {'201': {description: Pending request created}, '404': {description: Student not found}, '409': {description: Already pending or approved}}}}
+  /admin/donations: {get: {summary: Donation reconciliation list, security: [{bearerAuth: []}], responses: {'200': {description: OK}}}}
+  /admin/notifications: {get: {summary: Notification history, security: [{bearerAuth: []}], responses: {'200': {description: OK}}}, post: {summary: Compose or schedule notification, security: [{bearerAuth: []}], responses: {'201': {description: Created}}}}
+  /admin/students/{id}: {patch: {summary: Update student profile/status without destructive delete, security: [{bearerAuth: []}], responses: {'200': {description: Updated}, '403': {description: Forbidden}, '404': {description: Not found}}}}
+  /admin/guardian-links/{id}/approve: {patch: {summary: Approve guardian-student relationship, security: [{bearerAuth: []}], responses: {'200': {description: Approved}}}}
+  /admin/guardian-links/{id}/reject: {patch: {summary: Reject pending guardian-student relationship, security: [{bearerAuth: []}], responses: {'200': {description: Rejected}}}}
+  /admin/guardian-links/{id}/revoke: {patch: {summary: Revoke approved guardian-student relationship, security: [{bearerAuth: []}], responses: {'200': {description: Revoked}}}}
+  /admin/attendance: {get: {summary: Attendance operations list, security: [{bearerAuth: []}], responses: {'200': {description: OK}}}, post: {summary: Create or upsert attendance by student/date, security: [{bearerAuth: []}], responses: {'200': {description: Saved}}}}
+  /tahfidz/targets: {get: {summary: Tahfidz target list, security: [{bearerAuth: []}], responses: {'200': {description: OK}}}, post: {summary: Create tahfidz target, security: [{bearerAuth: []}], responses: {'201': {description: Created}}}}
+  /tahfidz/targets/{id}: {patch: {summary: Update tahfidz target, description: Strict PATCH accepts target_juz and target_date only; student ownership is immutable., security: [{bearerAuth: []}], responses: {'200': {description: Updated}, '400': {description: Invalid or unknown field}}}}
+  /admin/subjects: {get: {summary: Admin subject list including inactive subjects, security: [{bearerAuth: []}], responses: {'200': {description: OK}}}, post: {summary: Create configurable subject, security: [{bearerAuth: []}], responses: {'201': {description: Created}}}}
+  /admin/subjects/{id}: {patch: {summary: Update or deactivate subject, security: [{bearerAuth: []}], responses: {'200': {description: Updated}}}}
+  /admin/grades: {get: {summary: Grade operations list, security: [{bearerAuth: []}], responses: {'200': {description: OK}}}}
+  /admin/grades/{id}: {patch: {summary: Edit a grade while still draft; published grades are immutable, security: [{bearerAuth: []}], responses: {'200': {description: Updated}, '409': {description: Published grade immutable}}}}
+  /admin/grades/{id}/publish: {patch: {summary: Publish grade transactionally and emit guardian notification event, security: [{bearerAuth: []}], responses: {'200': {description: Published}, '409': {description: Already published}}}}
+  /admin/reports: {get: {summary: Admin report list, security: [{bearerAuth: []}], responses: {'200': {description: OK}}}, post: {summary: Create report draft, security: [{bearerAuth: []}], responses: {'201': {description: Created}}}}
+  /admin/reports/{id}/publish: {patch: {summary: Publish report transactionally and emit guardian notification event, security: [{bearerAuth: []}], responses: {'200': {description: Published}}}}
+  /admin/donation/payment-methods: {get: {summary: Admin payment methods including inactive entries, security: [{bearerAuth: []}], responses: {'200': {description: OK}}}, post: {summary: Create configurable payment method, description: Create body excludes active; new methods start active. Lifecycle active flag is PATCH-only., security: [{bearerAuth: []}], responses: {'201': {description: Created}, '400': {description: Invalid or unknown field}}}}
+  /admin/donation/payment-methods/{id}: {patch: {summary: Update or deactivate payment method, security: [{bearerAuth: []}], responses: {'200': {description: Updated}}}}
+  /admin/donation/campaigns: {get: {summary: Admin campaign list including non-active lifecycle states, security: [{bearerAuth: []}], responses: {'200': {description: OK}}}, post: {summary: Create campaign, security: [{bearerAuth: []}], responses: {'201': {description: Created}}}}
+  /admin/donation/campaigns/{id}: {patch: {summary: Update campaign and lifecycle status, security: [{bearerAuth: []}], responses: {'200': {description: Updated}}}}
+  /admin/audit-logs: {get: {summary: Cross-service immutable audit read model, description: Includes source_service plus request and trace correlation for audited sensitive mutations., security: [{bearerAuth: []}], responses: {'200': {description: OK}}}}
+components:
+  securitySchemes:
+    bearerAuth: {type: http, scheme: bearer, bearerFormat: JWT}

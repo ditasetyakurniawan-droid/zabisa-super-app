@@ -1,0 +1,15 @@
+CREATE DATABASE IF NOT EXISTS identity_db CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+CREATE DATABASE IF NOT EXISTS content_db CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+CREATE DATABASE IF NOT EXISTS student_db CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+CREATE DATABASE IF NOT EXISTS tahfidz_db CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+CREATE DATABASE IF NOT EXISTS academic_db CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+CREATE DATABASE IF NOT EXISTS donation_db CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+CREATE DATABASE IF NOT EXISTS notification_db CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+GRANT ALL PRIVILEGES ON identity_db.* TO 'zabisa'@'%';
+GRANT ALL PRIVILEGES ON content_db.* TO 'zabisa'@'%';
+GRANT ALL PRIVILEGES ON student_db.* TO 'zabisa'@'%';
+GRANT ALL PRIVILEGES ON tahfidz_db.* TO 'zabisa'@'%';
+GRANT ALL PRIVILEGES ON academic_db.* TO 'zabisa'@'%';
+GRANT ALL PRIVILEGES ON donation_db.* TO 'zabisa'@'%';
+GRANT ALL PRIVILEGES ON notification_db.* TO 'zabisa'@'%';
+FLUSH PRIVILEGES;

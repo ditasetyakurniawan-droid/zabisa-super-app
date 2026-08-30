@@ -1,0 +1,14 @@
+# Secrets and runtime
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+coverage/
+dist/
+build/
+.next/
+node_modules/
+vendor/
+.DS_Store
+*.log

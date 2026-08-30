@@ -1,0 +1,5 @@
+export function PageHeader({title,description,actions}:{title:string;description:string;actions?:React.ReactNode}){return <div className="pageHeader"><div><p className="eyebrow">ZABISA BACKOFFICE</p><h1>{title}</h1><p className="muted">{description}</p></div>{actions&&<div className="headerActions">{actions}</div>}</div>}
+export function Card({title,children,className=""}:{title?:string;children:React.ReactNode;className?:string}){return <section className={`card ${className}`}>{title&&<h2>{title}</h2>}{children}</section>}
+export function Stat({label,value,sub}:{label:string;value:string|number;sub?:string}){return <div className="stat"><span>{label}</span><strong>{value}</strong>{sub&&<small>{sub}</small>}</div>}
+export function Pill({children,tone="neutral"}:{children:React.ReactNode;tone?:'neutral'|'ok'|'warn'|'danger'|'info'}){return <span className={`pill ${tone}`}>{children}</span>}
+export function Empty({text="Belum ada data."}:{text?:string}){return <div className="empty">{text}</div>}
