@@ -2,63 +2,140 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: donation
-  namespace: zabisa-dt
+  namespace: zabisa-app
 spec:
   replicas: 2
   selector:
-    matchLabels: {app: donation}
+    matchLabels:
+      app: donation
   template:
     metadata:
-      labels: {app: donation, tier: backend}
+      labels:
+        app: donation
+        tier: backend
+        zabisa.network/vault-access: 'true'
+        zabisa.network/mysql-access: 'true'
+      annotations:
+        vault.hashicorp.com/agent-inject: 'true'
+        vault.hashicorp.com/role: app-zabisa-donation-dt
+        vault.hashicorp.com/agent-service-account-token-volume-name: vault-token
+        vault.hashicorp.com/tls-secret: vault-ca
+        vault.hashicorp.com/ca-cert: /vault/tls/ca.crt
+        vault.hashicorp.com/tls-server-name: vault.vault.svc
+        vault.hashicorp.com/agent-run-as-same-user: 'true'
+        vault.hashicorp.com/agent-inject-secret-jwt-signing-key: kv/data/zabisa/dt/shared/runtime
+        vault.hashicorp.com/agent-inject-template-jwt-signing-key: '{{- with secret "kv/data/zabisa/dt/shared/runtime" -}}{{ .Data.data.JWT_SIGNING_KEY }}{{- end }}'
+        vault.hashicorp.com/agent-inject-perms-jwt-signing-key: '0400'
+        vault.hashicorp.com/agent-inject-secret-internal-service-key: kv/data/zabisa/dt/shared/runtime
+        vault.hashicorp.com/agent-inject-template-internal-service-key: '{{- with secret "kv/data/zabisa/dt/shared/runtime" -}}{{ .Data.data.INTERNAL_SERVICE_KEY }}{{- end }}'
+        vault.hashicorp.com/agent-inject-perms-internal-service-key: '0400'
+        vault.hashicorp.com/agent-inject-secret-mysql-user: kv/data/zabisa/dt/donation/database
+        vault.hashicorp.com/agent-inject-template-mysql-user: '{{- with secret "kv/data/zabisa/dt/donation/database" -}}{{ .Data.data.MYSQL_USER }}{{- end }}'
+        vault.hashicorp.com/agent-inject-perms-mysql-user: '0400'
+        vault.hashicorp.com/agent-inject-secret-mysql-password: kv/data/zabisa/dt/donation/database
+        vault.hashicorp.com/agent-inject-template-mysql-password: '{{- with secret "kv/data/zabisa/dt/donation/database" -}}{{ .Data.data.MYSQL_PASSWORD }}{{- end }}'
+        vault.hashicorp.com/agent-inject-perms-mysql-password: '0400'
     spec:
-      serviceAccountName: zabisa-app
+      serviceAccountName: zabisa-donation
       securityContext:
-        seccompProfile: {type: RuntimeDefault}
+        seccompProfile:
+          type: RuntimeDefault
       containers:
-        - name: donation
-          image: harbor-dt.co.id/zabisa/donation:REPLACE_SHA
-          ports: [{containerPort: 8086}]
-          env:
-            - {name: ENVIRONMENT, value: dt}
-            - {name: MYSQL_HOST, value: db-dt}
-          envFrom:
-            - secretRef: {name: donation-runtime}
-          securityContext:
-            allowPrivilegeEscalation: false
-            readOnlyRootFilesystem: true
-            runAsNonRoot: true
-            capabilities: {drop: ["ALL"]}
-          resources:
-            requests: {cpu: 50m, memory: 64Mi}
-            limits: {cpu: 500m, memory: 256Mi}
-          livenessProbe:
-            httpGet: {path: /health/live, port: 8086}
-            initialDelaySeconds: 10
-            periodSeconds: 15
-          readinessProbe:
-            httpGet: {path: /health/ready, port: 8086}
-            initialDelaySeconds: 5
-            periodSeconds: 10
+      - name: donation
+        image: harbor-dt.co.id/zabisa/donation:REPLACE_SHA
+        ports:
+        - containerPort: 8086
+        env:
+        - name: ENVIRONMENT
+          value: dt
+        - name: APP_MODE
+          value: serve
+        - name: MYSQL_HOST
+          value: db-dt
+        - name: MYSQL_TLS_MODE
+          value: verify-ca
+        - name: MYSQL_TLS_CA_FILE
+          value: /mysql/tls/ca.pem
+        - name: MYSQL_USER_FILE
+          value: /vault/secrets/mysql-user
+        - name: MYSQL_PASSWORD_FILE
+          value: /vault/secrets/mysql-password
+        - name: JWT_SIGNING_KEY_FILE
+          value: /vault/secrets/jwt-signing-key
+        - name: INTERNAL_SERVICE_KEY_FILE
+          value: /vault/secrets/internal-service-key
+        volumeMounts:
+        - name: mysql-ca
+          mountPath: /mysql/tls
+          readOnly: true
+        securityContext:
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+          runAsNonRoot: true
+          capabilities:
+            drop:
+            - ALL
+          runAsUser: 65532
+          runAsGroup: 65532
+        resources:
+          requests:
+            cpu: 50m
+            memory: 64Mi
+          limits:
+            cpu: 500m
+            memory: 256Mi
+        livenessProbe:
+          httpGet:
+            path: /health/live
+            port: 8086
+          initialDelaySeconds: 10
+          periodSeconds: 15
+        readinessProbe:
+          httpGet:
+            path: /health/ready
+            port: 8086
+          initialDelaySeconds: 5
+          periodSeconds: 10
       topologySpreadConstraints:
-        - maxSkew: 1
-          topologyKey: kubernetes.io/hostname
-          whenUnsatisfiable: ScheduleAnyway
-          labelSelector: {matchLabels: {app: donation}}
+      - maxSkew: 1
+        topologyKey: kubernetes.io/hostname
+        whenUnsatisfiable: ScheduleAnyway
+        labelSelector:
+          matchLabels:
+            app: donation
+      automountServiceAccountToken: false
+      volumes:
+      - name: mysql-ca
+        secret:
+          secretName: mysql-ca
+      - name: vault-token
+        projected:
+          defaultMode: 420
+          sources:
+          - serviceAccountToken:
+              audience: vault
+              expirationSeconds: 3600
+              path: token
 ---
 apiVersion: v1
 kind: Service
 metadata:
   name: donation
-  namespace: zabisa-dt
+  namespace: zabisa-app
 spec:
-  selector: {app: donation}
-  ports: [{port: 8086, targetPort: 8086}]
+  selector:
+    app: donation
+  ports:
+  - port: 8086
+    targetPort: 8086
 ---
 apiVersion: policy/v1
 kind: PodDisruptionBudget
 metadata:
   name: donation
-  namespace: zabisa-dt
+  namespace: zabisa-app
 spec:
   minAvailable: 1
-  selector: {matchLabels: {app: donation}}
+  selector:
+    matchLabels:
+      app: donation

@@ -1,12 +1,31 @@
 .git
 .gitignore
+
+# Dependencies / generated output
 **/node_modules
 **/.next
 **/dist
 **/build
-coverage
-.env
-*.log
-apps/mobile/android/.gradle
-apps/mobile/android/app/build
+**/coverage
+**/*.tsbuildinfo
+
+# Mobile/native caches
+**/.gradle
+**/.cxx
 apps/mobile/ios/Pods
+
+# Test/tool/editor artifacts
+**/test-results
+**/playwright-report
+**/__pycache__
+**/*.py[cod]
+**/*.bak
+**/*.bak-*
+
+# Secrets/runtime files
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.log

@@ -11,4 +11,4 @@ cp ZabisaMobile/babel.config.js "$ROOT/apps/mobile/" || true
 cp ZabisaMobile/metro.config.js "$ROOT/apps/mobile/" || true
 cp ZabisaMobile/app.json "$ROOT/apps/mobile/" || true
 printf '%s\n' "Native scaffold generated for React Native 0.87.0. App source and custom index.js were preserved."
-printf '%s\n' "Next: npm install && cd apps/mobile && npm run android"
+printf '%s\n' "Next: npm ci --workspaces --include-workspace-root --no-audit --no-fund && cd apps/mobile && npm run android"

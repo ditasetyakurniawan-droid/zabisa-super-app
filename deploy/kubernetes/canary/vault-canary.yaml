@@ -1,0 +1,67 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: zabisa-vault-canary
+  namespace: zabisa-app
+  labels:
+    app: zabisa-vault-canary
+    tier: backend
+    zabisa.network/vault-access: "true"
+    app.kubernetes.io/name: zabisa-vault-canary
+    app.kubernetes.io/part-of: zabisa-platform
+    zabisa.lifecycle: temporary-canary
+  annotations:
+    vault.hashicorp.com/agent-inject: 'true'
+    vault.hashicorp.com/agent-pre-populate-only: 'true'
+    vault.hashicorp.com/role: zabisa-canary
+    vault.hashicorp.com/agent-service-account-token-volume-name: vault-token
+    vault.hashicorp.com/tls-secret: vault-ca
+    vault.hashicorp.com/ca-cert: /vault/tls/ca.crt
+    vault.hashicorp.com/tls-server-name: vault.vault.svc
+    vault.hashicorp.com/agent-run-as-same-user: 'true'
+    vault.hashicorp.com/agent-inject-secret-canary: kv/data/zabisa/dt/canary
+    vault.hashicorp.com/agent-inject-template-canary: '{{- with secret "kv/data/zabisa/dt/canary" -}}{{ .Data.data.marker }}{{- end }}'
+    vault.hashicorp.com/agent-inject-perms-canary: '0400'
+spec:
+  serviceAccountName: zabisa-api-gateway
+  automountServiceAccountToken: false
+  restartPolicy: Never
+  securityContext:
+    seccompProfile:
+      type: RuntimeDefault
+  containers:
+    - name: canary
+      image: hashicorp/vault:2.0.3
+      imagePullPolicy: IfNotPresent
+      command: ["/bin/sh", "-ec"]
+      args:
+        - |
+          test -s /vault/secrets/canary
+          test "$(cat /vault/secrets/canary)" = "zabisa-vault-canary-ok"
+          test "$(stat -c '%a' /vault/secrets/canary)" = "400"
+          echo "[zabisa-canary] secret-file verification passed"
+          sleep 600
+      securityContext:
+        allowPrivilegeEscalation: false
+        readOnlyRootFilesystem: true
+        runAsNonRoot: true
+        runAsUser: 100
+        runAsGroup: 1000
+        capabilities:
+          drop: ["ALL"]
+      resources:
+        requests:
+          cpu: 10m
+          memory: 32Mi
+        limits:
+          cpu: 100m
+          memory: 128Mi
+  volumes:
+    - name: vault-token
+      projected:
+        defaultMode: 420
+        sources:
+          - serviceAccountToken:
+              audience: vault
+              expirationSeconds: 3600
+              path: token

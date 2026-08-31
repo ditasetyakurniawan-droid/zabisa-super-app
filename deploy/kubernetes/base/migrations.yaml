@@ -1,0 +1,636 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: identity-migrate
+  namespace: zabisa-app
+  annotations:
+    argocd.argoproj.io/hook: PreSync
+    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation,HookSucceeded
+spec:
+  backoffLimit: 1
+  activeDeadlineSeconds: 300
+  template:
+    metadata:
+      labels:
+        app: identity-migrate
+        tier: migration
+        zabisa.network/vault-access: "true"
+        zabisa.network/mysql-access: "true"
+      annotations:
+        vault.hashicorp.com/agent-inject: 'true'
+        vault.hashicorp.com/agent-pre-populate-only: 'true'
+        vault.hashicorp.com/role: app-zabisa-identity-migrator-dt
+        vault.hashicorp.com/agent-service-account-token-volume-name: vault-token
+        vault.hashicorp.com/tls-secret: vault-ca
+        vault.hashicorp.com/ca-cert: /vault/tls/ca.crt
+        vault.hashicorp.com/tls-server-name: vault.vault.svc
+        vault.hashicorp.com/agent-run-as-same-user: 'true'
+        vault.hashicorp.com/agent-inject-secret-mysql-user: kv/data/zabisa/dt/identity/migrator
+        vault.hashicorp.com/agent-inject-template-mysql-user: '{{- with secret "kv/data/zabisa/dt/identity/migrator" -}}{{ .Data.data.MYSQL_USER }}{{- end }}'
+        vault.hashicorp.com/agent-inject-perms-mysql-user: '0400'
+        vault.hashicorp.com/agent-inject-secret-mysql-password: kv/data/zabisa/dt/identity/migrator
+        vault.hashicorp.com/agent-inject-template-mysql-password: '{{- with secret "kv/data/zabisa/dt/identity/migrator" -}}{{ .Data.data.MYSQL_PASSWORD }}{{- end }}'
+        vault.hashicorp.com/agent-inject-perms-mysql-password: '0400'
+    spec:
+      serviceAccountName: zabisa-identity-migrator
+      automountServiceAccountToken: false
+      restartPolicy: Never
+      securityContext:
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+      - name: migrate
+        image: harbor-dt.co.id/zabisa/identity:REPLACE_SHA
+        imagePullPolicy: IfNotPresent
+        env:
+        - name: ENVIRONMENT
+          value: dt
+        - name: APP_MODE
+          value: migrate
+        - name: MYSQL_HOST
+          value: db-dt
+        - name: MYSQL_TLS_MODE
+          value: verify-ca
+        - name: MYSQL_TLS_CA_FILE
+          value: /mysql/tls/ca.pem
+        - name: MYSQL_USER_FILE
+          value: /vault/secrets/mysql-user
+        - name: MYSQL_PASSWORD_FILE
+          value: /vault/secrets/mysql-password
+        volumeMounts:
+        - name: mysql-ca
+          mountPath: /mysql/tls
+          readOnly: true
+        securityContext:
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+          runAsNonRoot: true
+          runAsUser: 65532
+          runAsGroup: 65532
+          capabilities:
+            drop: ["ALL"]
+        resources:
+          requests:
+            cpu: 10m
+            memory: 32Mi
+          limits:
+            cpu: 250m
+            memory: 128Mi
+      volumes:
+      - name: mysql-ca
+        secret:
+          secretName: mysql-ca
+      - name: vault-token
+        projected:
+          defaultMode: 420
+          sources:
+          - serviceAccountToken:
+              audience: vault
+              expirationSeconds: 1800
+              path: token
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: content-migrate
+  namespace: zabisa-app
+  annotations:
+    argocd.argoproj.io/hook: PreSync
+    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation,HookSucceeded
+spec:
+  backoffLimit: 1
+  activeDeadlineSeconds: 300
+  template:
+    metadata:
+      labels:
+        app: content-migrate
+        tier: migration
+        zabisa.network/vault-access: "true"
+        zabisa.network/mysql-access: "true"
+      annotations:
+        vault.hashicorp.com/agent-inject: 'true'
+        vault.hashicorp.com/agent-pre-populate-only: 'true'
+        vault.hashicorp.com/role: app-zabisa-content-migrator-dt
+        vault.hashicorp.com/agent-service-account-token-volume-name: vault-token
+        vault.hashicorp.com/tls-secret: vault-ca
+        vault.hashicorp.com/ca-cert: /vault/tls/ca.crt
+        vault.hashicorp.com/tls-server-name: vault.vault.svc
+        vault.hashicorp.com/agent-run-as-same-user: 'true'
+        vault.hashicorp.com/agent-inject-secret-mysql-user: kv/data/zabisa/dt/content/migrator
+        vault.hashicorp.com/agent-inject-template-mysql-user: '{{- with secret "kv/data/zabisa/dt/content/migrator" -}}{{ .Data.data.MYSQL_USER }}{{- end }}'
+        vault.hashicorp.com/agent-inject-perms-mysql-user: '0400'
+        vault.hashicorp.com/agent-inject-secret-mysql-password: kv/data/zabisa/dt/content/migrator
+        vault.hashicorp.com/agent-inject-template-mysql-password: '{{- with secret "kv/data/zabisa/dt/content/migrator" -}}{{ .Data.data.MYSQL_PASSWORD }}{{- end }}'
+        vault.hashicorp.com/agent-inject-perms-mysql-password: '0400'
+    spec:
+      serviceAccountName: zabisa-content-migrator
+      automountServiceAccountToken: false
+      restartPolicy: Never
+      securityContext:
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+      - name: migrate
+        image: harbor-dt.co.id/zabisa/content:REPLACE_SHA
+        imagePullPolicy: IfNotPresent
+        env:
+        - name: ENVIRONMENT
+          value: dt
+        - name: APP_MODE
+          value: migrate
+        - name: MYSQL_HOST
+          value: db-dt
+        - name: MYSQL_TLS_MODE
+          value: verify-ca
+        - name: MYSQL_TLS_CA_FILE
+          value: /mysql/tls/ca.pem
+        - name: MYSQL_USER_FILE
+          value: /vault/secrets/mysql-user
+        - name: MYSQL_PASSWORD_FILE
+          value: /vault/secrets/mysql-password
+        volumeMounts:
+        - name: mysql-ca
+          mountPath: /mysql/tls
+          readOnly: true
+        securityContext:
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+          runAsNonRoot: true
+          runAsUser: 65532
+          runAsGroup: 65532
+          capabilities:
+            drop: ["ALL"]
+        resources:
+          requests:
+            cpu: 10m
+            memory: 32Mi
+          limits:
+            cpu: 250m
+            memory: 128Mi
+      volumes:
+      - name: mysql-ca
+        secret:
+          secretName: mysql-ca
+      - name: vault-token
+        projected:
+          defaultMode: 420
+          sources:
+          - serviceAccountToken:
+              audience: vault
+              expirationSeconds: 1800
+              path: token
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: student-migrate
+  namespace: zabisa-app
+  annotations:
+    argocd.argoproj.io/hook: PreSync
+    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation,HookSucceeded
+spec:
+  backoffLimit: 1
+  activeDeadlineSeconds: 300
+  template:
+    metadata:
+      labels:
+        app: student-migrate
+        tier: migration
+        zabisa.network/vault-access: "true"
+        zabisa.network/mysql-access: "true"
+      annotations:
+        vault.hashicorp.com/agent-inject: 'true'
+        vault.hashicorp.com/agent-pre-populate-only: 'true'
+        vault.hashicorp.com/role: app-zabisa-student-migrator-dt
+        vault.hashicorp.com/agent-service-account-token-volume-name: vault-token
+        vault.hashicorp.com/tls-secret: vault-ca
+        vault.hashicorp.com/ca-cert: /vault/tls/ca.crt
+        vault.hashicorp.com/tls-server-name: vault.vault.svc
+        vault.hashicorp.com/agent-run-as-same-user: 'true'
+        vault.hashicorp.com/agent-inject-secret-mysql-user: kv/data/zabisa/dt/student/migrator
+        vault.hashicorp.com/agent-inject-template-mysql-user: '{{- with secret "kv/data/zabisa/dt/student/migrator" -}}{{ .Data.data.MYSQL_USER }}{{- end }}'
+        vault.hashicorp.com/agent-inject-perms-mysql-user: '0400'
+        vault.hashicorp.com/agent-inject-secret-mysql-password: kv/data/zabisa/dt/student/migrator
+        vault.hashicorp.com/agent-inject-template-mysql-password: '{{- with secret "kv/data/zabisa/dt/student/migrator" -}}{{ .Data.data.MYSQL_PASSWORD }}{{- end }}'
+        vault.hashicorp.com/agent-inject-perms-mysql-password: '0400'
+    spec:
+      serviceAccountName: zabisa-student-migrator
+      automountServiceAccountToken: false
+      restartPolicy: Never
+      securityContext:
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+      - name: migrate
+        image: harbor-dt.co.id/zabisa/student:REPLACE_SHA
+        imagePullPolicy: IfNotPresent
+        env:
+        - name: ENVIRONMENT
+          value: dt
+        - name: APP_MODE
+          value: migrate
+        - name: MYSQL_HOST
+          value: db-dt
+        - name: MYSQL_TLS_MODE
+          value: verify-ca
+        - name: MYSQL_TLS_CA_FILE
+          value: /mysql/tls/ca.pem
+        - name: MYSQL_USER_FILE
+          value: /vault/secrets/mysql-user
+        - name: MYSQL_PASSWORD_FILE
+          value: /vault/secrets/mysql-password
+        volumeMounts:
+        - name: mysql-ca
+          mountPath: /mysql/tls
+          readOnly: true
+        securityContext:
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+          runAsNonRoot: true
+          runAsUser: 65532
+          runAsGroup: 65532
+          capabilities:
+            drop: ["ALL"]
+        resources:
+          requests:
+            cpu: 10m
+            memory: 32Mi
+          limits:
+            cpu: 250m
+            memory: 128Mi
+      volumes:
+      - name: mysql-ca
+        secret:
+          secretName: mysql-ca
+      - name: vault-token
+        projected:
+          defaultMode: 420
+          sources:
+          - serviceAccountToken:
+              audience: vault
+              expirationSeconds: 1800
+              path: token
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: tahfidz-migrate
+  namespace: zabisa-app
+  annotations:
+    argocd.argoproj.io/hook: PreSync
+    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation,HookSucceeded
+spec:
+  backoffLimit: 1
+  activeDeadlineSeconds: 300
+  template:
+    metadata:
+      labels:
+        app: tahfidz-migrate
+        tier: migration
+        zabisa.network/vault-access: "true"
+        zabisa.network/mysql-access: "true"
+      annotations:
+        vault.hashicorp.com/agent-inject: 'true'
+        vault.hashicorp.com/agent-pre-populate-only: 'true'
+        vault.hashicorp.com/role: app-zabisa-tahfidz-migrator-dt
+        vault.hashicorp.com/agent-service-account-token-volume-name: vault-token
+        vault.hashicorp.com/tls-secret: vault-ca
+        vault.hashicorp.com/ca-cert: /vault/tls/ca.crt
+        vault.hashicorp.com/tls-server-name: vault.vault.svc
+        vault.hashicorp.com/agent-run-as-same-user: 'true'
+        vault.hashicorp.com/agent-inject-secret-mysql-user: kv/data/zabisa/dt/tahfidz/migrator
+        vault.hashicorp.com/agent-inject-template-mysql-user: '{{- with secret "kv/data/zabisa/dt/tahfidz/migrator" -}}{{ .Data.data.MYSQL_USER }}{{- end }}'
+        vault.hashicorp.com/agent-inject-perms-mysql-user: '0400'
+        vault.hashicorp.com/agent-inject-secret-mysql-password: kv/data/zabisa/dt/tahfidz/migrator
+        vault.hashicorp.com/agent-inject-template-mysql-password: '{{- with secret "kv/data/zabisa/dt/tahfidz/migrator" -}}{{ .Data.data.MYSQL_PASSWORD }}{{- end }}'
+        vault.hashicorp.com/agent-inject-perms-mysql-password: '0400'
+    spec:
+      serviceAccountName: zabisa-tahfidz-migrator
+      automountServiceAccountToken: false
+      restartPolicy: Never
+      securityContext:
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+      - name: migrate
+        image: harbor-dt.co.id/zabisa/tahfidz:REPLACE_SHA
+        imagePullPolicy: IfNotPresent
+        env:
+        - name: ENVIRONMENT
+          value: dt
+        - name: APP_MODE
+          value: migrate
+        - name: MYSQL_HOST
+          value: db-dt
+        - name: MYSQL_TLS_MODE
+          value: verify-ca
+        - name: MYSQL_TLS_CA_FILE
+          value: /mysql/tls/ca.pem
+        - name: MYSQL_USER_FILE
+          value: /vault/secrets/mysql-user
+        - name: MYSQL_PASSWORD_FILE
+          value: /vault/secrets/mysql-password
+        volumeMounts:
+        - name: mysql-ca
+          mountPath: /mysql/tls
+          readOnly: true
+        securityContext:
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+          runAsNonRoot: true
+          runAsUser: 65532
+          runAsGroup: 65532
+          capabilities:
+            drop: ["ALL"]
+        resources:
+          requests:
+            cpu: 10m
+            memory: 32Mi
+          limits:
+            cpu: 250m
+            memory: 128Mi
+      volumes:
+      - name: mysql-ca
+        secret:
+          secretName: mysql-ca
+      - name: vault-token
+        projected:
+          defaultMode: 420
+          sources:
+          - serviceAccountToken:
+              audience: vault
+              expirationSeconds: 1800
+              path: token
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: academic-migrate
+  namespace: zabisa-app
+  annotations:
+    argocd.argoproj.io/hook: PreSync
+    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation,HookSucceeded
+spec:
+  backoffLimit: 1
+  activeDeadlineSeconds: 300
+  template:
+    metadata:
+      labels:
+        app: academic-migrate
+        tier: migration
+        zabisa.network/vault-access: "true"
+        zabisa.network/mysql-access: "true"
+      annotations:
+        vault.hashicorp.com/agent-inject: 'true'
+        vault.hashicorp.com/agent-pre-populate-only: 'true'
+        vault.hashicorp.com/role: app-zabisa-academic-migrator-dt
+        vault.hashicorp.com/agent-service-account-token-volume-name: vault-token
+        vault.hashicorp.com/tls-secret: vault-ca
+        vault.hashicorp.com/ca-cert: /vault/tls/ca.crt
+        vault.hashicorp.com/tls-server-name: vault.vault.svc
+        vault.hashicorp.com/agent-run-as-same-user: 'true'
+        vault.hashicorp.com/agent-inject-secret-mysql-user: kv/data/zabisa/dt/academic/migrator
+        vault.hashicorp.com/agent-inject-template-mysql-user: '{{- with secret "kv/data/zabisa/dt/academic/migrator" -}}{{ .Data.data.MYSQL_USER }}{{- end }}'
+        vault.hashicorp.com/agent-inject-perms-mysql-user: '0400'
+        vault.hashicorp.com/agent-inject-secret-mysql-password: kv/data/zabisa/dt/academic/migrator
+        vault.hashicorp.com/agent-inject-template-mysql-password: '{{- with secret "kv/data/zabisa/dt/academic/migrator" -}}{{ .Data.data.MYSQL_PASSWORD }}{{- end }}'
+        vault.hashicorp.com/agent-inject-perms-mysql-password: '0400'
+    spec:
+      serviceAccountName: zabisa-academic-migrator
+      automountServiceAccountToken: false
+      restartPolicy: Never
+      securityContext:
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+      - name: migrate
+        image: harbor-dt.co.id/zabisa/academic:REPLACE_SHA
+        imagePullPolicy: IfNotPresent
+        env:
+        - name: ENVIRONMENT
+          value: dt
+        - name: APP_MODE
+          value: migrate
+        - name: MYSQL_HOST
+          value: db-dt
+        - name: MYSQL_TLS_MODE
+          value: verify-ca
+        - name: MYSQL_TLS_CA_FILE
+          value: /mysql/tls/ca.pem
+        - name: MYSQL_USER_FILE
+          value: /vault/secrets/mysql-user
+        - name: MYSQL_PASSWORD_FILE
+          value: /vault/secrets/mysql-password
+        volumeMounts:
+        - name: mysql-ca
+          mountPath: /mysql/tls
+          readOnly: true
+        securityContext:
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+          runAsNonRoot: true
+          runAsUser: 65532
+          runAsGroup: 65532
+          capabilities:
+            drop: ["ALL"]
+        resources:
+          requests:
+            cpu: 10m
+            memory: 32Mi
+          limits:
+            cpu: 250m
+            memory: 128Mi
+      volumes:
+      - name: mysql-ca
+        secret:
+          secretName: mysql-ca
+      - name: vault-token
+        projected:
+          defaultMode: 420
+          sources:
+          - serviceAccountToken:
+              audience: vault
+              expirationSeconds: 1800
+              path: token
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: donation-migrate
+  namespace: zabisa-app
+  annotations:
+    argocd.argoproj.io/hook: PreSync
+    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation,HookSucceeded
+spec:
+  backoffLimit: 1
+  activeDeadlineSeconds: 300
+  template:
+    metadata:
+      labels:
+        app: donation-migrate
+        tier: migration
+        zabisa.network/vault-access: "true"
+        zabisa.network/mysql-access: "true"
+      annotations:
+        vault.hashicorp.com/agent-inject: 'true'
+        vault.hashicorp.com/agent-pre-populate-only: 'true'
+        vault.hashicorp.com/role: app-zabisa-donation-migrator-dt
+        vault.hashicorp.com/agent-service-account-token-volume-name: vault-token
+        vault.hashicorp.com/tls-secret: vault-ca
+        vault.hashicorp.com/ca-cert: /vault/tls/ca.crt
+        vault.hashicorp.com/tls-server-name: vault.vault.svc
+        vault.hashicorp.com/agent-run-as-same-user: 'true'
+        vault.hashicorp.com/agent-inject-secret-mysql-user: kv/data/zabisa/dt/donation/migrator
+        vault.hashicorp.com/agent-inject-template-mysql-user: '{{- with secret "kv/data/zabisa/dt/donation/migrator" -}}{{ .Data.data.MYSQL_USER }}{{- end }}'
+        vault.hashicorp.com/agent-inject-perms-mysql-user: '0400'
+        vault.hashicorp.com/agent-inject-secret-mysql-password: kv/data/zabisa/dt/donation/migrator
+        vault.hashicorp.com/agent-inject-template-mysql-password: '{{- with secret "kv/data/zabisa/dt/donation/migrator" -}}{{ .Data.data.MYSQL_PASSWORD }}{{- end }}'
+        vault.hashicorp.com/agent-inject-perms-mysql-password: '0400'
+    spec:
+      serviceAccountName: zabisa-donation-migrator
+      automountServiceAccountToken: false
+      restartPolicy: Never
+      securityContext:
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+      - name: migrate
+        image: harbor-dt.co.id/zabisa/donation:REPLACE_SHA
+        imagePullPolicy: IfNotPresent
+        env:
+        - name: ENVIRONMENT
+          value: dt
+        - name: APP_MODE
+          value: migrate
+        - name: MYSQL_HOST
+          value: db-dt
+        - name: MYSQL_TLS_MODE
+          value: verify-ca
+        - name: MYSQL_TLS_CA_FILE
+          value: /mysql/tls/ca.pem
+        - name: MYSQL_USER_FILE
+          value: /vault/secrets/mysql-user
+        - name: MYSQL_PASSWORD_FILE
+          value: /vault/secrets/mysql-password
+        volumeMounts:
+        - name: mysql-ca
+          mountPath: /mysql/tls
+          readOnly: true
+        securityContext:
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+          runAsNonRoot: true
+          runAsUser: 65532
+          runAsGroup: 65532
+          capabilities:
+            drop: ["ALL"]
+        resources:
+          requests:
+            cpu: 10m
+            memory: 32Mi
+          limits:
+            cpu: 250m
+            memory: 128Mi
+      volumes:
+      - name: mysql-ca
+        secret:
+          secretName: mysql-ca
+      - name: vault-token
+        projected:
+          defaultMode: 420
+          sources:
+          - serviceAccountToken:
+              audience: vault
+              expirationSeconds: 1800
+              path: token
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: notification-migrate
+  namespace: zabisa-app
+  annotations:
+    argocd.argoproj.io/hook: PreSync
+    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation,HookSucceeded
+spec:
+  backoffLimit: 1
+  activeDeadlineSeconds: 300
+  template:
+    metadata:
+      labels:
+        app: notification-migrate
+        tier: migration
+        zabisa.network/vault-access: "true"
+        zabisa.network/mysql-access: "true"
+      annotations:
+        vault.hashicorp.com/agent-inject: 'true'
+        vault.hashicorp.com/agent-pre-populate-only: 'true'
+        vault.hashicorp.com/role: app-zabisa-notification-migrator-dt
+        vault.hashicorp.com/agent-service-account-token-volume-name: vault-token
+        vault.hashicorp.com/tls-secret: vault-ca
+        vault.hashicorp.com/ca-cert: /vault/tls/ca.crt
+        vault.hashicorp.com/tls-server-name: vault.vault.svc
+        vault.hashicorp.com/agent-run-as-same-user: 'true'
+        vault.hashicorp.com/agent-inject-secret-mysql-user: kv/data/zabisa/dt/notification/migrator
+        vault.hashicorp.com/agent-inject-template-mysql-user: '{{- with secret "kv/data/zabisa/dt/notification/migrator" -}}{{ .Data.data.MYSQL_USER }}{{- end }}'
+        vault.hashicorp.com/agent-inject-perms-mysql-user: '0400'
+        vault.hashicorp.com/agent-inject-secret-mysql-password: kv/data/zabisa/dt/notification/migrator
+        vault.hashicorp.com/agent-inject-template-mysql-password: '{{- with secret "kv/data/zabisa/dt/notification/migrator" -}}{{ .Data.data.MYSQL_PASSWORD }}{{- end }}'
+        vault.hashicorp.com/agent-inject-perms-mysql-password: '0400'
+    spec:
+      serviceAccountName: zabisa-notification-migrator
+      automountServiceAccountToken: false
+      restartPolicy: Never
+      securityContext:
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+      - name: migrate
+        image: harbor-dt.co.id/zabisa/notification:REPLACE_SHA
+        imagePullPolicy: IfNotPresent
+        env:
+        - name: ENVIRONMENT
+          value: dt
+        - name: APP_MODE
+          value: migrate
+        - name: MYSQL_HOST
+          value: db-dt
+        - name: MYSQL_TLS_MODE
+          value: verify-ca
+        - name: MYSQL_TLS_CA_FILE
+          value: /mysql/tls/ca.pem
+        - name: MYSQL_USER_FILE
+          value: /vault/secrets/mysql-user
+        - name: MYSQL_PASSWORD_FILE
+          value: /vault/secrets/mysql-password
+        volumeMounts:
+        - name: mysql-ca
+          mountPath: /mysql/tls
+          readOnly: true
+        securityContext:
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+          runAsNonRoot: true
+          runAsUser: 65532
+          runAsGroup: 65532
+          capabilities:
+            drop: ["ALL"]
+        resources:
+          requests:
+            cpu: 10m
+            memory: 32Mi
+          limits:
+            cpu: 250m
+            memory: 128Mi
+      volumes:
+      - name: mysql-ca
+        secret:
+          secretName: mysql-ca
+      - name: vault-token
+        projected:
+          defaultMode: 420
+          sources:
+          - serviceAccountToken:
+              audience: vault
+              expirationSeconds: 1800
+              path: token

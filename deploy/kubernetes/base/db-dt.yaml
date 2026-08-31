@@ -1,0 +1,38 @@
+# Stable in-cluster DNS abstraction for the existing MySQL 8 Docker Compose host.
+# Headless + selectorless is intentional: CoreDNS returns the external endpoint IP
+# directly, so Calico's existing 192.168.100.70/32 egress rule remains authoritative.
+apiVersion: v1
+kind: Service
+metadata:
+  name: db-dt
+  namespace: zabisa-app
+  labels:
+    app.kubernetes.io/name: db-dt
+    app.kubernetes.io/part-of: zabisa-platform
+spec:
+  clusterIP: None
+  ports:
+    - name: mysql
+      protocol: TCP
+      port: 3306
+      targetPort: 3306
+---
+apiVersion: discovery.k8s.io/v1
+kind: EndpointSlice
+metadata:
+  name: db-dt-external
+  namespace: zabisa-app
+  labels:
+    kubernetes.io/service-name: db-dt
+    endpointslice.kubernetes.io/managed-by: zabisa-platform
+    app.kubernetes.io/part-of: zabisa-platform
+addressType: IPv4
+ports:
+  - name: mysql
+    protocol: TCP
+    port: 3306
+endpoints:
+  - addresses:
+      - 192.168.100.70
+    conditions:
+      ready: true

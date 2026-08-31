@@ -45,15 +45,25 @@ type kajianIn struct {
 
 func main() {
 	cfg := config.Load("content-service", "content_db", 8082)
-	db, err := database.Open(context.Background(), cfg.DSN())
+	if err := cfg.ValidateRuntime(true); err != nil {
+		slog.Error("invalid config", "error", err)
+		os.Exit(1)
+	}
+	db, err := database.Open(context.Background(), cfg.DSN(), database.TLSOptions{Mode: cfg.MySQLTLSMode, CAFile: cfg.MySQLTLSCAFile, ServerName: cfg.MySQLTLSServerName})
 	if err != nil {
 		slog.Error("db", "error", err)
 		os.Exit(1)
 	}
 	defer db.Close()
-	if err = migrate.Apply(context.Background(), db, migrationFS, "migrations"); err != nil {
-		slog.Error("migration", "error", err)
-		os.Exit(1)
+	if cfg.ShouldMigrate() {
+		if err = migrate.Apply(context.Background(), db, migrationFS, "migrations"); err != nil {
+			slog.Error("migration", "error", err)
+			os.Exit(1)
+		}
+		if cfg.MigrateOnly() {
+			slog.Info("database migrations complete", "service", cfg.Service, "database", cfg.DBName)
+			return
+		}
 	}
 	a := &app{db, cfg}
 	ctx, cancel := context.WithCancel(context.Background())

@@ -1,35 +1,252 @@
 apiVersion: v1
 kind: Namespace
 metadata:
-  name: zabisa-dt
+  name: zabisa-app
   labels:
+    app.kubernetes.io/name: zabisa
+    app.kubernetes.io/part-of: zabisa-platform
     pod-security.kubernetes.io/enforce: restricted
+    pod-security.kubernetes.io/audit: restricted
+    pod-security.kubernetes.io/warn: restricted
 ---
 apiVersion: v1
 kind: ServiceAccount
-metadata:
-  name: zabisa-app
-  namespace: zabisa-dt
+metadata: {name: zabisa-api-gateway, namespace: zabisa-app}
 automountServiceAccountToken: false
 ---
+apiVersion: v1
+kind: ServiceAccount
+metadata: {name: zabisa-identity, namespace: zabisa-app}
+automountServiceAccountToken: false
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata: {name: zabisa-content, namespace: zabisa-app}
+automountServiceAccountToken: false
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata: {name: zabisa-student, namespace: zabisa-app}
+automountServiceAccountToken: false
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata: {name: zabisa-tahfidz, namespace: zabisa-app}
+automountServiceAccountToken: false
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata: {name: zabisa-academic, namespace: zabisa-app}
+automountServiceAccountToken: false
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata: {name: zabisa-donation, namespace: zabisa-app}
+automountServiceAccountToken: false
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata: {name: zabisa-notification, namespace: zabisa-app}
+automountServiceAccountToken: false
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata: {name: zabisa-admin-web, namespace: zabisa-app}
+automountServiceAccountToken: false
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata: {name: zabisa-identity-migrator, namespace: zabisa-app}
+automountServiceAccountToken: false
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata: {name: zabisa-content-migrator, namespace: zabisa-app}
+automountServiceAccountToken: false
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata: {name: zabisa-student-migrator, namespace: zabisa-app}
+automountServiceAccountToken: false
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata: {name: zabisa-tahfidz-migrator, namespace: zabisa-app}
+automountServiceAccountToken: false
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata: {name: zabisa-academic-migrator, namespace: zabisa-app}
+automountServiceAccountToken: false
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata: {name: zabisa-donation-migrator, namespace: zabisa-app}
+automountServiceAccountToken: false
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata: {name: zabisa-notification-migrator, namespace: zabisa-app}
+automountServiceAccountToken: false
+---
+# Default isolation. Every permitted edge below is intentional and auditable.
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
-metadata:
-  name: default-deny
-  namespace: zabisa-dt
+metadata: {name: default-deny, namespace: zabisa-app}
 spec:
   podSelector: {}
   policyTypes: [Ingress, Egress]
 ---
+# CoreDNS is confirmed in kube-system with k8s-app=kube-dns and ClusterIP 10.96.0.10.
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
-metadata:
-  name: allow-gateway-to-services
-  namespace: zabisa-dt
+metadata: {name: allow-dns-egress, namespace: zabisa-app}
+spec:
+  podSelector: {}
+  policyTypes: [Egress]
+  egress:
+    - to:
+        - namespaceSelector:
+            matchLabels: {kubernetes.io/metadata.name: kube-system}
+          podSelector:
+            matchLabels: {k8s-app: kube-dns}
+      ports:
+        - {protocol: UDP, port: 53}
+        - {protocol: TCP, port: 53}
+---
+# Vault Agent init/sidecars on backend pods authenticate to the existing Vault HA service.
+# Calico evaluates this against Vault server pod labels, not a broad cluster CIDR.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata: {name: allow-vault-egress, namespace: zabisa-app}
+spec:
+  podSelector:
+    matchLabels: {zabisa.network/vault-access: "true"}
+  policyTypes: [Egress]
+  egress:
+    - to:
+        - namespaceSelector:
+            matchLabels: {kubernetes.io/metadata.name: vault}
+          podSelector:
+            matchLabels:
+              app.kubernetes.io/name: vault
+              component: server
+      ports:
+        - {protocol: TCP, port: 8200}
+---
+# Current bounded contexts communicate synchronously through ClusterIP services.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata: {name: allow-backend-internal, namespace: zabisa-app}
 spec:
   podSelector:
     matchLabels: {tier: backend}
+  policyTypes: [Ingress, Egress]
   ingress:
     - from:
-        - podSelector: {matchLabels: {app: api-gateway}}
+        - podSelector:
+            matchLabels: {tier: backend}
+      ports:
+        - {protocol: TCP, port: 8080}
+        - {protocol: TCP, port: 8081}
+        - {protocol: TCP, port: 8082}
+        - {protocol: TCP, port: 8083}
+        - {protocol: TCP, port: 8084}
+        - {protocol: TCP, port: 8085}
+        - {protocol: TCP, port: 8086}
+        - {protocol: TCP, port: 8087}
+  egress:
+    - to:
+        - podSelector:
+            matchLabels: {tier: backend}
+      ports:
+        - {protocol: TCP, port: 8080}
+        - {protocol: TCP, port: 8081}
+        - {protocol: TCP, port: 8082}
+        - {protocol: TCP, port: 8083}
+        - {protocol: TCP, port: 8084}
+        - {protocol: TCP, port: 8085}
+        - {protocol: TCP, port: 8086}
+        - {protocol: TCP, port: 8087}
+---
+# Only stateful bounded contexts can reach the existing DB host.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata: {name: allow-mysql-egress, namespace: zabisa-app}
+spec:
+  podSelector:
+    matchLabels: {zabisa.network/mysql-access: "true"}
+  policyTypes: [Egress]
+  egress:
+    - to:
+        - ipBlock: {cidr: 192.168.100.70/32}
+      ports:
+        - {protocol: TCP, port: 3306}
+---
+# Existing ingress-nginx controller labels were discovered from the cluster. No namespace mutation is required.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata: {name: allow-ingress-to-api-gateway, namespace: zabisa-app}
+spec:
+  podSelector:
+    matchLabels: {app: api-gateway}
   policyTypes: [Ingress]
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels: {kubernetes.io/metadata.name: ingress-nginx}
+          podSelector:
+            matchLabels:
+              app.kubernetes.io/component: controller
+              app.kubernetes.io/instance: ingress-nginx
+              app.kubernetes.io/name: ingress-nginx
+      ports:
+        - {protocol: TCP, port: 8080}
+---
+# Admin BFF can call only the API gateway; it cannot bypass gateway policy enforcement.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata: {name: allow-admin-egress-to-api-gateway, namespace: zabisa-app}
+spec:
+  podSelector:
+    matchLabels: {app: admin-web}
+  policyTypes: [Egress]
+  egress:
+    - to:
+        - podSelector:
+            matchLabels: {app: api-gateway}
+      ports:
+        - {protocol: TCP, port: 8080}
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata: {name: allow-admin-ingress-to-api-gateway, namespace: zabisa-app}
+spec:
+  podSelector:
+    matchLabels: {app: api-gateway}
+  policyTypes: [Ingress]
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels: {app: admin-web}
+      ports:
+        - {protocol: TCP, port: 8080}
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata: {name: allow-ingress-to-admin-web, namespace: zabisa-app}
+spec:
+  podSelector:
+    matchLabels: {app: admin-web}
+  policyTypes: [Ingress]
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels: {kubernetes.io/metadata.name: ingress-nginx}
+          podSelector:
+            matchLabels:
+              app.kubernetes.io/component: controller
+              app.kubernetes.io/instance: ingress-nginx
+              app.kubernetes.io/name: ingress-nginx
+      ports:
+        - {protocol: TCP, port: 3000}

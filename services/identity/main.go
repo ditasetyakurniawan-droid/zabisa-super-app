@@ -42,20 +42,26 @@ type refreshRequest struct {
 
 func main() {
 	cfg := config.Load("identity-service", "identity_db", 8081)
-	if err := cfg.ValidateAuth(); err != nil {
+	if err := cfg.ValidateRuntime(true); err != nil {
 		slog.Error("invalid config", "error", err)
 		os.Exit(1)
 	}
 	ctx := context.Background()
-	db, err := database.Open(ctx, cfg.DSN())
+	db, err := database.Open(ctx, cfg.DSN(), database.TLSOptions{Mode: cfg.MySQLTLSMode, CAFile: cfg.MySQLTLSCAFile, ServerName: cfg.MySQLTLSServerName})
 	if err != nil {
 		slog.Error("database", "error", err)
 		os.Exit(1)
 	}
 	defer db.Close()
-	if err = migrate.Apply(ctx, db, migrationFS, "migrations"); err != nil {
-		slog.Error("migration", "error", err)
-		os.Exit(1)
+	if cfg.ShouldMigrate() {
+		if err = migrate.Apply(ctx, db, migrationFS, "migrations"); err != nil {
+			slog.Error("migration", "error", err)
+			os.Exit(1)
+		}
+		if cfg.MigrateOnly() {
+			slog.Info("database migrations complete", "service", cfg.Service, "database", cfg.DBName)
+			return
+		}
 	}
 	a := &app{db: db, cfg: cfg}
 	if cfg.Environment == "local" {

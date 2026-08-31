@@ -37,7 +37,12 @@
     "phase37:contracts": "./scripts/verify-phase37-api-contracts.sh",
     "phase37:audit": "./scripts/verify-phase37-audit-coverage.sh",
     "phase37:verify": "npm run phase37:invariants && npm run phase37:contracts && npm run phase35:verify && npm run phase35:guardian-verify && npm run phase36:audit && npm run phase37:audit && npm run phase34:verify && npm run demo:verify && ./scripts/verify-admin-runtime.sh && ./scripts/verify-admin-session-cache.sh apps/admin-web && npm run admin:e2e",
-    "admin:form-invariant": "./scripts/verify-admin-form-lifecycle.sh apps/admin-web"
+    "admin:form-invariant": "./scripts/verify-admin-form-lifecycle.sh apps/admin-web",
+    "preflight:offline": "./scripts/preflight-offline.sh",
+    "preflight:offline:full": "./scripts/preflight-offline.sh --full",
+    "node:lock:verify": "node ./scripts/verify-node-lockfile.mjs",
+    "images:verify": "./scripts/verify-image-pipeline.sh",
+    "vault:verify": "./scripts/verify-vault-injector.sh"
   },
   "engines": {
     "node": ">=22"

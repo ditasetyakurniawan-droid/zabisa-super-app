@@ -1,0 +1,109 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: admin-web
+  namespace: zabisa-app
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: admin-web
+  template:
+    metadata:
+      labels:
+        app: admin-web
+        tier: frontend
+    spec:
+      serviceAccountName: zabisa-admin-web
+      securityContext:
+        seccompProfile:
+          type: RuntimeDefault
+        fsGroup: 1001
+        fsGroupChangePolicy: OnRootMismatch
+      containers:
+      - name: admin-web
+        image: harbor-dt.co.id/zabisa/admin-web:REPLACE_SHA
+        ports:
+        - containerPort: 3000
+        env:
+        - name: NODE_ENV
+          value: production
+        - name: BACKEND_INTERNAL_URL
+          value: http://api-gateway:8080
+        - name: ZABISA_COOKIE_SECURE
+          value: 'true'
+        securityContext:
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+          runAsNonRoot: true
+          runAsUser: 1001
+          runAsGroup: 1001
+          capabilities:
+            drop:
+            - ALL
+        resources:
+          requests:
+            cpu: 100m
+            memory: 128Mi
+          limits:
+            cpu: 750m
+            memory: 512Mi
+        startupProbe:
+          httpGet:
+            path: /login
+            port: 3000
+          failureThreshold: 30
+          periodSeconds: 2
+        livenessProbe:
+          httpGet:
+            path: /login
+            port: 3000
+          periodSeconds: 15
+          timeoutSeconds: 3
+        readinessProbe:
+          httpGet:
+            path: /login
+            port: 3000
+          periodSeconds: 10
+          timeoutSeconds: 3
+        volumeMounts:
+        - name: tmp
+          mountPath: /tmp
+        - name: next-cache
+          mountPath: /app/apps/admin-web/.next/cache
+      volumes:
+      - name: tmp
+        emptyDir: {}
+      - name: next-cache
+        emptyDir: {}
+      topologySpreadConstraints:
+      - maxSkew: 1
+        topologyKey: kubernetes.io/hostname
+        whenUnsatisfiable: ScheduleAnyway
+        labelSelector:
+          matchLabels:
+            app: admin-web
+      automountServiceAccountToken: false
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: admin-web
+  namespace: zabisa-app
+spec:
+  selector:
+    app: admin-web
+  ports:
+  - port: 3000
+    targetPort: 3000
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: admin-web
+  namespace: zabisa-app
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app: admin-web

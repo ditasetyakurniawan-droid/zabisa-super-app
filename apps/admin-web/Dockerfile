@@ -1,9 +1,9 @@
 FROM node:22-alpine AS build
 WORKDIR /src
-COPY package.json ./
+COPY package.json package-lock.json ./
 COPY apps/admin-web/package.json ./apps/admin-web/package.json
+RUN npm ci --workspace=@zabisa/admin-web --include-workspace-root --no-audit --no-fund
 COPY apps/admin-web ./apps/admin-web
-RUN npm install --workspaces --include-workspace-root
 RUN npm run build --workspace=@zabisa/admin-web
 
 FROM node:22-alpine AS run

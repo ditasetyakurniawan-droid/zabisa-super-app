@@ -1,5 +1,5 @@
 SHELL := /bin/bash
-.PHONY: test lint fmt vet dev compose-up compose-down verify mobile-bootstrap
+.PHONY: test lint fmt vet dev compose-up compose-down verify mobile-bootstrap preflight preflight-full images-verify images-plan vault-verify
 
 test:
 	go test ./...
@@ -26,4 +26,19 @@ compose-down:
 
 mobile-bootstrap:
 	./scripts/bootstrap-mobile-native.sh
-	npm install
+	npm ci --workspaces --include-workspace-root --no-audit --no-fund
+
+preflight:
+	./scripts/preflight-offline.sh
+
+preflight-full:
+	./scripts/preflight-offline.sh --full
+
+images-verify:
+	./scripts/verify-image-pipeline.sh
+
+images-plan:
+	./scripts/build-images.sh "$$(git rev-parse HEAD)" --plan
+
+vault-verify:
+	./scripts/verify-vault-injector.sh

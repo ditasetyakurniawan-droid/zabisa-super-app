@@ -38,6 +38,10 @@ type sessionStatusEnvelope struct {
 
 func main() {
 	cfg := config.Load("api-gateway", "", 8080)
+	if err := cfg.ValidateRuntime(false); err != nil {
+		slog.Error("invalid config", "error", err)
+		os.Exit(1)
+	}
 	targets := []target{
 		must("/api/v1/auth", "http://identity:8081"), must("/api/v1/admin/guardian-candidates", "http://identity:8081"), must("/api/v1/admin/notification-candidates", "http://identity:8081"), must("/api/v1/admin/users", "http://identity:8081"), must("/api/v1/admin/audit-logs", "http://identity:8081"),
 		must("/api/v1/kajian", "http://content:8082"), must("/api/v1/content", "http://content:8082"), must("/api/v1/admin/kajian", "http://content:8082"), must("/api/v1/admin/content", "http://content:8082"),

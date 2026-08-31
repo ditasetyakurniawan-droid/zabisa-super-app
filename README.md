@@ -36,7 +36,7 @@ Generate native React Native scaffolding once:
 
 ```bash
 ./scripts/bootstrap-mobile-native.sh
-npm install
+npm ci --workspaces --include-workspace-root --no-audit --no-fund
 cd apps/mobile
 npm run android
 ```
@@ -87,3 +87,38 @@ npm run demo:refresh
 ```
 
 The tooling refuses non-localhost API targets and never writes directly to MySQL. See `docs/mobile/PHASE3_3_DEMO_DATA.md`.
+
+## Immutable image pipeline
+
+Offline-safe image inventory and GitOps-render verification:
+
+```bash
+make images-verify
+make images-plan
+```
+
+CI builds nine SHA-tagged images (eight Go services plus `admin-web`), scans HIGH/CRITICAL findings with Trivy, emits CycloneDX SBOMs, and pushes to Harbor only on `main` after Jenkins credential-based login. The pipeline never creates `:latest`.
+
+## DT Vault integration
+
+The DT deployment reuses the existing Vault Agent Injector. Go workloads use one Kubernetes ServiceAccount/Vault role per bounded context, projected `audience=vault` tokens, TLS through the existing CA, and `*_FILE` runtime secret loading. No production secret value is stored in Git.
+
+Offline validation:
+
+```bash
+make vault-verify
+```
+
+First-time cluster bootstrap and Vault administrative steps are intentionally separated from repository patching. Follow `docs/deployment/VAULT.md` before enabling ArgoCD sync.
+
+### Vault Agent canary (Hotfix 0.3.3)
+After Vault administrative authentication and cluster prerequisites are ready, use `scripts/run-vault-canary.sh` to perform one temporary end-to-end injector test before provisioning production DT secrets. The runner cleans up its temporary Pod, Vault role/policy and KV v2 canary data.
+
+### DT external MySQL
+`db-dt` is represented inside `zabisa-app` by a selectorless headless Service and manual EndpointSlice pointing to the Docker Compose host `192.168.100.70:3306`. Stateful services continue to use `MYSQL_HOST=db-dt`.
+
+### db-dt probe portability (Hotfix 0.3.5)
+The external MySQL abstraction is unchanged. The runtime proof now tolerates BusyBox `nslookup` returning non-zero during search-suffix attempts, explicitly verifies the `192.168.100.70` A record, and then tests `db-dt:3306`.
+
+### DT DB security boundary (Hotfix 0.3.6)
+DT backend runtime uses `APP_MODE=serve`, DML-only DB identities, and client-enforced MySQL TLS with a pinned CA. Schema migrations run as seven separate ArgoCD PreSync Jobs using migration-only ServiceAccounts/Vault roles/KV paths and the same immutable service images. The MySQL CA is external to Git and must be bootstrapped as `zabisa-app/mysql-ca` before first sync. See `docs/deployment/HOTFIX-0.3.6-DB-SECURITY-BOUNDARY.md`.

@@ -4,11 +4,36 @@
 !.env.example
 *.pem
 *.key
-coverage/
+
+# JavaScript / TypeScript dependencies and generated output
+node_modules/
+.next/
 dist/
 build/
-.next/
-node_modules/
-vendor/
+coverage/
+*.tsbuildinfo
+
+# Android / native build caches
+.gradle/
+.cxx/
+apps/mobile/android/app/build/
+
+# iOS generated dependencies/build output
+Pods/
+apps/mobile/ios/build/
+
+# Test / tool artifacts
+test-results/
+playwright-report/
+__pycache__/
+*.py[cod]
+
+# Local editor / backup artifacts
+*.bak
+*.bak-*
+*~
 .DS_Store
 *.log
+
+# Go local dependency cache (if created inside repo)
+vendor/

@@ -1,4 +1,0 @@
-/home/dita/project-homelab/zabisa-super-app/apps/mobile/android/app/.cxx/Debug/3w6j4e29/x86_64/CMakeFiles/_CMakeLTOTest-CXX/bin/CMakeFiles/foo.dir
-/home/dita/project-homelab/zabisa-super-app/apps/mobile/android/app/.cxx/Debug/3w6j4e29/x86_64/CMakeFiles/_CMakeLTOTest-CXX/bin/CMakeFiles/boo.dir
-/home/dita/project-homelab/zabisa-super-app/apps/mobile/android/app/.cxx/Debug/3w6j4e29/x86_64/CMakeFiles/_CMakeLTOTest-CXX/bin/CMakeFiles/edit_cache.dir
-/home/dita/project-homelab/zabisa-super-app/apps/mobile/android/app/.cxx/Debug/3w6j4e29/x86_64/CMakeFiles/_CMakeLTOTest-CXX/bin/CMakeFiles/rebuild_cache.dir

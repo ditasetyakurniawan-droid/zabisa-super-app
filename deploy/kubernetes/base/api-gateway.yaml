@@ -2,63 +2,114 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: api-gateway
-  namespace: zabisa-dt
+  namespace: zabisa-app
 spec:
   replicas: 2
   selector:
-    matchLabels: {app: api-gateway}
+    matchLabels:
+      app: api-gateway
   template:
     metadata:
-      labels: {app: api-gateway, tier: backend}
+      labels:
+        app: api-gateway
+        tier: backend
+        zabisa.network/vault-access: 'true'
+      annotations:
+        vault.hashicorp.com/agent-inject: 'true'
+        vault.hashicorp.com/role: app-zabisa-api-gateway-dt
+        vault.hashicorp.com/agent-service-account-token-volume-name: vault-token
+        vault.hashicorp.com/tls-secret: vault-ca
+        vault.hashicorp.com/ca-cert: /vault/tls/ca.crt
+        vault.hashicorp.com/tls-server-name: vault.vault.svc
+        vault.hashicorp.com/agent-run-as-same-user: 'true'
+        vault.hashicorp.com/agent-inject-secret-jwt-signing-key: kv/data/zabisa/dt/shared/runtime
+        vault.hashicorp.com/agent-inject-template-jwt-signing-key: '{{- with secret "kv/data/zabisa/dt/shared/runtime" -}}{{ .Data.data.JWT_SIGNING_KEY }}{{- end }}'
+        vault.hashicorp.com/agent-inject-perms-jwt-signing-key: '0400'
+        vault.hashicorp.com/agent-inject-secret-internal-service-key: kv/data/zabisa/dt/shared/runtime
+        vault.hashicorp.com/agent-inject-template-internal-service-key: '{{- with secret "kv/data/zabisa/dt/shared/runtime" -}}{{ .Data.data.INTERNAL_SERVICE_KEY }}{{- end }}'
+        vault.hashicorp.com/agent-inject-perms-internal-service-key: '0400'
     spec:
-      serviceAccountName: zabisa-app
+      serviceAccountName: zabisa-api-gateway
       securityContext:
-        seccompProfile: {type: RuntimeDefault}
+        seccompProfile:
+          type: RuntimeDefault
       containers:
-        - name: api-gateway
-          image: harbor-dt.co.id/zabisa/api-gateway:REPLACE_SHA
-          ports: [{containerPort: 8080}]
-          env:
-            - {name: ENVIRONMENT, value: dt}
-            - {name: MYSQL_HOST, value: db-dt}
-          envFrom:
-            - secretRef: {name: api-gateway-runtime}
-          securityContext:
-            allowPrivilegeEscalation: false
-            readOnlyRootFilesystem: true
-            runAsNonRoot: true
-            capabilities: {drop: ["ALL"]}
-          resources:
-            requests: {cpu: 50m, memory: 64Mi}
-            limits: {cpu: 500m, memory: 256Mi}
-          livenessProbe:
-            httpGet: {path: /health/live, port: 8080}
-            initialDelaySeconds: 10
-            periodSeconds: 15
-          readinessProbe:
-            httpGet: {path: /health/ready, port: 8080}
-            initialDelaySeconds: 5
-            periodSeconds: 10
+      - name: api-gateway
+        image: harbor-dt.co.id/zabisa/api-gateway:REPLACE_SHA
+        ports:
+        - containerPort: 8080
+        env:
+        - name: ENVIRONMENT
+          value: dt
+        - name: JWT_SIGNING_KEY_FILE
+          value: /vault/secrets/jwt-signing-key
+        - name: INTERNAL_SERVICE_KEY_FILE
+          value: /vault/secrets/internal-service-key
+        securityContext:
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+          runAsNonRoot: true
+          capabilities:
+            drop:
+            - ALL
+          runAsUser: 65532
+          runAsGroup: 65532
+        resources:
+          requests:
+            cpu: 50m
+            memory: 64Mi
+          limits:
+            cpu: 500m
+            memory: 256Mi
+        livenessProbe:
+          httpGet:
+            path: /health/live
+            port: 8080
+          initialDelaySeconds: 10
+          periodSeconds: 15
+        readinessProbe:
+          httpGet:
+            path: /health/ready
+            port: 8080
+          initialDelaySeconds: 5
+          periodSeconds: 10
       topologySpreadConstraints:
-        - maxSkew: 1
-          topologyKey: kubernetes.io/hostname
-          whenUnsatisfiable: ScheduleAnyway
-          labelSelector: {matchLabels: {app: api-gateway}}
+      - maxSkew: 1
+        topologyKey: kubernetes.io/hostname
+        whenUnsatisfiable: ScheduleAnyway
+        labelSelector:
+          matchLabels:
+            app: api-gateway
+      automountServiceAccountToken: false
+      volumes:
+      - name: vault-token
+        projected:
+          defaultMode: 420
+          sources:
+          - serviceAccountToken:
+              audience: vault
+              expirationSeconds: 3600
+              path: token
 ---
 apiVersion: v1
 kind: Service
 metadata:
   name: api-gateway
-  namespace: zabisa-dt
+  namespace: zabisa-app
 spec:
-  selector: {app: api-gateway}
-  ports: [{port: 8080, targetPort: 8080}]
+  selector:
+    app: api-gateway
+  ports:
+  - port: 8080
+    targetPort: 8080
 ---
 apiVersion: policy/v1
 kind: PodDisruptionBudget
 metadata:
   name: api-gateway
-  namespace: zabisa-dt
+  namespace: zabisa-app
 spec:
   minAvailable: 1
-  selector: {matchLabels: {app: api-gateway}}
+  selector:
+    matchLabels:
+      app: api-gateway
