@@ -29,6 +29,14 @@ Exit gate:
 
 `PR cannot merge when a required engineering gate is red.`
 
+Implementation status:
+
+- CI workflow, scoped Go reports, mobile coverage import, dependency checks,
+  secret hygiene, optional SonarQube integration, Dependabot, and isolated
+  Backoffice browser E2E are implemented in source;
+- the phase remains open until the workflow passes on the real repository and
+  both jobs are configured as required `main` branch checks.
+
 ## Phase 3.9 — Mobile test and UX completion
 
 Goal: raise confidence in the end-user application.

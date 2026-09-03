@@ -3,7 +3,14 @@ set -euo pipefail
 ROOT=$(cd "$(dirname "$0")/.." && pwd)
 cd "$ROOT"
 echo '== Go 1.26.7 dependency + test =='
-docker run --rm -v "$ROOT:/src" -w /src golang:1.26.7-alpine sh -c 'export PATH=/usr/local/go/bin:$PATH; go version; go mod tidy; go test ./...'
+docker run --rm -v "$ROOT:/src" -w /src golang:1.26.7-alpine sh -c '
+  set -eu
+  export PATH=/usr/local/go/bin:$PATH
+  export GOTOOLCHAIN=local
+  go version
+  go mod download
+  go test ./packages/go/... ./services/...
+'
 echo '== Build and start full local stack =='
 docker rm -f zabisa-admin-web >/dev/null 2>&1 || true
 docker compose down --remove-orphans

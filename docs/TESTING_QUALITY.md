@@ -22,6 +22,15 @@ Scoped Go tests should cover platform packages and affected services. Current
 service packages still have sparse unit-test depth in places; a package showing
 `[no test files]` is not evidence of complete test coverage.
 
+The canonical gate is:
+
+```bash
+./scripts/go-quality.sh
+```
+
+It emits Sonar-compatible coverage and test-execution reports without scanning
+Go packages nested under `node_modules`.
+
 ## Contract/regression suites
 
 Important existing scripts include:
@@ -75,6 +84,19 @@ Desired policy:
 - controlled duplication;
 - reviewed security hotspots;
 - do not chase artificial 100% coverage.
+
+The Phase 3.8 report paths are:
+
+- Go coverage: `coverage/go-cover.out`;
+- Go test execution: `coverage/go-test-report.json`;
+- npm production dependency audit: `coverage/npm-audit.json`;
+- mobile LCOV: `apps/mobile/coverage/lcov.info`.
+
+The Go test execution report is newline-delimited JSON (NDJSON), not one JSON
+document. Offline preflight validates each non-empty report line independently.
+
+See `docs/ci/PHASE3.8-QUALITY-GATE.md` for GitHub variables, secrets, and branch
+protection requirements.
 
 ## Browser diagnostics
 

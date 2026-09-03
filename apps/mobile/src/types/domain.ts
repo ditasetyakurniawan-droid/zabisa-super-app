@@ -1,6 +1,10 @@
 export type User = {id: string; email: string; phone?: string; name: string; role: string; status: string};
 export type Kajian = {id: string; title: string; slug: string; description: string; speaker: string; start_at: string; end_at?: string | null; location: string; map_url?: string; live_url?: string; poster_url?: string; status: string};
 export type Campaign = {id: string; name: string; slug: string; description: string; category: string; target_amount: number | null; collected_amount: number; cover_url?: string; deadline?: string | null; status: string};
+export type CampaignUpdate = {id: string; title: string; body: string; created_at: string};
+export type ContentItem = {id: string; type: string; title: string; slug: string; summary?: string; body?: string; image_url?: string; published_at?: string};
+export type DonationHistoryItem = {id: string; campaign_name: string; amount: number; status: string; created_at: string};
+export type DonationResult = {id: string; status?: string};
 export type Student = {id: string; student_no: string; full_name: string; class_name: string; program_name: string; academic_year: string; status: string};
 export type NotificationItem = {id: string; type: string; title: string; message: string; deep_link?: string; read: boolean; created_at: string};
 export type PaymentMethod = {method_code: string; display_name: string; bank_name: string; account_number: string; account_holder: string; instructions: string};

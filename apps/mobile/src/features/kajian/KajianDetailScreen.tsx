@@ -2,9 +2,13 @@ import React from 'react';
 import {Linking, StyleSheet, Text} from 'react-native';
 import {Button, Card, ScrollScreen, SectionTitle, Title} from '../../components/UI';
 import {colors, space, type} from '../../theme/tokens';
+import type {RootStackScreenProps} from '../../navigation/types';
 
-export default function KajianDetailScreen({route}: {route: any}) {
+export default function KajianDetailScreen({route}: RootStackScreenProps<'KajianDetail'>) {
   const kajian = route.params.kajian;
+  const mapURL = kajian.map_url;
+  const liveURL = kajian.live_url;
+
   return (
     <ScrollScreen safeTop={false}>
       <Title>{kajian.title}</Title>
@@ -12,8 +16,8 @@ export default function KajianDetailScreen({route}: {route: any}) {
       <Card>
         <Text style={styles.label}>WAKTU</Text><Text style={styles.value}>{new Date(kajian.start_at).toLocaleString('id-ID')}</Text>
         <Text style={styles.label}>LOKASI</Text><Text style={styles.value}>{kajian.location || 'Lokasi menyusul'}</Text>
-        {kajian.map_url ? <Button secondary title="Buka peta" onPress={() => Linking.openURL(kajian.map_url)} /> : null}
-        {kajian.live_url ? <Button secondary title="Buka live stream" onPress={() => Linking.openURL(kajian.live_url)} /> : null}
+        {mapURL ? <Button secondary title="Buka peta" onPress={() => Linking.openURL(mapURL)} /> : null}
+        {liveURL ? <Button secondary title="Buka live stream" onPress={() => Linking.openURL(liveURL)} /> : null}
       </Card>
       <SectionTitle>Deskripsi</SectionTitle>
       <Text style={styles.body}>{kajian.description || 'Deskripsi kajian belum tersedia.'}</Text>

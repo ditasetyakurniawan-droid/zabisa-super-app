@@ -4,8 +4,9 @@ import {AppHeader, Button, Card, Muted, ScrollScreen, TextField} from '../../com
 import {colors, radius, space, type} from '../../theme/tokens';
 import {useAuth} from '../../store/auth';
 import {userMessage} from '../../api/client';
+import type {RootStackScreenProps} from '../../navigation/types';
 
-export default function LoginScreen({navigation}: {navigation: any}) {
+export default function LoginScreen({navigation}: RootStackScreenProps<'Login'>) {
   const login = useAuth(s => s.login);
   const busy = useAuth(s => s.busy);
   const user = useAuth(s => s.user);

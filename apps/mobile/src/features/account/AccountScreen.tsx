@@ -3,8 +3,9 @@ import {StyleSheet, Text, View} from 'react-native';
 import {AppHeader, Button, Card, Muted, ScrollScreen, SectionTitle} from '../../components/UI';
 import {colors, radius, space, type} from '../../theme/tokens';
 import {useAuth} from '../../store/auth';
+import type {MainTabScreenProps} from '../../navigation/types';
 
-export default function AccountScreen({navigation}: {navigation: any}) {
+export default function AccountScreen({navigation}: MainTabScreenProps<'Akun'>) {
   const user = useAuth(s => s.user);
   const logout = useAuth(s => s.logout);
   const busy = useAuth(s => s.busy);
@@ -16,7 +17,7 @@ export default function AccountScreen({navigation}: {navigation: any}) {
         <Card>
           <Text style={styles.cardTitle}>Akses wali santri</Text>
           <Muted>Login diperlukan untuk melihat tahfidz, nilai, kehadiran, report, dan notifikasi pribadi.</Muted>
-          <Button title="Masuk" onPress={() => (navigation.getParent() as any)?.navigate('Login')} />
+          <Button title="Masuk" onPress={() => navigation.navigate('Login')} />
         </Card>
       </ScrollScreen>
     );

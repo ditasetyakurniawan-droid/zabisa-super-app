@@ -4,14 +4,15 @@ import {useQuery} from '@tanstack/react-query';
 import {api, userMessage} from '../../api/client';
 import {AppHeader, Card, Empty, ErrorState, Loading, Muted, Screen} from '../../components/UI';
 import {colors, radius, space, type} from '../../theme/tokens';
-import type {Campaign} from '../../types/domain';
+import type {Campaign, DonationHistoryItem} from '../../types/domain';
 import {useAuth} from '../../store/auth';
 import {formatCurrencyID, formatDonationStatus} from '../../utils/format';
+import type {MainTabScreenProps} from '../../navigation/types';
 
-export default function DonationScreen({navigation}: {navigation: any}) {
+export default function DonationScreen({navigation}: MainTabScreenProps<'Donasi'>) {
   const user = useAuth(s => s.user);
   const campaigns = useQuery({queryKey: ['campaigns'], queryFn: () => api<Campaign[]>('/api/v1/donation/campaigns')});
-  const history = useQuery({queryKey: ['donation-history', user?.id], enabled: !!user, queryFn: () => api<any[]>('/api/v1/donations/history')});
+  const history = useQuery({queryKey: ['donation-history', user?.id], enabled: !!user, queryFn: () => api<DonationHistoryItem[]>('/api/v1/donations/history')});
   return (
     <Screen>
       <AppHeader eyebrow="DONASI" title="Kebaikan yang transparan" subtitle="Salurkan dukungan melalui campaign resmi. Status pembayaran selalu ditentukan backend Zabisa." />

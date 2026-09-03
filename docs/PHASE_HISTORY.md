@@ -189,3 +189,27 @@ Corrected the API Gateway health contract so the source now serves the
 Added a Go regression test and an offline preflight invariant to prevent future
 source/manifest drift. This hotfix does not change MySQL, migrations, Vault,
 RBAC, mobile contracts, or bounded-service behavior.
+
+## Phase 3.8 — Reproducible CI and code-quality foundation
+
+Introduced GitHub pull-request gates, Dependabot, scoped Go coverage/test
+reports, mobile LCOV import, dependency and secret checks, optional SonarQube
+analysis, and isolated Backoffice browser E2E. Jenkins now consumes the same
+scoped report contract.
+
+Readability work split the API Gateway bootstrap, routing, access control, and
+HTTP handler into focused files. Route matching now requires an exact path
+boundary, with regression tests. Mobile screen navigation and API result DTOs
+are typed instead of relying on explicit `any`.
+
+Validation added a fail-closed npm audit policy with exact, expiring exceptions
+for the two unpatched `image-size` advisories inherited through React Native
+Metro. New high/critical advisories remain blocking and the raw JSON report is
+retained as CI evidence.
+
+The offline preflight distinguishes tracked source JSON from generated reports
+and validates `go test -json` output as NDJSON, matching Sonar's Go test report
+contract.
+
+Phase 3.8 remains open until the workflow passes in GitHub and both jobs become
+required branch-protection checks.

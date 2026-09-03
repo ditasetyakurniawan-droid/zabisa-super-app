@@ -6,7 +6,7 @@ import {
   NavigationContainer,
 } from '@react-navigation/native';
 import {createBottomTabNavigator, type BottomTabNavigationOptions} from '@react-navigation/bottom-tabs';
-import {createNativeStackNavigator} from '@react-navigation/native-stack';
+import {createNativeStackNavigator, type NativeStackNavigationProp} from '@react-navigation/native-stack';
 import HomeScreen from '../features/home/HomeScreen';
 import KajianScreen from '../features/kajian/KajianScreen';
 import KajianDetailScreen from '../features/kajian/KajianDetailScreen';
@@ -77,7 +77,7 @@ function Tabs() {
           tabPress: event => {
             if (!user) {
               event.preventDefault();
-              (navigation.getParent() as any)?.navigate('Login');
+              navigation.getParent<NativeStackNavigationProp<RootStackParamList>>()?.navigate('Login');
             }
           },
         })}

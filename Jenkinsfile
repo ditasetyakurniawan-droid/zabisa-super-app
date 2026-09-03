@@ -19,12 +19,43 @@ pipeline {
     }
     stage('Go Quality') {
       steps {
-        sh '''docker run --rm -v "$PWD:/src" -w /src $GO_IMAGE sh -c 'export PATH=/usr/local/go/bin:$PATH; go version; go mod download; test -z "$(gofmt -l services packages/go)"; go vet ./...; mkdir -p coverage; go test -coverprofile=coverage/go-cover.out ./...' '''
+        sh '''docker run --rm -v "$PWD:/src" -w /src $GO_IMAGE sh -c '
+          set -eu
+          export PATH=/usr/local/go/bin:$PATH
+          export GOTOOLCHAIN=local
+          go version
+          go mod download
+          test -z "$(gofmt -l services packages/go)"
+          go vet ./packages/go/... ./services/...
+          mkdir -p coverage
+          if ! go test -json -count=1 -covermode=atomic -coverpkg=github.com/zabisa/platform/packages/go/...,github.com/zabisa/platform/services/... -coverprofile=coverage/go-cover.out ./packages/go/... ./services/... > coverage/go-test-report.json; then
+            tail -n 200 coverage/go-test-report.json
+            exit 1
+          fi
+          go tool cover -func=coverage/go-cover.out | tail -n 1
+        ' '''
       }
     }
     stage('Node Quality') {
       steps {
-        sh '''docker run --rm -v "$PWD:/src" -w /src $NODE_IMAGE sh -c 'npm ci --workspaces --include-workspace-root --no-audit --no-fund && npm run node:lock:verify && npm run lint && npm run typecheck' '''
+        sh '''docker run --rm -v "$PWD:/src" -w /src $NODE_IMAGE sh -c '
+          set -eu
+          export CI=true
+          export NEXT_TELEMETRY_DISABLED=1
+          npm ci --workspaces --include-workspace-root --no-audit --no-fund
+          npm run node:lock:verify
+          npm run lint --workspace=@zabisa/admin-web -- --max-warnings=0
+          npm run lint --workspace=@zabisa/mobile -- --max-warnings=0
+          npm run typecheck --workspaces --if-present
+          npm run test --workspace=@zabisa/mobile
+          npm run build --workspace=@zabisa/admin-web
+          npm run audit:production
+        ' '''
+      }
+    }
+    stage('Secret Hygiene') {
+      steps {
+        sh './scripts/verify-secret-hygiene.sh'
       }
     }
     stage('Image Pipeline Invariants') {

@@ -19,6 +19,20 @@ Run everything:
 
 The verification script exercises real vertical slices through API, MySQL, transactional outbox, and notification inbox.
 
+## Engineering quality gate
+
+Install the locked Node dependency graph, use Go 1.26.7, and run the same gate
+used by CI:
+
+```bash
+npm ci --workspaces --include-workspace-root --no-audit --no-fund
+make quality
+```
+
+The gate produces Sonar-compatible Go and mobile coverage reports. GitHub CI,
+SonarQube setup, branch protection, and browser E2E behavior are documented in
+`docs/ci/PHASE3.8-QUALITY-GATE.md`.
+
 ## Development accounts
 
 All are DEVELOPMENT DATA and use password `ChangeMe123!`:

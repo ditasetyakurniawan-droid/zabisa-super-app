@@ -8,6 +8,7 @@ import {useAuth} from '../../store/auth';
 import type {NotificationItem, Student} from '../../types/domain';
 import {formatDateTimeID} from '../../utils/format';
 import {notificationTypeLabel, parseZabisaDeepLink} from './deepLink';
+import type {MainTabScreenProps} from '../../navigation/types';
 
 function tone(typeName: string) {
   if (typeName === 'TAHFIDZ') return 'success' as const;
@@ -15,7 +16,7 @@ function tone(typeName: string) {
   return 'neutral' as const;
 }
 
-export default function NotificationsScreen({navigation}: {navigation: any}) {
+export default function NotificationsScreen({navigation}: MainTabScreenProps<'Notifikasi'>) {
   const queryClient = useQueryClient();
   const user = useAuth(s => s.user);
   const guardian = !!user && ['GUARDIAN', 'WALI_SANTRI'].includes(user.role);

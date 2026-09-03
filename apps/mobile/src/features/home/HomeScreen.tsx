@@ -7,8 +7,9 @@ import {colors, radius, space, type} from '../../theme/tokens';
 import type {Campaign, Kajian, Student} from '../../types/domain';
 import {useAuth} from '../../store/auth';
 import {formatCurrencyID, formatDateTimeID, friendlyFirstName} from '../../utils/format';
+import type {MainTabScreenProps} from '../../navigation/types';
 
-export default function HomeScreen({navigation}: {navigation: any}) {
+export default function HomeScreen({navigation}: MainTabScreenProps<'Home'>) {
   const user = useAuth(s => s.user);
   const guardian = !!user && ['GUARDIAN', 'WALI_SANTRI'].includes(user.role);
   const kajian = useQuery({queryKey: ['kajian'], queryFn: () => api<Kajian[]>('/api/v1/kajian')});
@@ -49,7 +50,7 @@ export default function HomeScreen({navigation}: {navigation: any}) {
         <IconTile icon="info" label="Tentang" onPress={() => navigation.navigate('ContentList', {type: 'profile', title: 'Tentang Zabisa'})} />
         <IconTile icon="gallery" label="Galeri" onPress={() => navigation.navigate('ContentList', {type: 'gallery', title: 'Galeri'})} />
         <IconTile icon="notification" label="Notifikasi" onPress={() => navigation.navigate('Notifikasi')} />
-        <IconTile icon="account" label="Akun" onPress={() => user ? navigation.navigate('Akun') : (navigation.getParent() as any)?.navigate('Login')} />
+        <IconTile icon="account" label="Akun" onPress={() => user ? navigation.navigate('Akun') : navigation.navigate('Login')} />
       </View>
 
       <SectionTitle action={<TextButton title="Lihat semua" onPress={() => navigation.navigate('Kajian')} />}>Kajian terbaru</SectionTitle>

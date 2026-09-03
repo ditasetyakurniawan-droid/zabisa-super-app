@@ -5,14 +5,16 @@ import {api, userMessage} from '../../api/client';
 import {Card, Empty, ErrorState, Loading, Muted, Screen, Title} from '../../components/UI';
 import {colors, space, type} from '../../theme/tokens';
 import {contentTypeLabel, normalizeContentType} from '../../utils/content';
+import type {ContentItem} from '../../types/domain';
+import type {RootStackScreenProps} from '../../navigation/types';
 
-export default function ContentListScreen({navigation, route}: {navigation: any; route: any}) {
+export default function ContentListScreen({navigation, route}: RootStackScreenProps<'ContentList'>) {
   const requestedType = route.params?.type || '';
   const contentType = normalizeContentType(requestedType);
   const title = route.params?.title || contentTypeLabel(contentType);
   const query = useQuery({
     queryKey: ['content', contentType],
-    queryFn: () => api<any[]>(`/api/v1/content${contentType ? `?type=${encodeURIComponent(contentType)}` : ''}`),
+    queryFn: () => api<ContentItem[]>(`/api/v1/content${contentType ? `?type=${encodeURIComponent(contentType)}` : ''}`),
   });
 
   return (

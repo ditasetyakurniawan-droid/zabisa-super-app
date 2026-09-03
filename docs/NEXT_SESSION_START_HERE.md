@@ -87,11 +87,12 @@ npm run mobile:quality
 - Do not `pm clear` the verified OPPO workflow.
 - Do not run `npm audit fix --force`.
 
-## 6. First planned phase
+## 6. Current phase
 
-Proceed with:
+Validate and finish:
 
 **Phase 3.8 — GitHub CI and repository quality gate**
 
-Do not start FCM/payment-provider work before the repository baseline is safely
-pushed and CI is reproducible.
+Run `./scripts/quality-gate.sh`, push the Phase 3.8 branch, enable Sonar only
+after its URL/token are configured, then require both GitHub jobs on `main`.
+Do not start FCM/payment-provider work before CI is reproducible.

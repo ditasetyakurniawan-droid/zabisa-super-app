@@ -42,7 +42,9 @@
     "preflight:offline:full": "./scripts/preflight-offline.sh --full",
     "node:lock:verify": "node ./scripts/verify-node-lockfile.mjs",
     "images:verify": "./scripts/verify-image-pipeline.sh",
-    "vault:verify": "./scripts/verify-vault-injector.sh"
+    "vault:verify": "./scripts/verify-vault-injector.sh",
+    "audit:production": "./scripts/npm-audit-gate.sh",
+    "quality": "./scripts/quality-gate.sh"
   },
   "engines": {
     "node": ">=22"

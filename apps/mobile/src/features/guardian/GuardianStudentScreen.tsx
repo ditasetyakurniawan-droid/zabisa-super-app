@@ -14,8 +14,9 @@ import {
   formatAssessmentType,
   formatReportType,
 } from '../../utils/format';
+import type {RootStackScreenProps} from '../../navigation/types';
 
-export default function GuardianStudentScreen({route}: {route: any}) {
+export default function GuardianStudentScreen({route}: RootStackScreenProps<'GuardianStudent'>) {
   const student = route.params.student;
   const tahfidz = useQuery({queryKey: ['student-tahfidz', student.id], queryFn: () => api<TahfidzEntry[]>(`/api/v1/tahfidz/students/${student.id}/entries`)});
   const grades = useQuery({queryKey: ['student-grades', student.id], queryFn: () => api<Grade[]>(`/api/v1/students/${student.id}/grades`)});

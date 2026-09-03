@@ -6,8 +6,9 @@ import {AppHeader, Card, Empty, ErrorState, Loading, Muted, Screen} from '../../
 import {colors, space, type} from '../../theme/tokens';
 import type {Kajian} from '../../types/domain';
 import {formatDateTimeID} from '../../utils/format';
+import type {MainTabScreenProps} from '../../navigation/types';
 
-export default function KajianScreen({navigation}: {navigation: any}) {
+export default function KajianScreen({navigation}: MainTabScreenProps<'Kajian'>) {
   const query = useQuery({queryKey: ['kajian'], queryFn: () => api<Kajian[]>('/api/v1/kajian')});
   return (
     <Screen>

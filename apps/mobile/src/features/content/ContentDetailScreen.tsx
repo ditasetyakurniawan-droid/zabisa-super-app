@@ -5,11 +5,14 @@ import {api, userMessage} from '../../api/client';
 import {ErrorState, Loading, Muted, ScrollScreen, Title} from '../../components/UI';
 import {colors, space, type} from '../../theme/tokens';
 import {contentTypeLabel} from '../../utils/content';
+import type {ContentItem} from '../../types/domain';
+import type {RootStackScreenProps} from '../../navigation/types';
 
-export default function ContentDetailScreen({route}: {route: any}) {
-  const query = useQuery({queryKey: ['content-detail', route.params.id], queryFn: () => api<any>(`/api/v1/content/${route.params.id}`)});
+export default function ContentDetailScreen({route}: RootStackScreenProps<'ContentDetail'>) {
+  const query = useQuery({queryKey: ['content-detail', route.params.id], queryFn: () => api<ContentItem>(`/api/v1/content/${route.params.id}`)});
   if (query.isLoading) return <ScrollScreen safeTop={false}><Loading /></ScrollScreen>;
   if (query.isError) return <ScrollScreen safeTop={false}><ErrorState message={userMessage(query.error)} onRetry={() => query.refetch()} /></ScrollScreen>;
+  if (!query.data) return <ScrollScreen safeTop={false}><ErrorState message="Konten tidak ditemukan." onRetry={() => query.refetch()} /></ScrollScreen>;
   const item = query.data;
   return (
     <ScrollScreen safeTop={false}>

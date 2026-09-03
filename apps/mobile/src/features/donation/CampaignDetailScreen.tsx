@@ -4,10 +4,12 @@ import {useQuery} from '@tanstack/react-query';
 import {api, userMessage} from '../../api/client';
 import {Button, Card, Empty, ErrorState, Loading, Muted, ScrollScreen, SectionTitle, Title} from '../../components/UI';
 import {colors, space, type} from '../../theme/tokens';
+import type {CampaignUpdate} from '../../types/domain';
+import type {RootStackScreenProps} from '../../navigation/types';
 
-export default function CampaignDetailScreen({navigation, route}: {navigation: any; route: any}) {
+export default function CampaignDetailScreen({navigation, route}: RootStackScreenProps<'CampaignDetail'>) {
   const campaign = route.params.campaign;
-  const updates = useQuery({queryKey: ['campaign-updates', campaign.id], queryFn: () => api<any[]>(`/api/v1/donation/campaigns/${campaign.id}/updates`)});
+  const updates = useQuery({queryKey: ['campaign-updates', campaign.id], queryFn: () => api<CampaignUpdate[]>(`/api/v1/donation/campaigns/${campaign.id}/updates`)});
   return (
     <ScrollScreen safeTop={false}>
       <Title>{campaign.name}</Title>

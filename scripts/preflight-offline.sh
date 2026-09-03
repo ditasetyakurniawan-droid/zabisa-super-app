@@ -51,9 +51,9 @@ grep -Eq '^[[:space:]]*name:[[:space:]]*zabisa-app[[:space:]]*$' deploy/kubernet
 pass 'namespace zabisa-app declared'
 
 # Keep the API Gateway process health contract synchronized with its Pod probes.
-grep -Fq 'case "/health/live":' services/api-gateway/main.go \
+grep -Fq 'case "/health/live":' services/api-gateway/handler.go \
   || fail 'API Gateway liveness route is missing'
-grep -Fq 'case "/health/ready":' services/api-gateway/main.go \
+grep -Fq 'case "/health/ready":' services/api-gateway/handler.go \
   || fail 'API Gateway readiness route is missing'
 grep -Eq '^[[:space:]]*path:[[:space:]]*/health/live[[:space:]]*$' deploy/kubernetes/base/api-gateway.yaml \
   || fail 'API Gateway liveness probe path is missing'
@@ -82,27 +82,46 @@ pass 'DB TLS + runtime/migrator boundary invariants'
 ./scripts/verify-vault-injector.sh || fail 'Vault Agent Injector invariants failed'
 pass 'Vault Agent Injector + per-service identity invariants'
 
-# 3. Basic secret hygiene. Allow documented examples but reject obvious private key blocks / common live-secret files.
-if command -v git >/dev/null 2>&1 && git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
-  secret_files="$(git ls-files | grep -E '(^|/)(\.env|id_rsa|id_ed25519)$|\.(pem|p12|pfx|jks)$' | grep -vE '(^|/)\.env\.example$|debug\.keystore$' || true)"
-  if [[ -n "$secret_files" ]]; then
-    printf '%s\n' "$secret_files" >&2
-    fail 'potential runtime/private secret files are tracked'
-  fi
-  if git grep -I -n -E -- '-----BEGIN (RSA |EC |OPENSSH |)?PRIVATE KEY-----' -- ':!*.md' ':!*.example' >/tmp/zabisa-private-key-hits.txt 2>/dev/null; then
-    cat /tmp/zabisa-private-key-hits.txt >&2
-    fail 'private key material detected in tracked source'
-  fi
-  pass 'basic tracked-secret hygiene'
-fi
+# 3. Tracked secret hygiene.
+./scripts/verify-secret-hygiene.sh || fail 'tracked secret hygiene failed'
+pass 'tracked secret hygiene'
 
 # 4. Parse source formats that have standard-library parsers.
 if command -v node >/dev/null 2>&1; then
+  json_source_files() {
+    if command -v git >/dev/null 2>&1 && git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+      git ls-files -z -- '*.json'
+    else
+      find . \
+        -path './node_modules' -prune -o \
+        -path './.git' -prune -o \
+        -path '*/coverage' -prune -o \
+        -path '*/.next' -prune -o \
+        -path '*/test-results' -prune -o \
+        -path '*/playwright-report' -prune -o \
+        -type f -name '*.json' -print0
+    fi
+  }
+
   while IFS= read -r -d '' f; do
     node -e 'JSON.parse(require("fs").readFileSync(process.argv[1], "utf8"))' "$f" \
       || fail "invalid JSON: $f"
-  done < <(find . -path './node_modules' -prune -o -path './.git' -prune -o -type f -name '*.json' -print0)
-  pass 'JSON syntax'
+  done < <(json_source_files)
+  pass 'tracked/source JSON syntax'
+
+  if [[ -s coverage/go-test-report.json ]]; then
+    node -e '
+      const fs = require("fs");
+      const lines = fs.readFileSync(process.argv[1], "utf8").split(/\r?\n/).filter(Boolean);
+      if (lines.length === 0) throw new Error("empty Go test report");
+      lines.forEach((line, index) => {
+        try { JSON.parse(line); }
+        catch (error) { throw new Error(`invalid NDJSON at line ${index + 1}: ${error.message}`); }
+      });
+    ' coverage/go-test-report.json || fail 'invalid Go test NDJSON report'
+    pass 'Go test NDJSON report syntax'
+  fi
+
   node ./scripts/verify-node-lockfile.mjs || fail 'Node lockfile/workspace synchronization failed'
   pass 'Node lockfile/workspace synchronization'
 else
@@ -111,6 +130,9 @@ fi
 
 ./scripts/verify-image-pipeline.sh || fail 'immutable image/GitOps pipeline invariants failed'
 pass 'immutable image/GitOps pipeline invariants'
+
+./scripts/verify-quality-gate.sh || fail 'CI/Sonar quality gate invariants failed'
+pass 'CI/Sonar quality gate invariants'
 
 while IFS= read -r -d '' f; do
   bash -n "$f" || fail "invalid shell syntax: $f"
@@ -122,16 +144,16 @@ if command -v ruby >/dev/null 2>&1; then
   while IFS= read -r -d '' f; do
     ruby -e 'require "yaml"; YAML.load_stream(File.read(ARGV[0]))' "$f" \
       || fail "invalid YAML: $f"
-  done < <(find deploy -type f \( -name '*.yaml' -o -name '*.yml' \) -print0)
+  done < <(find deploy .github -type f \( -name '*.yaml' -o -name '*.yml' \) -print0)
   pass 'YAML syntax via local Ruby/Psych'
 elif command -v python3 >/dev/null 2>&1 && python3 -c 'import yaml' >/dev/null 2>&1; then
   while IFS= read -r -d '' f; do
     python3 -c 'import sys,yaml; list(yaml.safe_load_all(open(sys.argv[1], encoding="utf-8")))' "$f" \
       || fail "invalid YAML: $f"
-  done < <(find deploy -type f \( -name '*.yaml' -o -name '*.yml' \) -print0)
+  done < <(find deploy .github -type f \( -name '*.yaml' -o -name '*.yml' \) -print0)
   pass 'YAML syntax via local PyYAML'
 elif command -v yamllint >/dev/null 2>&1; then
-  yamllint deploy || fail 'yamllint failed'
+  yamllint deploy .github || fail 'yamllint failed'
   pass 'YAML syntax via yamllint'
 else
   skip 'YAML parser not installed; cluster-independent semantic invariants still checked'
@@ -165,10 +187,10 @@ if [[ "$MODE" == "full" ]]; then
     pass 'gofmt'
 
     # GOTOOLCHAIN=local prevents Go from downloading a different toolchain behind our back.
-    if GOTOOLCHAIN=local go test ./...; then
-      pass 'go test ./...'
+    if GOTOOLCHAIN=local go test ./packages/go/... ./services/...; then
+      pass 'scoped Go tests'
     else
-      fail 'go test ./... failed with local toolchain'
+      fail 'scoped Go tests failed with local toolchain'
     fi
   else
     skip 'Go checks (go unavailable)'

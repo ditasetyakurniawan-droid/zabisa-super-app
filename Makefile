@@ -1,8 +1,8 @@
 SHELL := /bin/bash
-.PHONY: test lint fmt vet dev compose-up compose-down verify mobile-bootstrap preflight preflight-full images-verify images-plan vault-verify
+.PHONY: test lint fmt vet quality dev compose-up compose-down verify mobile-bootstrap preflight preflight-full images-verify images-plan vault-verify
 
 test:
-	go test ./...
+	go test ./packages/go/... ./services/...
 
 lint: fmt vet
 
@@ -10,7 +10,10 @@ fmt:
 	@test -z "$$(gofmt -l services packages/go | tee /dev/stderr)"
 
 vet:
-	go vet ./...
+	go vet ./packages/go/... ./services/...
+
+quality:
+	./scripts/quality-gate.sh
 
 dev:
 	./scripts/run-local.sh

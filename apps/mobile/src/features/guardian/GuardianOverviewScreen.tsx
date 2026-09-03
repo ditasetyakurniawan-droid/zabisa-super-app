@@ -6,8 +6,9 @@ import {AppIcon} from '../../components/AppIcon';
 import {AppHeader, Card, Empty, ErrorState, Loading, Muted, ScrollScreen} from '../../components/UI';
 import {colors, space, type} from '../../theme/tokens';
 import type {Student} from '../../types/domain';
+import type {RootStackScreenProps} from '../../navigation/types';
 
-export default function GuardianOverviewScreen({navigation}: {navigation: any}) {
+export default function GuardianOverviewScreen({navigation}: RootStackScreenProps<'GuardianOverview'>) {
   const students = useQuery({queryKey: ['guardian-students'], queryFn: () => api<Student[]>('/api/v1/guardian/students')});
   return (
     <ScrollScreen safeTop={false} contentStyle={styles.noTopPadding}>
