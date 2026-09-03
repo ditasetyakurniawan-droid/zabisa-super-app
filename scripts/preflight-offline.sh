@@ -50,6 +50,17 @@ grep -Eq '^[[:space:]]*name:[[:space:]]*zabisa-app[[:space:]]*$' deploy/kubernet
   || fail 'namespace zabisa-app is not declared in platform.yaml'
 pass 'namespace zabisa-app declared'
 
+# Keep the API Gateway process health contract synchronized with its Pod probes.
+grep -Fq 'case "/health/live":' services/api-gateway/main.go \
+  || fail 'API Gateway liveness route is missing'
+grep -Fq 'case "/health/ready":' services/api-gateway/main.go \
+  || fail 'API Gateway readiness route is missing'
+grep -Eq '^[[:space:]]*path:[[:space:]]*/health/live[[:space:]]*$' deploy/kubernetes/base/api-gateway.yaml \
+  || fail 'API Gateway liveness probe path is missing'
+grep -Eq '^[[:space:]]*path:[[:space:]]*/health/ready[[:space:]]*$' deploy/kubernetes/base/api-gateway.yaml \
+  || fail 'API Gateway readiness probe path is missing'
+pass 'API Gateway health routes match Kubernetes probes'
+
 # NetworkPolicy guardrails introduced by Hotfix 0.2.
 grep -q 'name: default-deny' deploy/kubernetes/base/platform.yaml \
   || fail 'default-deny NetworkPolicy missing'

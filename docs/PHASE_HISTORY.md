@@ -181,3 +181,11 @@ Final state:
 - Backoffice runtime/session regression passes.
 
 This is the locked development baseline for the next session.
+
+## Hotfix 0.3.7 — API Gateway readiness contract
+
+Corrected the API Gateway health contract so the source now serves the
+`/health/ready` path already configured in its Kubernetes readiness probe.
+Added a Go regression test and an offline preflight invariant to prevent future
+source/manifest drift. This hotfix does not change MySQL, migrations, Vault,
+RBAC, mobile contracts, or bounded-service behavior.

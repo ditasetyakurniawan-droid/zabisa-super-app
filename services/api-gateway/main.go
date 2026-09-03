@@ -51,9 +51,23 @@ func main() {
 		must("/api/v1/donation", "http://donation:8086"), must("/api/v1/donations", "http://donation:8086"), must("/api/v1/admin/donation", "http://donation:8086"), must("/api/v1/admin/donations", "http://donation:8086"),
 		must("/api/v1/notifications", "http://notification:8087"), must("/api/v1/devices", "http://notification:8087"), must("/api/v1/admin/notifications", "http://notification:8087"),
 	}
-	h := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.URL.Path == "/health/live" {
-			httpx.JSON(w, 200, map[string]string{"status": "ok"})
+	h := newGatewayHandler(cfg, targets)
+	if err := server.Run(cfg.Port, httpx.Middleware(cfg.Service, cfg.AllowedOrigins, h)); err != nil {
+		slog.Error("server", "error", err)
+		os.Exit(1)
+	}
+}
+
+func newGatewayHandler(cfg config.Config, targets []target) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/health/live":
+			httpx.JSON(w, http.StatusOK, map[string]string{"status": "ok"})
+			return
+		case "/health/ready":
+			// Readiness is process-local for this stateless gateway. Each upstream
+			// owns its own readiness probe, avoiding cascading gateway outages.
+			httpx.JSON(w, http.StatusOK, map[string]string{"status": "ready"})
 			return
 		}
 		if raw := strings.TrimSpace(strings.TrimPrefix(r.Header.Get("Authorization"), "Bearer ")); raw != "" {
@@ -88,10 +102,6 @@ func main() {
 		}
 		httpx.Fail(w, r, 404, "NOT_FOUND", "Route not found")
 	})
-	if err := server.Run(cfg.Port, httpx.Middleware(cfg.Service, cfg.AllowedOrigins, h)); err != nil {
-		slog.Error("server", "error", err)
-		os.Exit(1)
-	}
 }
 
 func protectedStudentPath(path string) bool {
