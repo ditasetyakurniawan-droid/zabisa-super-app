@@ -22,6 +22,10 @@ roles, KV paths, CA secrets, `db-dt` Service/EndpointSlice and MySQL egress
 label. It proves both Vault-to-pod delivery and MySQL password authentication
 from the intended network boundary. Both temporary pods are deleted.
 
+The runner waits for the explicit sanitized authentication result. Kubernetes
+Pod `Ready` alone is not treated as success because a freshly started cached
+image can become Ready immediately before its first log line is emitted.
+
 Do not widen MySQL accounts to `%` or add a workstation/NAT address merely to
 make an external test pass. Do not run migrations or ArgoCD sync until the DT2
 canary is green.

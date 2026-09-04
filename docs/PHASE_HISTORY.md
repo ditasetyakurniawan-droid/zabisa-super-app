@@ -264,3 +264,8 @@ canary proves the actual Vault passwords against MySQL from pods selected by the
 existing Vault and MySQL NetworkPolicies. It never widens MySQL account hosts,
 creates duplicate platform infrastructure, prints credentials, runs migrations
 or triggers ArgoCD sync.
+
+DT2.1 removes a canary startup race: the runner now waits for the explicit
+authentication result and fails early on a non-zero container exit. Pod Ready
+is no longer accepted as proof because it can precede the application's first
+log line when the image is already cached on a worker.

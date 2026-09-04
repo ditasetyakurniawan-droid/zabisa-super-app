@@ -55,21 +55,57 @@ run_probe() {
     deploy/kubernetes/canary/mysql-credential-canary.yaml |
     "$KUBECTL_BIN" apply -f - >/dev/null
 
-  echo "[mysql-canary] waiting for $kind credential probe"
-  if ! "$KUBECTL_BIN" -n "$NAMESPACE" wait \
-    --for=condition=Ready "pod/$CURRENT_POD" --timeout=180s >/dev/null; then
+  echo "[mysql-canary] waiting for $kind authentication result"
+  probe_passed=false
+  logs=''
+
+  for attempt in $(seq 1 180); do
+    logs="$(
+      "$KUBECTL_BIN" -n "$NAMESPACE" logs "$CURRENT_POD" \
+        -c mysql-canary --tail=20 2>/dev/null || true
+    )"
+
+    if grep -Fqx "[mysql-canary] $kind authentication passed" <<<"$logs"; then
+      probe_passed=true
+      break
+    fi
+
+    phase="$(
+      "$KUBECTL_BIN" -n "$NAMESPACE" get pod "$CURRENT_POD" \
+        -o jsonpath='{.status.phase}' 2>/dev/null || true
+    )"
+    exit_code="$(
+      "$KUBECTL_BIN" -n "$NAMESPACE" get pod "$CURRENT_POD" \
+        -o jsonpath='{.status.containerStatuses[?(@.name=="mysql-canary")].state.terminated.exitCode}' \
+        2>/dev/null || true
+    )"
+
+    if [[ -n "$exit_code" && "$exit_code" != '0' ]]; then
+      echo "[mysql-canary] ERROR: $kind probe exited with code $exit_code" >&2
+      printf '%s\n' "$logs" >&2
+      exit 1
+    fi
+
+    if [[ "$phase" == 'Failed' ]]; then
+      echo "[mysql-canary] ERROR: $kind probe entered Failed phase" >&2
+      printf '%s\n' "$logs" >&2
+      exit 1
+    fi
+
+    if (( attempt == 1 || attempt % 10 == 0 )); then
+      echo "[mysql-canary] $kind attempt $attempt: phase=${phase:-pending}"
+    fi
+    sleep 1
+  done
+
+  if [[ "$probe_passed" != true ]]; then
+    echo "[mysql-canary] ERROR: $kind authentication result timed out" >&2
     "$KUBECTL_BIN" -n "$NAMESPACE" get pod "$CURRENT_POD" -o wide >&2 || true
     "$KUBECTL_BIN" -n "$NAMESPACE" describe pod "$CURRENT_POD" |
       sed -n '/Events:/,$p' >&2 || true
-    exit 1
-  fi
-
-  logs="$($KUBECTL_BIN -n "$NAMESPACE" logs "$CURRENT_POD" -c mysql-canary --tail=20)"
-  grep -Fqx "[mysql-canary] $kind authentication passed" <<<"$logs" || {
-    echo "[mysql-canary] ERROR: $kind probe did not report success" >&2
     printf '%s\n' "$logs" >&2
     exit 1
-  }
+  fi
 
   "$KUBECTL_BIN" -n "$NAMESPACE" get pod "$CURRENT_POD" -o json |
     python3 -c '

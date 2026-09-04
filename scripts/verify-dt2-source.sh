@@ -33,6 +33,13 @@ grep -Fq 'image: __IMAGE__' "$MANIFEST" ||
   fail 'canary image placeholder missing'
 grep -Fq "IMAGE='mysql@sha256:" "$RUNNER" ||
   fail 'canary MySQL image must be digest pinned'
+grep -Fq 'waiting for $kind authentication result' "$RUNNER" ||
+  fail 'canary must wait for the authentication result, not only Pod Ready'
+grep -Fq 'probe_passed=false' "$RUNNER" ||
+  fail 'canary authentication-result polling guard missing'
+if grep -Fq -- '--for=condition=Ready' "$RUNNER"; then
+  fail 'Pod Ready is not a sufficient credential-canary success condition'
+fi
 grep -Fq 'bound_service_account_namespaces="zabisa-app"' \
   scripts/configure-zabisa-vault-auth.sh ||
   fail 'runtime Vault roles must remain namespace bounded'
