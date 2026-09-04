@@ -5,9 +5,10 @@ metadata:
   namespace: zabisa-app
   annotations:
     argocd.argoproj.io/hook: PreSync
+    argocd.argoproj.io/sync-wave: "-60"
     argocd.argoproj.io/hook-delete-policy: BeforeHookCreation,HookSucceeded
 spec:
-  backoffLimit: 1
+  backoffLimit: 0
   activeDeadlineSeconds: 300
   template:
     metadata:
@@ -96,9 +97,10 @@ metadata:
   namespace: zabisa-app
   annotations:
     argocd.argoproj.io/hook: PreSync
+    argocd.argoproj.io/sync-wave: "-70"
     argocd.argoproj.io/hook-delete-policy: BeforeHookCreation,HookSucceeded
 spec:
-  backoffLimit: 1
+  backoffLimit: 0
   activeDeadlineSeconds: 300
   template:
     metadata:
@@ -187,9 +189,10 @@ metadata:
   namespace: zabisa-app
   annotations:
     argocd.argoproj.io/hook: PreSync
+    argocd.argoproj.io/sync-wave: "-50"
     argocd.argoproj.io/hook-delete-policy: BeforeHookCreation,HookSucceeded
 spec:
-  backoffLimit: 1
+  backoffLimit: 0
   activeDeadlineSeconds: 300
   template:
     metadata:
@@ -278,9 +281,10 @@ metadata:
   namespace: zabisa-app
   annotations:
     argocd.argoproj.io/hook: PreSync
+    argocd.argoproj.io/sync-wave: "-40"
     argocd.argoproj.io/hook-delete-policy: BeforeHookCreation,HookSucceeded
 spec:
-  backoffLimit: 1
+  backoffLimit: 0
   activeDeadlineSeconds: 300
   template:
     metadata:
@@ -369,9 +373,10 @@ metadata:
   namespace: zabisa-app
   annotations:
     argocd.argoproj.io/hook: PreSync
+    argocd.argoproj.io/sync-wave: "-30"
     argocd.argoproj.io/hook-delete-policy: BeforeHookCreation,HookSucceeded
 spec:
-  backoffLimit: 1
+  backoffLimit: 0
   activeDeadlineSeconds: 300
   template:
     metadata:
@@ -460,9 +465,10 @@ metadata:
   namespace: zabisa-app
   annotations:
     argocd.argoproj.io/hook: PreSync
+    argocd.argoproj.io/sync-wave: "-20"
     argocd.argoproj.io/hook-delete-policy: BeforeHookCreation,HookSucceeded
 spec:
-  backoffLimit: 1
+  backoffLimit: 0
   activeDeadlineSeconds: 300
   template:
     metadata:
@@ -551,9 +557,10 @@ metadata:
   namespace: zabisa-app
   annotations:
     argocd.argoproj.io/hook: PreSync
+    argocd.argoproj.io/sync-wave: "-10"
     argocd.argoproj.io/hook-delete-policy: BeforeHookCreation,HookSucceeded
 spec:
-  backoffLimit: 1
+  backoffLimit: 0
   activeDeadlineSeconds: 300
   template:
     metadata:

@@ -1,0 +1,111 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: __POD__
+  namespace: zabisa-app
+  labels:
+    app: __POD__
+    tier: backend
+    app.kubernetes.io/part-of: zabisa-platform
+    zabisa.lifecycle: temporary-canary
+    zabisa.network/vault-access: "true"
+    zabisa.network/mysql-access: "true"
+  annotations:
+    vault.hashicorp.com/agent-inject: "true"
+    vault.hashicorp.com/agent-pre-populate-only: "true"
+    vault.hashicorp.com/role: __ROLE__
+    vault.hashicorp.com/agent-service-account-token-volume-name: vault-token
+    vault.hashicorp.com/tls-secret: vault-ca
+    vault.hashicorp.com/ca-cert: /vault/tls/ca.crt
+    vault.hashicorp.com/tls-server-name: vault.vault.svc
+    vault.hashicorp.com/agent-run-as-same-user: "true"
+    vault.hashicorp.com/agent-inject-secret-mysql-user: __SECRET_PATH__
+    vault.hashicorp.com/agent-inject-template-mysql-user: '{{- with secret "__SECRET_PATH__" -}}{{ .Data.data.MYSQL_USER }}{{- end }}'
+    vault.hashicorp.com/agent-inject-perms-mysql-user: "0400"
+    vault.hashicorp.com/agent-inject-secret-mysql-password: __SECRET_PATH__
+    vault.hashicorp.com/agent-inject-template-mysql-password: '{{- with secret "__SECRET_PATH__" -}}{{ .Data.data.MYSQL_PASSWORD }}{{- end }}'
+    vault.hashicorp.com/agent-inject-perms-mysql-password: "0400"
+spec:
+  serviceAccountName: __SA__
+  automountServiceAccountToken: false
+  restartPolicy: Never
+  securityContext:
+    seccompProfile:
+      type: RuntimeDefault
+  containers:
+    - name: schema-inventory
+      image: mysql@sha256:b3b90af2a6552ae30c266fdb7d5dd55f3afb72404bb78d37fe8a23eb857fd3fb
+      imagePullPolicy: IfNotPresent
+      command: ["/bin/sh", "-ec"]
+      args:
+        - |
+          umask 077
+          config=/tmp/mysql-client.cnf
+          trap 'rm -f "$config"' EXIT INT TERM
+          test -s /vault/secrets/mysql-user
+          test -s /vault/secrets/mysql-password
+          {
+            printf '[client]\nuser=%s\npassword=%s\n' \
+              "$(cat /vault/secrets/mysql-user)" \
+              "$(cat /vault/secrets/mysql-password)"
+          } > "$config"
+
+          mysql_query() {
+            mysql \
+              --defaults-extra-file="$config" \
+              --ssl-mode=VERIFY_CA \
+              --ssl-ca=/mysql/tls/ca.pem \
+              --host=db-dt \
+              --port=3306 \
+              --batch \
+              --skip-column-names \
+              --database=__DATABASE__ \
+              --execute="$1"
+          }
+
+          table_count="$(mysql_query "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='__DATABASE__';")"
+          migration_table="$(mysql_query "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='__DATABASE__' AND table_name='schema_migrations';")"
+          migration_rows=0
+          checksum_column=0
+
+          if [ "$migration_table" = 1 ]; then
+            migration_rows="$(mysql_query 'SELECT COUNT(*) FROM schema_migrations;')"
+            checksum_column="$(mysql_query "SELECT COUNT(*) FROM information_schema.columns WHERE table_schema='__DATABASE__' AND table_name='schema_migrations' AND column_name='checksum';")"
+          fi
+
+          echo "[schema-inventory] service=__SERVICE__ database=__DATABASE__ tables=$table_count migration_table=$migration_table migration_rows=$migration_rows checksum_column=$checksum_column"
+          echo "[schema-inventory] table names begin"
+          mysql_query "SELECT table_name FROM information_schema.tables WHERE table_schema='__DATABASE__' ORDER BY table_name;"
+          echo "[schema-inventory] table names end"
+          echo "[schema-inventory] __SERVICE__ completed"
+          sleep 600
+      securityContext:
+        allowPrivilegeEscalation: false
+        runAsNonRoot: true
+        runAsUser: 65532
+        runAsGroup: 65532
+        capabilities:
+          drop: ["ALL"]
+      resources:
+        requests:
+          cpu: 10m
+          memory: 32Mi
+        limits:
+          cpu: 100m
+          memory: 128Mi
+      volumeMounts:
+        - name: mysql-ca
+          mountPath: /mysql/tls
+          readOnly: true
+  volumes:
+    - name: mysql-ca
+      secret:
+        secretName: mysql-ca
+    - name: vault-token
+      projected:
+        defaultMode: 420
+        sources:
+          - serviceAccountToken:
+              audience: vault
+              expirationSeconds: 3600
+              path: token

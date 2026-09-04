@@ -41,6 +41,8 @@ for svc in "${db_services[@]}"; do
   grep -q "kv/data/zabisa/dt/${svc}/migrator" "$mig" || fail "$svc migration Vault path missing"
 done
 grep -q 'argocd.argoproj.io/hook: PreSync' "$mig" || fail 'migration Jobs are not ArgoCD PreSync hooks'
+[[ "$(grep -c 'argocd.argoproj.io/sync-wave:' "$mig")" == "7" ]] || fail 'every migration Job must have an explicit sync wave'
+[[ "$(grep -c 'backoffLimit: 0' "$mig")" == "7" ]] || fail 'migration Jobs must fail closed without automatic retry'
 grep -q 'value: migrate' "$mig" || fail 'migration Jobs do not use APP_MODE=migrate'
 grep -q 'value: verify-ca' "$mig" || fail 'migration Jobs do not require MySQL verify-ca'
 if grep -Eq 'JWT_SIGNING_KEY|INTERNAL_SERVICE_KEY|/shared/runtime' "$mig"; then

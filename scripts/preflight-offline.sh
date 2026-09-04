@@ -89,6 +89,9 @@ pass 'Vault Agent Injector + per-service identity invariants'
 ./scripts/verify-dt2-source.sh || fail 'DT2 source invariants failed'
 pass 'DT2 Vault/CA credential-canary source invariants'
 
+./scripts/verify-dt3-source.sh || fail 'DT3 source invariants failed'
+pass 'DT3 controlled migration-readiness source invariants'
+
 # 3. Tracked secret hygiene.
 ./scripts/verify-secret-hygiene.sh || fail 'tracked secret hygiene failed'
 pass 'tracked secret hygiene'

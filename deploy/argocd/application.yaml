@@ -12,5 +12,5 @@ spec:
   destination:
     server: https://kubernetes.default.svc
     namespace: zabisa-app
-  syncPolicy:
-    automated: {prune: true, selfHeal: true}
+  # DT rollout is intentionally manual. An operator must review the rendered
+  # immutable manifests and explicitly approve each delivery gate before sync.
