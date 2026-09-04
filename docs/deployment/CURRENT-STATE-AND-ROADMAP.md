@@ -1,8 +1,10 @@
 # Zabisa Current State and Delivery Roadmap
 
-> Official checkpoint: **DT4.1 PASS / DT4.2 EXISTING JENKINS ALIGNMENT**
+> Official checkpoint: **DT4.2.1 EXISTING JENKINS INTEGRATION PASS**
 >
-> Source baseline: `df2d275`
+> Live job: `zabisa-super-app-v1` — `DISABLED`, no automatic trigger
+>
+> Lock tag: `dt4.2.1-jenkins-integration-locked-2026-09-04`
 >
 > Verified on: `2026-09-04`
 
@@ -14,7 +16,7 @@ delivery.
 
 | Area | Status | Evidence |
 |---|---|---|
-| Repository and CI | PASS | `df2d275`; Engineering Quality Gate succeeded |
+| Repository and CI | PASS | DT4.2.1 SCM renderer source and Engineering Quality Gate succeeded |
 | Kubernetes compatibility | PASS | kubectl `1.30.14`; server `1.30` |
 | Vault and network boundary | PASS | Injector, roles, CA, default-deny and explicit DNS/Vault/MySQL egress verified |
 | MySQL abstraction | PASS | `db-dt` -> `192.168.100.70:3306` |
@@ -23,7 +25,8 @@ delivery.
 | Temporary canaries | PASS | Removed after DT2 and DT3.2 verification |
 | Migration source controls | PASS | Sequential waves, zero retry, advisory lock and checksums committed |
 | Immutable deployment images | SOURCE READY | Base digests and Harbor digest evidence controls committed; images not built |
-| Existing Jenkins/Harbor path | VERIFIED | Compose Jenkins uses Docker socket, `harbor-cred`, private Sonar and existing Harbor insecure-registry compatibility mode |
+| Existing Jenkins/Harbor path | PASS / LOCKED | Compose Jenkins uses Docker socket, `harbor-cred`, private Sonar and existing Harbor compatibility mode |
+| Zabisa Jenkins job | CREATED / DISABLED | `zabisa-super-app-v1`; `GitHubSCMSource` verified; automatic triggers empty; no indexing/build requested |
 | Image scanning | SOURCE READY / LIVE UNPROVEN | Digest-pinned Dockerized Trivy runs through the existing Jenkins Docker socket; first live scan not run |
 | Cluster Harbor pull | UNPROVEN | No namespace Docker config Secret or ServiceAccount imagePullSecret found |
 | Backup and isolated restore proof | NOT PROVEN | Mandatory before any database mutation |
@@ -76,16 +79,28 @@ Pin the three reviewed base-image indexes, lock the platform to `linux/amd64`,
 bind scan/SBOM attestations to each local image ID and verify Harbor digests
 after push. Source and remote CI must pass before any image build/push approval.
 
-### DT4.2 — Existing Jenkins build, scan and Harbor publication
+### DT4.2-DT4.2.1 — Existing Jenkins integration
 
-Status: **ACTIVE / JENKINS ALIGNMENT SOURCE**
+Status: **PASS / CHECKPOINT LOCKED**
 
 Use the proven `tropical-management-v1` Multibranch pattern on the existing
 Compose Jenkins host. GitHub remains the source/browser gate; Jenkins retains
 private Sonar, image build, Dockerized Trivy, SBOM, Harbor push and GitOps
 render. The existing `github-credentials-id`, `harbor-cred`, `sonar-dt`, Docker
 socket and Harbor compatibility mode are reused. The Zabisa job is created
-disabled and cannot index or build until a separate operator approval.
+disabled with no automatic trigger. Authentication, rendered
+`GitHubSCMSource`, repository, SCM credential identifier and script path were
+read back and verified. No indexing, build or push ran.
+
+### DT4.3 — Controlled Jenkins readiness
+
+Status: **NEXT / NOT AUTHORIZED YET**
+
+Before enabling or scanning the Multibranch job, make image build, Harbor push
+and GitOps publication explicit opt-in parameters that default to off. The
+first approved run is limited to repository quality, private Sonar and the
+digest-pinned Dockerized Trivy version/database readiness. The job must return
+to disabled after evidence is captured.
 
 ### DT5 — Backup and isolated restore readiness
 
@@ -161,8 +176,10 @@ DT3.1 source controls: PASS at cee801f
 DT3.2 live read-only inventory: PASS; all seven databases empty
 DT3.3 migration engine hardening: PASS at 4783fa6
 DT4.1 immutable image source hardening: PASS at df2d275
-DT4.2 existing Jenkins pattern: VERIFIED
-DT4.2 Zabisa Multibranch source/bootstrap: ACTIVE; job not created
+DT4.2 existing Jenkins pattern: PASS
+DT4.2.1 Zabisa Multibranch bootstrap: PASS; job created disabled
+Jenkins job: zabisa-super-app-v1; automatic triggers empty; build not run
+DT4.3 controlled quality/Sonar/Trivy readiness: NEXT
 Dockerized Trivy / first Harbor publication / cluster pull: NOT RUN
 Migration: NOT RUN
 Application: NOT DEPLOYED

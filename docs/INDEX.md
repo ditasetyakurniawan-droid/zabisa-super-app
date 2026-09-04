@@ -1,8 +1,12 @@
 # Zabisa Super App — Engineering Documentation Index
 
-**Project lock:** Phase 3.7.6  
-**Lock date:** 2026-08-31 (Asia/Jakarta)  
-**Lock tag:** `phase-3.7.6-locked-2026-08-31`
+**Historical application lock:** Phase 3.7.6
+
+**Current deployment checkpoint:** DT4.2.1 — existing Jenkins integration PASS
+
+**Deployment lock tag:** `dt4.2.1-jenkins-integration-locked-2026-09-04`
+
+**Verified date:** 2026-09-04 (Asia/Jakarta)
 
 This directory is the handoff source of truth for continuing Zabisa development.
 Read `NEXT_SESSION_START_HERE.md` first when work resumes.
@@ -11,7 +15,7 @@ Read `NEXT_SESSION_START_HERE.md` first when work resumes.
 
 | Document | Purpose |
 |---|---|
-| `PROJECT_STATE.md` | Current verified state and exact scope of the lock |
+| `PROJECT_STATE.md` | Current verified application and deployment state |
 | `ARCHITECTURE.md` | Platform topology, service boundaries, data ownership |
 | `BACKEND_SERVICES.md` | Backend services, responsibilities, key patterns |
 | `BACKOFFICE.md` | Next.js Backoffice architecture, RBAC-aware UI, browser E2E |
@@ -28,6 +32,9 @@ Read `NEXT_SESSION_START_HERE.md` first when work resumes.
 | `DEVELOPMENT_ROADMAP.md` | Structured next work plan |
 | `NEXT_SESSION_START_HERE.md` | Exact restart checklist for the next engineering session |
 | `PROJECT_LOCK.md` | Lock rules, branch/tag convention and handoff checklist |
+| `deployment/CURRENT-STATE-AND-ROADMAP.md` | Authoritative DT rollout checkpoint and approval gates |
+| `deployment/PHASE-DT4-IMMUTABLE-IMAGES.md` | Active immutable-image phase and remaining live proofs |
+| `runbook/JENKINS_DELIVERY.md` | Existing Jenkins/Harbor workflow, controls and developer procedure |
 
 ## Rule
 
@@ -38,3 +45,6 @@ For critical flows, the expected path is:
 
 Do not weaken strict API decoding, backend authorization, audit guarantees or
 quality gates merely to make a test pass.
+
+The Phase 3.7.6 tag remains a historical restore point. It does not supersede
+the current DT rollout state recorded in `deployment/CURRENT-STATE-AND-ROADMAP.md`.

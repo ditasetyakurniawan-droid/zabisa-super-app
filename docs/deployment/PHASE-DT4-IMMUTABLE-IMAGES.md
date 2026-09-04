@@ -1,8 +1,8 @@
 # DT4 — Immutable image build and Harbor publication
 
-Status: **DT4.1 SOURCE PASS / DT4.2 JOB CREATION READY**
+Status: **DT4.2.1 INTEGRATION PASS / DT4.3 READINESS NEXT**
 
-Source baseline: `df2d275`
+Live Jenkins job: `zabisa-super-app-v1` (`DISABLED`)
 
 Discovery date: `2026-09-04`
 
@@ -44,6 +44,9 @@ Seven of the images are used by both runtime Deployments and migration Jobs:
   namespace contains no Docker config Secret. Node-level auth/trust or anonymous
   project pull therefore remains unproven.
 - The old build script did not record or compare the post-push Harbor digest.
+- The Zabisa Multibranch job was rendered from `tropical-management-v1` using
+  the actual `GitHubSCMSource` shape, created disabled, and verified through a
+  read-back. Automatic triggers are empty. No indexing or build ran.
 
 Discovery report SHA-256:
 `dad2aaa1fa85312683bc7a85820e922ade942453ba906a4a12f9508628cf338b`.
@@ -90,20 +93,20 @@ resources or invokes ArgoCD.
 
 ## Remaining live gates
 
-1. Commit and pass GitHub source/browser gates for the DT4.2 alignment.
-2. Render the Zabisa Multibranch job from `tropical-management-v1`, using
-   `github-credentials-id`; clear automatic triggers and create it disabled.
-3. Review the disabled job configuration before any indexing/build.
-4. Prove the pinned Dockerized Trivy version and vulnerability DB download on
+1. Add and review explicit default-off Jenkins parameters for image build,
+   Harbor push and GitOps publication.
+2. Run one controlled DT4.3 Jenkins readiness cycle for repository quality,
+   private Sonar and Dockerized Trivy only, then return the job to disabled.
+3. Prove the pinned Dockerized Trivy version and vulnerability DB download on
    the Jenkins executor.
-5. Prove Harbor project `zabisa` exists and `harbor-cred` has bounded write
+4. Prove Harbor project `zabisa` exists and `harbor-cred` has bounded write
    access using a separately approved canary publication.
-6. Build, scan and push the nine images from one clean approved commit, then
+5. Build, scan and push the nine images from one clean approved commit, then
    verify all remote digests.
-7. Prove worker/containerd trust and cluster pull using the existing platform
+6. Prove worker/containerd trust and cluster pull using the existing platform
    mechanism, or add a dedicated
    namespace imagePullSecret through a separately reviewed bootstrap change.
-8. Review the Jenkins image/SBOM/scan/digest evidence and approve DT4 closure.
+7. Review the Jenkins image/SBOM/scan/digest evidence and approve DT4 closure.
 
 ## Stop conditions
 
@@ -126,6 +129,7 @@ state and is not broadened by Zabisa.
 
 ## Authorization boundary
 
-DT4 source hardening does not authorize `docker login`, image push, Kubernetes
-mutation, database migration, application Deployment or ArgoCD sync. Those
-actions require later explicit confirmations for their exact targets.
+Closing DT4.2.1 does not authorize Jenkins enable/index/build, `docker login`,
+image push, Kubernetes mutation, database migration, application Deployment or
+ArgoCD sync. Those actions require later explicit confirmations for their exact
+targets.

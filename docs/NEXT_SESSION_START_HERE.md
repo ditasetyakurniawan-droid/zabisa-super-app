@@ -9,22 +9,26 @@ cd ~/project-homelab/zabisa-super-app
 git status
 git branch --show-current
 git log --oneline -5
-git tag --list 'phase-3.7.6-*'
+./scripts/verify-dt42-jenkins-alignment.sh
+./scripts/preflight-offline.sh
 ```
 
-Expected lock tag:
+Expected repository state:
 
 ```text
-phase-3.7.6-locked-2026-08-31
+main synchronized with origin/main
+clean worktree
+DT4.2 existing Jenkins/Sonar/Harbor delivery alignment invariants: PASS
 ```
 
 ## 2. Read in this order
 
-1. `docs/PROJECT_STATE.md`
-2. `docs/KNOWN_LIMITATIONS.md`
-3. `docs/DEVELOPMENT_ROADMAP.md`
-4. `docs/ARCHITECTURE.md`
-5. the domain document relevant to the next task.
+1. `docs/deployment/CURRENT-STATE-AND-ROADMAP.md`
+2. `docs/PROJECT_STATE.md`
+3. `docs/runbook/JENKINS_DELIVERY.md`
+4. `docs/deployment/PHASE-DT4-IMMUTABLE-IMAGES.md`
+5. `docs/KNOWN_LIMITATIONS.md`
+6. the domain document relevant to the next task.
 
 ## 3. Runtime check
 
@@ -89,10 +93,19 @@ npm run mobile:quality
 
 ## 6. Current phase
 
-Validate and finish:
+Closed checkpoint:
 
-**Phase 3.8 — GitHub CI and repository quality gate**
+**DT4.2.1 — Existing Jenkins integration**
 
-Run `./scripts/quality-gate.sh`, push the Phase 3.8 branch, enable Sonar only
-after its URL/token are configured, then require both GitHub jobs on `main`.
-Do not start FCM/payment-provider work before CI is reproducible.
+The Multibranch job `zabisa-super-app-v1` exists on the existing Docker Compose
+Jenkins and is disabled with no automatic trigger. Authentication and the
+actual `GitHubSCMSource` config were verified. No indexing, build or push ran.
+
+Next phase:
+
+**DT4.3 — Controlled Jenkins quality/Sonar/Trivy readiness**
+
+Do not enable or scan the Multibranch job until the Jenkinsfile has an explicit
+default-deny switch for image build and Harbor push. The first approved run may
+prove quality, private Sonar and Dockerized Trivy only. It must not publish an
+image, mutate GitOps, deploy Kubernetes, migrate MySQL or sync ArgoCD.

@@ -34,8 +34,23 @@ local image ID and verifies the resulting remote Harbor digest.
 
 `admin-web` has a separate frontend boundary and no Vault injection because it currently requires no secret. Its only application egress is to the API gateway.
 
-The repository can render immutable GitOps manifests locally with `scripts/update-gitops.sh`, but publishing them to the real GitOps repository remains intentionally unimplemented until its actual URL and Jenkins credential workflow are configured. ArgoCD remains deployment authority.
+## Existing delivery path
 
-Harbor workstation CA trust, Trivy installation, cluster image-pull
-authentication and real GitOps repository publication remain explicit live
-gates. TLS verification must not be bypassed.
+GitHub Actions owns source quality and Browser E2E. The existing Docker Compose
+Jenkins at `192.168.100.57` owns private Sonar and, after separate approvals,
+Dockerized Trivy, SBOM generation, Harbor publication and GitOps rendering.
+Zabisa reuses `github-credentials-id`, `harbor-cred`, `sonar-dt` and the
+established Docker socket/Harbor compatibility contract.
+
+The Multibranch job `zabisa-super-app-v1` was cloned from the proven
+`tropical-management-v1` pattern. It is disabled, contains no automatic
+trigger and has never indexed or built a branch. See
+`../runbook/JENKINS_DELIVERY.md` before changing that state.
+
+The repository can render immutable GitOps manifests with
+`scripts/update-gitops.sh`. Publishing or applying a rendered result remains a
+separate gate; ArgoCD remains deployment authority.
+
+The first Dockerized Trivy execution, Harbor publication, cluster image-pull
+authentication and real GitOps publication remain explicit live gates. TLS
+bypass flags must not be added to Zabisa pipeline source.

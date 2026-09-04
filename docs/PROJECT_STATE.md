@@ -1,4 +1,4 @@
-# Project State — Phase 3.7.6 Locked Baseline
+# Project State — Application Baseline and DT4.2.1 Checkpoint
 
 ## Executive status
 
@@ -14,8 +14,39 @@ Zabisa currently has a production-shaped local platform composed of:
 - append-only cross-service audit delivery;
 - backend-enforced RBAC and object-level guardian authorization.
 
-Phase 3.7.6 is the first point where the Backoffice critical functional matrix
-is verified through a real Chrome browser, not only API-level scripts.
+Phase 3.7.6 remains the historical application restore point where the
+Backoffice critical functional matrix was first verified through a real Chrome
+browser. Delivery work has advanced through DT4.2.1 without declaring the
+application deployed.
+
+## Current DT deployment status
+
+Verified:
+
+- DT2 Vault/CA, ServiceAccounts, NetworkPolicies and runtime/migrator MySQL
+  authentication;
+- DT3 read-only inventory showing all seven target schemas empty;
+- deterministic migration waves, zero retries, advisory locks and migration
+  checksum/drift controls;
+- immutable `linux/amd64` image source, pinned application base indexes,
+  Trivy/SBOM attestations and post-push Harbor digest verification logic;
+- existing Jenkins/Harbor delivery topology and credentials by identifier;
+- `zabisa-super-app-v1` created from the existing
+  `tropical-management-v1` Multibranch pattern with automatic triggers empty
+  and the job disabled;
+- support and regression tests for the actual Jenkins `GitHubSCMSource`
+  configuration shape.
+
+Not run:
+
+- Jenkins branch indexing or pipeline build;
+- application image build, vulnerability scan or Harbor push;
+- worker/containerd image-pull proof;
+- database backup/isolated restore drill or migration;
+- application Deployment or ArgoCD sync.
+
+The active next gate is DT4.3: prove Jenkins quality, private Sonar and the
+digest-pinned Dockerized Trivy runtime while image publication remains blocked.
 
 ## Verified at lock
 
@@ -80,7 +111,9 @@ as future work.
 
 ## Lock principle
 
-This is a **development baseline lock**, not a production launch declaration.
+Phase 3.7.6 is a **development baseline lock**, and DT4.2.1 is an
+**operational integration checkpoint**. Neither is a production launch
+declaration.
 
 Production push notification providers, production payment providers, iOS
 release signing, final Sonar/CI/CD policy and production deployment remain

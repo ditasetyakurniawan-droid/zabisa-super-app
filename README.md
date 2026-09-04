@@ -2,6 +2,24 @@
 
 Production-oriented monorepo for Zabisa Mobile, guardian services, internal Backoffice, and platform deployment.
 
+## Current engineering checkpoint
+
+DT2 runtime foundations and DT3 migration-readiness controls are verified.
+DT4.2.1 is closed: the existing Docker Compose Jenkins at
+`192.168.100.57` now contains `zabisa-super-app-v1` as a disabled
+Multibranch Pipeline, cloned from the proven `tropical-management-v1`
+pattern. No application image, database migration, Kubernetes workload or
+ArgoCD sync has run.
+
+Start or resume development from:
+
+1. `docs/NEXT_SESSION_START_HERE.md`;
+2. `docs/deployment/CURRENT-STATE-AND-ROADMAP.md`;
+3. `docs/runbook/JENKINS_DELIVERY.md` for the controlled delivery path.
+
+The next deployment gate is DT4.3: a quality/Sonar/Trivy readiness run with
+image build and Harbor push still disabled.
+
 ## Local stack
 
 - Go 1.26.7 backend services
@@ -29,9 +47,11 @@ npm ci --workspaces --include-workspace-root --no-audit --no-fund
 make quality
 ```
 
-The gate produces Sonar-compatible Go and mobile coverage reports. GitHub CI,
-SonarQube setup, branch protection, and browser E2E behavior are documented in
-`docs/ci/PHASE3.8-QUALITY-GATE.md`.
+The gate produces Sonar-compatible Go and mobile coverage reports. GitHub
+Actions owns the remote source and Browser E2E gates. The existing Jenkins owns
+private Sonar and, only after later approvals, image build/scan/push and GitOps
+render. See `docs/ci/PHASE3.8-QUALITY-GATE.md` and
+`docs/runbook/JENKINS_DELIVERY.md`.
 
 ## Development accounts
 
@@ -111,7 +131,11 @@ make images-verify
 make images-plan
 ```
 
-CI builds nine SHA-tagged images (eight Go services plus `admin-web`), scans HIGH/CRITICAL findings with Trivy, emits CycloneDX SBOMs, and pushes to Harbor only on `main` after Jenkins credential-based login. The pipeline never creates `:latest`.
+The source defines nine SHA-tagged images (eight Go services plus `admin-web`),
+HIGH/CRITICAL Trivy scanning, CycloneDX SBOMs and verified Harbor digest
+evidence. The Jenkins job currently remains disabled, so no image has been
+built or pushed. A later explicitly approved gate may publish from `main`
+through the existing `harbor-cred`; the pipeline never creates `:latest`.
 
 ## DT Vault integration
 

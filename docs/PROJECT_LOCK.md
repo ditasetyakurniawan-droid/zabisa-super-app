@@ -1,5 +1,17 @@
 # Project Lock — 2026-08-31
 
+> Historical application restore point. The active deployment checkpoint is
+> DT4.2.1 and is recorded in
+> `deployment/CURRENT-STATE-AND-ROADMAP.md`. Do not interpret this older tag as
+> the current `main` deployment state.
+
+Current deployment checkpoint tag:
+
+`dt4.2.1-jenkins-integration-locked-2026-09-04`
+
+This tag locks the source/documentation state after the existing Jenkins job
+was created disabled. It does not authorize enabling, indexing or building it.
+
 ## Lock point
 
 Phase:

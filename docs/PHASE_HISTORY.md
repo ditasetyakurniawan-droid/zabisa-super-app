@@ -338,7 +338,7 @@ application Deployment or ArgoCD sync is part of DT4.1.
 
 ## DT4.2 — Existing Jenkins and Harbor alignment
 
-Status: **SOURCE ALIGNMENT / JOB NOT CREATED / BUILD NOT RUN**
+Status: **PASS / JOB CREATED DISABLED / BUILD NOT RUN**
 
 Discovery date: `2026-09-04`
 
@@ -370,3 +370,16 @@ existing Tropical job uses the GitHub Branch Source XML shape
 (`repoOwner`/`repository`) rather than a plain Git SCM `remote`. The first run
 stopped before `createItem`, so Jenkins and Harbor were not mutated. Regression
 tests now cover both supported Multibranch SCM shapes before another apply.
+
+The corrected apply authenticated as the existing Jenkins administrator,
+rendered `scm_type=github`, cleared automatic triggers, created
+`zabisa-super-app-v1` disabled and read the stored configuration back
+successfully. Render evidence SHA-256:
+`508e439fc18a3958d4f9ff1c2852997e409a0a79dc623c6ddaa5f86981a013de`.
+
+DT4.2/DT4.2.1 is now closed as an integration checkpoint. No branch indexing,
+pipeline build, Docker/Harbor operation, GitOps publication, Kubernetes change,
+database migration, application Deployment or ArgoCD sync occurred. DT4.3 must
+add default-off delivery parameters before the first controlled Jenkins run.
+The repository checkpoint tag is
+`dt4.2.1-jenkins-integration-locked-2026-09-04`.
