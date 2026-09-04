@@ -1,8 +1,8 @@
 pipeline {
   agent any
-  options { timestamps(); disableConcurrentBuilds() }
+  options { timestamps(); disableConcurrentBuilds(); skipDefaultCheckout(true) }
   parameters {
-    string(name: 'HARBOR_CREDENTIALS_ID', defaultValue: '', description: 'Jenkins username/password credential ID for Harbor push on main')
+    string(name: 'HARBOR_CREDENTIALS_ID', defaultValue: 'harbor-cred', description: 'Existing Jenkins username/password credential ID for Harbor push on main')
   }
   environment {
     HARBOR = 'harbor-dt.co.id'
@@ -18,9 +18,25 @@ pipeline {
         sh 'git rev-parse HEAD > .gitsha'
       }
     }
+    stage('Existing Executor Contract') {
+      steps {
+        sh '''set -eu
+          test -S /var/run/docker.sock
+          docker inspect "$HOSTNAME" >/dev/null
+          echo "PASS: Jenkins Compose container and existing Docker socket are usable."
+        '''
+      }
+    }
     stage('Go Quality') {
       steps {
-        sh '''docker run --rm -v "$PWD:/src" -w /src $GO_IMAGE sh -c '
+        sh '''docker run --rm \
+          --user "$(id -u):$(id -g)" \
+          --volumes-from "$HOSTNAME" \
+          -w "$PWD" \
+          -e HOME=/tmp \
+          -e GOCACHE=/tmp/go-cache \
+          -e GOMODCACHE=/tmp/go-mod \
+          $GO_IMAGE sh -c '
           set -eu
           export PATH=/usr/local/go/bin:$PATH
           export GOTOOLCHAIN=local
@@ -39,7 +55,12 @@ pipeline {
     }
     stage('Node Quality') {
       steps {
-        sh '''docker run --rm -v "$PWD:/src" -w /src $NODE_IMAGE sh -c '
+        sh '''docker run --rm \
+          --user "$(id -u):$(id -g)" \
+          --volumes-from "$HOSTNAME" \
+          -w "$PWD" \
+          -e HOME=/tmp \
+          $NODE_IMAGE sh -c '
           set -eu
           export CI=true
           export NEXT_TELEMETRY_DISABLED=1
@@ -56,7 +77,12 @@ pipeline {
     }
     stage('Seed Readiness Quality') {
       steps {
-        sh '''docker run --rm -v "$PWD:/src" -w /src $PYTHON_IMAGE sh -c '
+        sh '''docker run --rm \
+          --user "$(id -u):$(id -g)" \
+          --volumes-from "$HOSTNAME" \
+          -w "$PWD" \
+          -e HOME=/tmp \
+          $PYTHON_IMAGE sh -c '
           set -eu
           python3 -m py_compile scripts/mobile-seed-demo-all.py scripts/test_mobile_seed_readiness.py
           python3 -m unittest discover -s scripts -p "test_*.py"
@@ -85,7 +111,7 @@ pipeline {
     }
     stage('Build + Scan Images') {
       steps {
-        sh './scripts/build-images.sh "$(cat .gitsha)" --build-scan'
+        sh 'TRIVY_BIN=./scripts/trivy-docker.sh ./scripts/build-images.sh "$(cat .gitsha)" --build-scan'
         archiveArtifacts artifacts: 'build/sbom/*.cdx.json,build/image-evidence/scans/*', fingerprint: true
       }
     }

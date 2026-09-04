@@ -321,17 +321,46 @@ Status: **SOURCE HARDENING / IMAGE PUSH NOT RUN**
 Discovery date: `2026-09-04`
 
 Source baseline `4783fa6` and its Engineering Quality Gate passed. Read-only
-DT4 discovery proved Docker/buildx readiness and a homogeneous `linux/amd64`
-cluster. It also found unpinned application base images, missing workstation
-Trivy, untrusted Harbor CA, no namespace imagePullSecret, and no post-push digest
-evidence in the existing build script.
+DT4 discovery from the operator workstation proved Docker/buildx readiness and
+a homogeneous `linux/amd64` cluster. It also found unpinned application base
+images, missing local Trivy, untrusted local Harbor CA, no namespace
+imagePullSecret, and no post-push digest evidence in the existing build script.
+Local tool/trust findings are not treated as Jenkins facts; DT4.2 must verify
+them on `jenkins-dt`, while worker/containerd trust is checked separately.
 
 DT4.1 pins the three reviewed OCI base-image indexes and makes the build path
 fail closed on a dirty source tree, platform drift, missing scan/SBOM evidence,
 local image replacement after scanning, and local/Harbor digest disagreement.
 Jenkins retains scan artifacts and the final Harbor digest report.
 
-Harbor trust is not bypassed. No `docker login`, build, pull, push, Kubernetes
-mutation, database migration, application Deployment or ArgoCD sync is part of
-DT4.1. Live publication remains blocked until the approved Harbor CA, a pinned
-safe Trivy installation and the cluster pull mechanism are proven.
+No `docker login`, build, pull, push, Kubernetes mutation, database migration,
+application Deployment or ArgoCD sync is part of DT4.1.
+
+## DT4.2 — Existing Jenkins and Harbor alignment
+
+Status: **SOURCE ALIGNMENT / JOB NOT CREATED / BUILD NOT RUN**
+
+Discovery date: `2026-09-04`
+
+Live discovery proved that Jenkins is an existing Docker Compose service on
+`192.168.100.57`. The successful `tropical-management-v1` Multibranch job uses
+`github-credentials-id`, private Sonar, `harbor-cred`, Docker build/push and a
+GitOps update stage. Zabisa adopts this existing delivery path rather than
+creating another runner, registry or deployment channel.
+
+GitHub Actions remains the source-quality and Browser E2E gate. Jenkins retains
+its local tests/coverage for private Sonar, then owns image build, pinned Trivy
+scan, SBOM, Harbor push and GitOps render. The Dockerized Trivy runner reuses the
+existing Docker socket and is pinned to Trivy `0.74.0` by OCI index digest.
+
+Harbor is operational through the shared daemon-level insecure-registry
+compatibility configuration already used by existing projects. Zabisa neither
+broadens nor embeds that exception: pipeline source still rejects per-command
+TLS bypass flags. Strict hostname-TLS remediation remains shared platform
+hardening outside this application rollout.
+
+The job bootstrap clones the proven Tropical Multibranch configuration, changes
+only the SCM identity/repository/script path, and creates
+`zabisa-super-app-v1` with automatic triggers cleared and the job disabled.
+Creation does not authorize indexing, a build,
+Harbor login/push, GitOps update, migration, deployment or ArgoCD sync.

@@ -141,6 +141,9 @@ fi
 ./scripts/verify-image-pipeline.sh || fail 'immutable image/GitOps pipeline invariants failed'
 pass 'immutable image/GitOps pipeline invariants'
 
+./scripts/verify-dt42-jenkins-alignment.sh || fail 'DT4.2 existing Jenkins alignment invariants failed'
+pass 'DT4.2 existing Jenkins/Sonar/Harbor delivery alignment invariants'
+
 ./scripts/verify-quality-gate.sh || fail 'CI/Sonar quality gate invariants failed'
 pass 'CI/Sonar quality gate invariants'
 

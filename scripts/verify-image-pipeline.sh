@@ -7,6 +7,8 @@ source scripts/image-inventory.sh
 
 fail() { echo "[image-verify] ERROR: $*" >&2; exit 1; }
 
+[[ -x scripts/trivy-docker.sh ]] || fail 'Dockerized Trivy wrapper is missing or not executable'
+
 [[ "${#ZABISA_IMAGE_NAMES[@]}" == "9" ]] || fail "expected 9 image targets, found ${#ZABISA_IMAGE_NAMES[@]}"
 
 expected_refs=0
@@ -36,16 +38,28 @@ grep -q 'PLAN PASS: 9 linux/amd64 immutable targets resolved' <<<"$plan" || fail
 go_digest='sha256:28d89ee9cc0ff9fec75c82ca201e6bf7fdf9a679d4b7b24dfa04f2bb766bb468'
 distroless_digest='sha256:afa5c872c891853ca7fcf1f12c3edb23f7eeef36189728842dd51042ff57f7ab'
 node_digest='sha256:c610fcdfb1d5b4740dd70c284ed3cb16bb857e0f7166196e36a5501df7a3aa32'
+trivy_digest='sha256:62b1e65e8869bc4b4c6aa4fa2b21595256c7c2f6018a9d9ad61caf87187c1969'
 
 [[ "$(grep -Rh '^FROM golang:1.26.7-alpine@' services/*/Dockerfile | wc -l | tr -d ' ')" == '8' ]] || fail 'all eight Go builders must be digest-pinned'
 [[ "$(grep -RhF "$go_digest" services/*/Dockerfile | wc -l | tr -d ' ')" == '8' ]] || fail 'Go builder digest mismatch'
 [[ "$(grep -RhF "$distroless_digest" services/*/Dockerfile | wc -l | tr -d ' ')" == '8' ]] || fail 'distroless runtime digest mismatch'
 [[ "$(grep -F "$node_digest" apps/admin-web/Dockerfile | wc -l | tr -d ' ')" == '2' ]] || fail 'admin-web build/runtime digest mismatch'
+grep -Fq "aquasec/trivy:0.74.0@$trivy_digest" scripts/trivy-docker.sh || fail 'Trivy image/version digest mismatch'
 
 if awk '$1 == "FROM" && $2 !~ /@sha256:[0-9a-f]{64}$/ {print FILENAME ":" FNR ":" $0}' services/*/Dockerfile apps/admin-web/Dockerfile | grep -q .; then
   fail 'an application base image is not digest-pinned'
 fi
 echo '[image-verify] OK: all application base images are pinned to reviewed OCI index digests'
+
+grep -Fq -- '--volumes-from "$HOSTNAME"' Jenkinsfile || fail 'Jenkins Docker-outside-Docker workspace contract missing'
+grep -Fq 'TRIVY_BIN=./scripts/trivy-docker.sh' Jenkinsfile || fail 'Jenkins does not select the pinned Dockerized Trivy wrapper'
+grep -Fq -- '-v "$docker_socket:$docker_socket"' scripts/trivy-docker.sh || fail 'Trivy Docker socket mount missing'
+grep -Fq -- '--cap-drop ALL' scripts/trivy-docker.sh || fail 'Trivy capability drop missing'
+grep -Fq -- '--security-opt no-new-privileges=true' scripts/trivy-docker.sh || fail 'Trivy no-new-privileges control missing'
+if grep -Eq 'aquasec/trivy:(latest|[[:space:]]|$)' scripts/trivy-docker.sh Jenkinsfile; then
+  fail 'mutable Trivy image reference found'
+fi
+echo '[image-verify] OK: Jenkins Compose workspace and digest-pinned Dockerized Trivy contract are explicit'
 
 grep -Fq 'refusing to build/push from a dirty worktree' scripts/build-images.sh || fail 'dirty-worktree build rejection missing'
 grep -Fq 'VERIFY all scan attestations before first push' scripts/build-images.sh || fail 'pre-push scan attestation gate missing'
@@ -53,7 +67,7 @@ grep -Fq 'docker buildx imagetools inspect' scripts/build-images.sh || fail 'rem
 grep -Fq 'harbor-digests-${SHA}.tsv' scripts/build-images.sh || fail 'Harbor digest evidence report missing'
 grep -Fq 'local/remote digest proof mismatch' scripts/build-images.sh || fail 'local/remote digest comparison missing'
 
-if grep -Ein -- '--insecure|--tls-verify=false|curl[[:space:]].*-k([[:space:]]|$)' scripts/build-images.sh Jenkinsfile; then
+if grep -Ein -- '--insecure|--tls-verify=false|curl[[:space:]].*-k([[:space:]]|$)' scripts/build-images.sh scripts/trivy-docker.sh Jenkinsfile; then
   fail 'insecure registry/TLS bypass found in image pipeline'
 fi
 echo '[image-verify] OK: scan attestations and verified Harbor digest evidence are required before completion'

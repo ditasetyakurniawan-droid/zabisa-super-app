@@ -1,8 +1,8 @@
 # Zabisa Current State and Delivery Roadmap
 
-> Official checkpoint: **DT3.3 PASS / DT4.1 SOURCE HARDENING**
+> Official checkpoint: **DT4.1 PASS / DT4.2 EXISTING JENKINS ALIGNMENT**
 >
-> Source baseline: `4783fa6`
+> Source baseline: `df2d275`
 >
 > Verified on: `2026-09-04`
 
@@ -14,7 +14,7 @@ delivery.
 
 | Area | Status | Evidence |
 |---|---|---|
-| Repository and CI | PASS | `4783fa6`; Engineering Quality Gate run `33869446657` succeeded |
+| Repository and CI | PASS | `df2d275`; Engineering Quality Gate succeeded |
 | Kubernetes compatibility | PASS | kubectl `1.30.14`; server `1.30` |
 | Vault and network boundary | PASS | Injector, roles, CA, default-deny and explicit DNS/Vault/MySQL egress verified |
 | MySQL abstraction | PASS | `db-dt` -> `192.168.100.70:3306` |
@@ -22,9 +22,9 @@ delivery.
 | Seven target schemas | EMPTY / VERIFIED | DT3.2 read-only inventory: 0 tables and 0 migration rows in every database |
 | Temporary canaries | PASS | Removed after DT2 and DT3.2 verification |
 | Migration source controls | PASS | Sequential waves, zero retry, advisory lock and checksums committed |
-| Immutable deployment images | SOURCE HARDENING | Base digests and Harbor digest evidence controls under review; images not built |
-| Harbor workstation trust | BLOCKED | `harbor-dt.co.id` resolves, but the issuing CA is not trusted locally |
-| Image scanning | BLOCKED | Trivy is not installed on the build workstation |
+| Immutable deployment images | SOURCE READY | Base digests and Harbor digest evidence controls committed; images not built |
+| Existing Jenkins/Harbor path | VERIFIED | Compose Jenkins uses Docker socket, `harbor-cred`, private Sonar and existing Harbor insecure-registry compatibility mode |
+| Image scanning | SOURCE READY / LIVE UNPROVEN | Digest-pinned Dockerized Trivy runs through the existing Jenkins Docker socket; first live scan not run |
 | Cluster Harbor pull | UNPROVEN | No namespace Docker config Secret or ServiceAccount imagePullSecret found |
 | Backup and isolated restore proof | NOT PROVEN | Mandatory before any database mutation |
 | Database migration | NOT RUN | Blocked by image, backup/restore and operator approval gates |
@@ -70,19 +70,22 @@ mutation occurred.
 
 ### DT4.1 — Immutable image source hardening
 
-Status: **ACTIVE / SOURCE ONLY**
+Status: **PASS / `df2d275` / SOURCE ONLY**
 
 Pin the three reviewed base-image indexes, lock the platform to `linux/amd64`,
 bind scan/SBOM attestations to each local image ID and verify Harbor digests
 after push. Source and remote CI must pass before any image build/push approval.
 
-### DT4.2 — Trusted build, scan and Harbor publication
+### DT4.2 — Existing Jenkins build, scan and Harbor publication
 
-Status: **BLOCKED BY CA TRUST, TRIVY AND PULL CONTRACT**
+Status: **ACTIVE / JENKINS ALIGNMENT SOURCE**
 
-Build, scan and push all nine images from one clean approved commit. Record
-immutable Harbor digests and prove cluster image pull. Migration cannot run from
-unresolved `REPLACE_SHA` references.
+Use the proven `tropical-management-v1` Multibranch pattern on the existing
+Compose Jenkins host. GitHub remains the source/browser gate; Jenkins retains
+private Sonar, image build, Dockerized Trivy, SBOM, Harbor push and GitOps
+render. The existing `github-credentials-id`, `harbor-cred`, `sonar-dt`, Docker
+socket and Harbor compatibility mode are reused. The Zabisa job is created
+disabled and cannot index or build until a separate operator approval.
 
 ### DT5 — Backup and isolated restore readiness
 
@@ -157,8 +160,10 @@ DT2.2: PASS
 DT3.1 source controls: PASS at cee801f
 DT3.2 live read-only inventory: PASS; all seven databases empty
 DT3.3 migration engine hardening: PASS at 4783fa6
-DT4.1 immutable image source hardening: ACTIVE
-Harbor TLS trust / Trivy / cluster pull: BLOCKED OR UNPROVEN
+DT4.1 immutable image source hardening: PASS at df2d275
+DT4.2 existing Jenkins pattern: VERIFIED
+DT4.2 Zabisa Multibranch source/bootstrap: ACTIVE; job not created
+Dockerized Trivy / first Harbor publication / cluster pull: NOT RUN
 Migration: NOT RUN
 Application: NOT DEPLOYED
 ArgoCD sync: NOT RUN
