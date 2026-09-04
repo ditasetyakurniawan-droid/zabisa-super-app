@@ -117,7 +117,21 @@ pipeline {
     }
     stage('SonarQube') {
       steps {
-        withSonarQubeEnv('SonarQube') { sh 'sonar-scanner' }
+        withSonarQubeEnv('SonarQube') {
+          sh '''
+            set -eu
+
+            docker run --rm \
+              --add-host sonar-dt:192.168.100.59 \
+              --volumes-from jenkins-server \
+              -w "$WORKSPACE" \
+              -e SONAR_TOKEN="$SONAR_AUTH_TOKEN" \
+              sonarsource/sonar-scanner-cli@sha256:23ca0f137965d9dff2198074043fd48d386280bc5d0ccac8c8349cea4cf096a9 \
+              -Dsonar.host.url="$SONAR_HOST_URL" \
+              -Dsonar.qualitygate.wait=true \
+              -Dsonar.qualitygate.timeout=300
+          '''
+        }
       }
     }
     stage('Quality Gate') {
