@@ -364,3 +364,9 @@ only the SCM identity/repository/script path, and creates
 `zabisa-super-app-v1` with automatic triggers cleared and the job disabled.
 Creation does not authorize indexing, a build,
 Harbor login/push, GitOps update, migration, deployment or ArgoCD sync.
+
+DT4.2.1 updates the renderer after the first authenticated plan proved the
+existing Tropical job uses the GitHub Branch Source XML shape
+(`repoOwner`/`repository`) rather than a plain Git SCM `remote`. The first run
+stopped before `createItem`, so Jenkins and Harbor were not mutated. Regression
+tests now cover both supported Multibranch SCM shapes before another apply.

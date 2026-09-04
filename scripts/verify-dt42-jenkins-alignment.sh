@@ -14,6 +14,7 @@ for required in \
   Jenkinsfile \
   .github/workflows/ci.yml \
   scripts/bootstrap-zabisa-jenkins-job.sh \
+  scripts/jenkins_job_config.py \
   scripts/trivy-docker.sh; do
   [[ -f "$required" ]] || fail "missing $required"
 done
@@ -47,10 +48,14 @@ grep -Fq 'target_job="zabisa-super-app-v1"' scripts/bootstrap-zabisa-jenkins-job
   || fail 'Jenkins target job name mismatch'
 grep -Fq 'scm_credentials="github-credentials-id"' scripts/bootstrap-zabisa-jenkins-job.sh \
   || fail 'existing GitHub SCM credential ID is not selected'
-grep -Fq 'disabled.text = "true"' scripts/bootstrap-zabisa-jenkins-job.sh \
+grep -Fq 'disabled.text = "true"' scripts/jenkins_job_config.py \
   || fail 'new Jenkins job must be created disabled'
-grep -Fq 'automatic triggers=none' scripts/bootstrap-zabisa-jenkins-job.sh \
+grep -Fq 'automatic_triggers=none' scripts/jenkins_job_config.py \
   || fail 'automatic Jenkins job triggers must be cleared'
+grep -Fq 'GitHubSCMSource' scripts/jenkins_job_config.py \
+  || fail 'actual existing GitHubSCMSource shape is unsupported'
+grep -Fq 'GitSCMSource' scripts/jenkins_job_config.py \
+  || fail 'GitSCMSource compatibility is unsupported'
 grep -Fq 'CREATE-DISABLED-ZABISA-JOB' scripts/bootstrap-zabisa-jenkins-job.sh \
   || fail 'explicit disabled-job creation confirmation is missing'
 
@@ -58,5 +63,7 @@ if grep -Eqi 'buildWithParameters|/build\?|/build$|/enable$' \
   scripts/bootstrap-zabisa-jenkins-job.sh; then
   fail 'bootstrap must not enable or start a Jenkins build'
 fi
+
+PYTHONPATH=scripts python3 -m unittest scripts/test_jenkins_job_config.py
 
 echo '[dt42-jenkins] PASS: GitHub source quality and existing Jenkins Sonar/delivery boundaries are aligned.'

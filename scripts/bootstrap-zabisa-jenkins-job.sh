@@ -5,6 +5,8 @@ set +x
 umask 077
 
 mode="${1:---plan}"
+root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+config_tool="$root/scripts/jenkins_job_config.py"
 source_job="tropical-management-v1"
 target_job="zabisa-super-app-v1"
 scm_credentials="github-credentials-id"
@@ -70,6 +72,7 @@ trap failure_report ERR
 command -v ssh >/dev/null || { echo 'ERROR: ssh is required.' >&2; exit 10; }
 command -v curl >/dev/null || { echo 'ERROR: curl is required.' >&2; exit 11; }
 command -v python3 >/dev/null || { echo 'ERROR: python3 is required.' >&2; exit 12; }
+[[ -f "$config_tool" ]] || { echo "ERROR: config renderer is missing: $config_tool" >&2; exit 14; }
 
 [[ "$jenkins_local_port" =~ ^[0-9]+$ ]] &&
   (( jenkins_local_port >= 1024 && jenkins_local_port <= 65535 )) || {
@@ -194,30 +197,11 @@ if [[ "$mode" == "--verify" ]]; then
   curl "${curl_auth[@]}" \
     "$jenkins_url/job/$target_job/config.xml" >"$verified_xml"
 
-  python3 - "$verified_xml" "$repository_url" "$scm_credentials" "$script_path" <<'PY'
-import sys
-import xml.etree.ElementTree as ET
-
-path, expected_remote, expected_credentials, expected_script = sys.argv[1:]
-root = ET.parse(path).getroot()
-
-def local(tag):
-    return tag.rsplit("}", 1)[-1]
-
-def values(name):
-    return [(node.text or "").strip() for node in root.iter() if local(node.tag) == name]
-
-def nodes(name):
-    return [node for node in root.iter() if local(node.tag) == name]
-
-assert "WorkflowMultiBranchProject" in local(root.tag), local(root.tag)
-assert values("remote") == [expected_remote], values("remote")
-assert values("credentialsId") == [expected_credentials], values("credentialsId")
-assert values("scriptPath") == [expected_script], values("scriptPath")
-assert values("disabled") == ["true"], values("disabled")
-assert all(len(node) == 0 for node in nodes("triggers")), "automatic triggers remain"
-print("[jenkins-job] PASS: Zabisa Multibranch job exists and remains disabled.")
-PY
+  python3 "$config_tool" verify "$verified_xml" \
+    --repository "$repository_url" \
+    --credentials "$scm_credentials" \
+    --script-path "$script_path"
+  echo "[jenkins-job] PASS: Zabisa Multibranch job exists and remains disabled."
   exit 0
 fi
 
@@ -230,73 +214,11 @@ fi
 curl "${curl_auth[@]}" \
   "$jenkins_url/job/$source_job/config.xml" >"$source_xml"
 
-python3 - \
-  "$source_xml" \
-  "$rendered_xml" \
-  "$repository_url" \
-  "$scm_credentials" \
-  "$script_path" <<'PY'
-import sys
-import xml.etree.ElementTree as ET
-
-source, destination, repository, credentials, script_path = sys.argv[1:]
-tree = ET.parse(source)
-root = tree.getroot()
-
-def local(tag):
-    return tag.rsplit("}", 1)[-1]
-
-def nodes(name):
-    return [node for node in root.iter() if local(node.tag) == name]
-
-assert "WorkflowMultiBranchProject" in local(root.tag), local(root.tag)
-
-remotes = nodes("remote")
-credential_nodes = nodes("credentialsId")
-script_nodes = nodes("scriptPath")
-source_ids = [node for node in nodes("id") if node.text]
-
-assert len(remotes) == 1, f"expected one SCM remote, got {len(remotes)}"
-assert len(credential_nodes) == 1, (
-    f"expected one SCM credential reference, got {len(credential_nodes)}"
-)
-assert len(script_nodes) == 1, f"expected one scriptPath, got {len(script_nodes)}"
-
-remotes[0].text = repository
-credential_nodes[0].text = credentials
-script_nodes[0].text = script_path
-
-if source_ids:
-    source_ids[0].text = "zabisa-super-app-v1-source"
-
-descriptions = nodes("description")
-if descriptions:
-    descriptions[0].text = (
-        "Zabisa existing-platform Multibranch job. Created disabled; "
-        "manual approval is required before first indexing/build."
-    )
-
-disabled_nodes = [node for node in root if local(node.tag) == "disabled"]
-if disabled_nodes:
-    disabled = disabled_nodes[0]
-else:
-    disabled = ET.SubElement(root, "disabled")
-disabled.text = "true"
-
-for triggers in nodes("triggers"):
-    for child in list(triggers):
-        triggers.remove(child)
-
-tree.write(destination, encoding="utf-8", xml_declaration=True)
-
-print("[jenkins-job] Rendered from existing Multibranch pattern")
-print(f"[jenkins-job] repository={repository}")
-print(f"[jenkins-job] credentialsId={credentials}")
-print(f"[jenkins-job] scriptPath={script_path}")
-print("[jenkins-job] disabled=true")
-print("[jenkins-job] automatic triggers=none")
-print("[jenkins-job] credential values=NOT DISPLAYED")
-PY
+python3 "$config_tool" render "$source_xml" "$rendered_xml" \
+  --repository "$repository_url" \
+  --credentials "$scm_credentials" \
+  --script-path "$script_path"
+echo "[jenkins-job] credential values=NOT DISPLAYED"
 
 echo "Rendered SHA256: $(sha256sum "$rendered_xml" | awk '{print $1}')"
 
@@ -337,30 +259,11 @@ create_status="$(
 curl "${curl_auth[@]}" \
   "$jenkins_url/job/$target_job/config.xml" >"$verified_xml"
 
-python3 - "$verified_xml" "$repository_url" "$scm_credentials" "$script_path" <<'PY'
-import sys
-import xml.etree.ElementTree as ET
-
-path, expected_remote, expected_credentials, expected_script = sys.argv[1:]
-root = ET.parse(path).getroot()
-
-def local(tag):
-    return tag.rsplit("}", 1)[-1]
-
-def values(name):
-    return [(node.text or "").strip() for node in root.iter() if local(node.tag) == name]
-
-def nodes(name):
-    return [node for node in root.iter() if local(node.tag) == name]
-
-assert "WorkflowMultiBranchProject" in local(root.tag), local(root.tag)
-assert values("remote") == [expected_remote], values("remote")
-assert values("credentialsId") == [expected_credentials], values("credentialsId")
-assert values("scriptPath") == [expected_script], values("scriptPath")
-assert values("disabled") == ["true"], values("disabled")
-assert all(len(node) == 0 for node in nodes("triggers")), "automatic triggers remain"
-print("[jenkins-job] PASS: disabled Zabisa Multibranch job created and verified.")
-PY
+python3 "$config_tool" verify "$verified_xml" \
+  --repository "$repository_url" \
+  --credentials "$scm_credentials" \
+  --script-path "$script_path"
+echo "[jenkins-job] PASS: disabled Zabisa Multibranch job created and verified."
 
 echo "Job URL       : http://192.168.100.57:8080/job/$target_job/"
 echo "Initial state : DISABLED"
