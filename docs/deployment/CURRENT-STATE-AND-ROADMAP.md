@@ -1,8 +1,8 @@
 # Zabisa Current State and Delivery Roadmap
 
-> Official checkpoint: **DT3.2 PASS / DT3.3 SOURCE HARDENING**
+> Official checkpoint: **DT3.3 PASS / DT4.1 SOURCE HARDENING**
 >
-> Source baseline: `cee801f`
+> Source baseline: `4783fa6`
 >
 > Verified on: `2026-09-04`
 
@@ -14,15 +14,18 @@ delivery.
 
 | Area | Status | Evidence |
 |---|---|---|
-| Repository and CI | PASS | `cee801f`; Engineering Quality Gate run `33865841795` succeeded |
+| Repository and CI | PASS | `4783fa6`; Engineering Quality Gate run `33869446657` succeeded |
 | Kubernetes compatibility | PASS | kubectl `1.30.14`; server `1.30` |
 | Vault and network boundary | PASS | Injector, roles, CA, default-deny and explicit DNS/Vault/MySQL egress verified |
 | MySQL abstraction | PASS | `db-dt` -> `192.168.100.70:3306` |
 | Runtime/migrator DB authentication | PASS | Both identities authenticated from allowed in-cluster canaries |
 | Seven target schemas | EMPTY / VERIFIED | DT3.2 read-only inventory: 0 tables and 0 migration rows in every database |
 | Temporary canaries | PASS | Removed after DT2 and DT3.2 verification |
-| Migration source controls | HARDENING | Sequential waves and no retry committed; lock/checksum change under review |
-| Immutable deployment images | NOT BUILT | Manifests intentionally contain `REPLACE_SHA` |
+| Migration source controls | PASS | Sequential waves, zero retry, advisory lock and checksums committed |
+| Immutable deployment images | SOURCE HARDENING | Base digests and Harbor digest evidence controls under review; images not built |
+| Harbor workstation trust | BLOCKED | `harbor-dt.co.id` resolves, but the issuing CA is not trusted locally |
+| Image scanning | BLOCKED | Trivy is not installed on the build workstation |
+| Cluster Harbor pull | UNPROVEN | No namespace Docker config Secret or ServiceAccount imagePullSecret found |
 | Backup and isolated restore proof | NOT PROVEN | Mandatory before any database mutation |
 | Database migration | NOT RUN | Blocked by image, backup/restore and operator approval gates |
 | Application deployment | NOT DEPLOYED | Blocked until migration and render gates pass |
@@ -51,7 +54,7 @@ separate DB-only migrator identities. `api-gateway` is DB-free.
 
 ### DT3.3 — Migration engine source hardening
 
-Status: **ACTIVE / SOURCE ONLY**
+Status: **PASS / `4783fa6`**
 
 Targets:
 
@@ -62,16 +65,24 @@ Targets:
   multi-statement `ALTER` files;
 - record the DT3.2 live evidence and remaining gates.
 
-Exit gate: source and remote CI pass. No database or cluster mutation is part of
-DT3.3.
+Exit gate passed: source and remote CI succeeded. No database or cluster
+mutation occurred.
 
-### DT4 — Immutable migration image build and publication
+### DT4.1 — Immutable image source hardening
 
-Status: **NEXT AFTER DT3.3**
+Status: **ACTIVE / SOURCE ONLY**
 
-Build, test, scan and push the seven service images used by migration Jobs.
-Record immutable Harbor digests and prove image-pull access. Migration cannot
-run from unresolved `REPLACE_SHA` references.
+Pin the three reviewed base-image indexes, lock the platform to `linux/amd64`,
+bind scan/SBOM attestations to each local image ID and verify Harbor digests
+after push. Source and remote CI must pass before any image build/push approval.
+
+### DT4.2 — Trusted build, scan and Harbor publication
+
+Status: **BLOCKED BY CA TRUST, TRIVY AND PULL CONTRACT**
+
+Build, scan and push all nine images from one clean approved commit. Record
+immutable Harbor digests and prove cluster image pull. Migration cannot run from
+unresolved `REPLACE_SHA` references.
 
 ### DT5 — Backup and isolated restore readiness
 
@@ -145,7 +156,9 @@ tags.
 DT2.2: PASS
 DT3.1 source controls: PASS at cee801f
 DT3.2 live read-only inventory: PASS; all seven databases empty
-DT3.3 migration engine hardening: ACTIVE
+DT3.3 migration engine hardening: PASS at 4783fa6
+DT4.1 immutable image source hardening: ACTIVE
+Harbor TLS trust / Trivy / cluster pull: BLOCKED OR UNPROVEN
 Migration: NOT RUN
 Application: NOT DEPLOYED
 ArgoCD sync: NOT RUN

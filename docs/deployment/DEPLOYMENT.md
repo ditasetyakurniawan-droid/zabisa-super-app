@@ -25,10 +25,17 @@ Runtime secret delivery is Vault Agent Injector. See `docs/deployment/VAULT.md`.
 
 ## Immutable image pipeline
 
-The DT image inventory contains nine images: eight Go backend services plus `admin-web`. CI builds/scans Git-SHA-tagged images only; `:latest` is not used. Trivy HIGH/CRITICAL scanning and CycloneDX SBOM generation happen before a `main`-branch Harbor push.
+The DT image inventory contains nine images: eight Go backend services plus
+`admin-web`. Builds use the full Git SHA, a clean worktree, the verified
+`linux/amd64` platform and digest-pinned application base images; `:latest` is
+not used. Trivy HIGH/CRITICAL JSON scanning and CycloneDX SBOM generation happen
+before a `main`-branch Harbor push. The push gate binds that evidence to the
+local image ID and verifies the resulting remote Harbor digest.
 
 `admin-web` has a separate frontend boundary and no Vault injection because it currently requires no secret. Its only application egress is to the API gateway.
 
 The repository can render immutable GitOps manifests locally with `scripts/update-gitops.sh`, but publishing them to the real GitOps repository remains intentionally unimplemented until its actual URL and Jenkins credential workflow are configured. ArgoCD remains deployment authority.
 
-Base-image digest pinning, Harbor image-pull authentication and real GitOps repository publication remain explicit pre-production follow-ups.
+Harbor workstation CA trust, Trivy installation, cluster image-pull
+authentication and real GitOps repository publication remain explicit live
+gates. TLS verification must not be bypassed.

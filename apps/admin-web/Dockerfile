@@ -1,4 +1,4 @@
-FROM node:22-alpine AS build
+FROM node:22-alpine@sha256:c610fcdfb1d5b4740dd70c284ed3cb16bb857e0f7166196e36a5501df7a3aa32 AS build
 WORKDIR /src
 COPY package.json package-lock.json ./
 COPY apps/admin-web/package.json ./apps/admin-web/package.json
@@ -6,7 +6,7 @@ RUN npm ci --workspace=@zabisa/admin-web --include-workspace-root --no-audit --n
 COPY apps/admin-web ./apps/admin-web
 RUN npm run build --workspace=@zabisa/admin-web
 
-FROM node:22-alpine AS run
+FROM node:22-alpine@sha256:c610fcdfb1d5b4740dd70c284ed3cb16bb857e0f7166196e36a5501df7a3aa32 AS run
 WORKDIR /app
 
 ENV NODE_ENV=production

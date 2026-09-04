@@ -46,7 +46,11 @@ NetworkPolicy permits:
 Admin Web has no direct NetworkPolicy path to bounded-context services or MySQL.
 
 ## Supply-chain boundary
-This hotfix establishes immutable application tags, vulnerability scanning and SBOM generation. Base images are **not yet claimed to be digest-pinned**. Before production, approved multi-architecture base-image digests should be pinned after validating the organization's Harbor/proxy/cache policy and supported worker architectures.
+This hotfix originally established immutable application tags, vulnerability
+scanning and SBOM generation while leaving base-image pinning open. DT4.0 later
+verified the cluster as `linux/amd64`, resolved the current OCI indexes and
+DT4.1 pins those base images by digest. Any future base-image digest change must
+remain an explicit reviewed source change.
 
 Image-pull authentication is also intentionally not guessed here. Kubernetes must use the cluster's approved Harbor pull mechanism (node/container-runtime auth or a dedicated imagePullSecret/ServiceAccount policy). Vault Agent injection cannot solve image-pull authentication because image pull occurs before application containers start.
 

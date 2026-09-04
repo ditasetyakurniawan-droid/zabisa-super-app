@@ -86,7 +86,7 @@ pipeline {
     stage('Build + Scan Images') {
       steps {
         sh './scripts/build-images.sh "$(cat .gitsha)" --build-scan'
-        archiveArtifacts artifacts: 'build/sbom/*.cdx.json', fingerprint: true
+        archiveArtifacts artifacts: 'build/sbom/*.cdx.json,build/image-evidence/scans/*', fingerprint: true
       }
     }
     stage('Push Immutable Images') {
@@ -102,6 +102,7 @@ pipeline {
               printf '%s' "$HARBOR_PASSWORD" | docker login "$HARBOR" --username "$HARBOR_USERNAME" --password-stdin
               ./scripts/build-images.sh "$(cat .gitsha)" --push-only
             '''
+            archiveArtifacts artifacts: 'build/image-evidence/harbor-digests-*.tsv', fingerprint: true
           }
         }
       }

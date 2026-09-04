@@ -31,7 +31,32 @@ echo '[image-verify] OK: no :latest references in production image/build paths'
 
 TEST_SHA='0123456789abcdef0123456789abcdef01234567'
 plan="$(./scripts/build-images.sh "$TEST_SHA" --plan)"
-grep -q 'PLAN PASS: 9 immutable image targets resolved' <<<"$plan" || fail 'image plan did not resolve all 9 images'
+grep -q 'PLAN PASS: 9 linux/amd64 immutable targets resolved' <<<"$plan" || fail 'image plan did not resolve all 9 linux/amd64 images'
+
+go_digest='sha256:28d89ee9cc0ff9fec75c82ca201e6bf7fdf9a679d4b7b24dfa04f2bb766bb468'
+distroless_digest='sha256:afa5c872c891853ca7fcf1f12c3edb23f7eeef36189728842dd51042ff57f7ab'
+node_digest='sha256:c610fcdfb1d5b4740dd70c284ed3cb16bb857e0f7166196e36a5501df7a3aa32'
+
+[[ "$(grep -Rh '^FROM golang:1.26.7-alpine@' services/*/Dockerfile | wc -l | tr -d ' ')" == '8' ]] || fail 'all eight Go builders must be digest-pinned'
+[[ "$(grep -RhF "$go_digest" services/*/Dockerfile | wc -l | tr -d ' ')" == '8' ]] || fail 'Go builder digest mismatch'
+[[ "$(grep -RhF "$distroless_digest" services/*/Dockerfile | wc -l | tr -d ' ')" == '8' ]] || fail 'distroless runtime digest mismatch'
+[[ "$(grep -F "$node_digest" apps/admin-web/Dockerfile | wc -l | tr -d ' ')" == '2' ]] || fail 'admin-web build/runtime digest mismatch'
+
+if awk '$1 == "FROM" && $2 !~ /@sha256:[0-9a-f]{64}$/ {print FILENAME ":" FNR ":" $0}' services/*/Dockerfile apps/admin-web/Dockerfile | grep -q .; then
+  fail 'an application base image is not digest-pinned'
+fi
+echo '[image-verify] OK: all application base images are pinned to reviewed OCI index digests'
+
+grep -Fq 'refusing to build/push from a dirty worktree' scripts/build-images.sh || fail 'dirty-worktree build rejection missing'
+grep -Fq 'VERIFY all scan attestations before first push' scripts/build-images.sh || fail 'pre-push scan attestation gate missing'
+grep -Fq 'docker buildx imagetools inspect' scripts/build-images.sh || fail 'remote digest inspection missing'
+grep -Fq 'harbor-digests-${SHA}.tsv' scripts/build-images.sh || fail 'Harbor digest evidence report missing'
+grep -Fq 'local/remote digest proof mismatch' scripts/build-images.sh || fail 'local/remote digest comparison missing'
+
+if grep -Ein -- '--insecure|--tls-verify=false|curl[[:space:]].*-k([[:space:]]|$)' scripts/build-images.sh Jenkinsfile; then
+  fail 'insecure registry/TLS bypass found in image pipeline'
+fi
+echo '[image-verify] OK: scan attestations and verified Harbor digest evidence are required before completion'
 
 tmp="$(mktemp -d)"
 trap 'rm -rf "$tmp"' EXIT

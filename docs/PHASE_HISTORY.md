@@ -313,3 +313,25 @@ backup/restore evidence contract.
 No migration, application Deployment or ArgoCD sync is authorized by these
 source changes. Immutable migration images and tested recovery evidence remain
 mandatory before a separately approved `content` canary.
+
+## DT4.0-DT4.1 — Immutable image readiness and source controls
+
+Status: **SOURCE HARDENING / IMAGE PUSH NOT RUN**
+
+Discovery date: `2026-09-04`
+
+Source baseline `4783fa6` and its Engineering Quality Gate passed. Read-only
+DT4 discovery proved Docker/buildx readiness and a homogeneous `linux/amd64`
+cluster. It also found unpinned application base images, missing workstation
+Trivy, untrusted Harbor CA, no namespace imagePullSecret, and no post-push digest
+evidence in the existing build script.
+
+DT4.1 pins the three reviewed OCI base-image indexes and makes the build path
+fail closed on a dirty source tree, platform drift, missing scan/SBOM evidence,
+local image replacement after scanning, and local/Harbor digest disagreement.
+Jenkins retains scan artifacts and the final Harbor digest report.
+
+Harbor trust is not bypassed. No `docker login`, build, pull, push, Kubernetes
+mutation, database migration, application Deployment or ArgoCD sync is part of
+DT4.1. Live publication remains blocked until the approved Harbor CA, a pinned
+safe Trivy installation and the cluster pull mechanism are proven.
