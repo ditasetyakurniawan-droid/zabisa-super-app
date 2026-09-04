@@ -269,3 +269,23 @@ DT2.1 removes a canary startup race: the runner now waits for the explicit
 authentication result and fails early on a non-zero container exit. Pod Ready
 is no longer accepted as proof because it can precede the application's first
 log line when the image is already cached on a worker.
+
+<!-- DT2_CLOSURE_START -->
+## DT2.1-DT2.2 — Credential canary stabilization and runtime closure
+
+Status: **PASS**
+
+Verified date: `2026-09-04`
+
+Verified source commit: `838c71d`
+
+- DT2.1 fixed the canary runner to wait for authentication results.
+- DT2.2 verified live Vault/CA/ServiceAccount/NetworkPolicy/role consistency.
+- Runtime and migrator credentials authenticated to MySQL from allowed cluster pods.
+- Temporary canary pods were removed.
+- Database migration, application deployment, image publication, and ArgoCD sync were not run.
+
+Next: **DT3 migration readiness audit (read-only)**.
+
+See [`CURRENT-STATE-AND-ROADMAP.md`](deployment/CURRENT-STATE-AND-ROADMAP.md).
+<!-- DT2_CLOSURE_END -->
