@@ -86,6 +86,9 @@ pass 'MySQL/Vault provisioning source invariants'
 ./scripts/verify-vault-injector.sh || fail 'Vault Agent Injector invariants failed'
 pass 'Vault Agent Injector + per-service identity invariants'
 
+./scripts/verify-dt2-source.sh || fail 'DT2 source invariants failed'
+pass 'DT2 Vault/CA credential-canary source invariants'
+
 # 3. Tracked secret hygiene.
 ./scripts/verify-secret-hygiene.sh || fail 'tracked secret hygiene failed'
 pass 'tracked secret hygiene'

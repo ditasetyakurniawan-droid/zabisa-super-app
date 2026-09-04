@@ -250,3 +250,17 @@ Calico, or the Kubernetes cluster.
   without it, piped SQL could be discarded while non-mutating `-e` checks still
   succeeded. The live verifier detected the empty schema set before any
   migration or deployment was allowed.
+
+## DT deployment track 2 — Vault identity and in-cluster credential proof
+
+DT1 provisioning and both live boundary verifiers completed successfully. A
+one-off workstation credential test was rejected because MySQL correctly saw a
+NAT source address outside the bounded Calico account network; that rejection
+did not roll back or invalidate DT1.
+
+DT2 adds an idempotent bootstrap for the existing Vault/Kubernetes integration,
+CA-only trust Secrets and shared runtime keys. A temporary runtime/migrator
+canary proves the actual Vault passwords against MySQL from pods selected by the
+existing Vault and MySQL NetworkPolicies. It never widens MySQL account hosts,
+creates duplicate platform infrastructure, prints credentials, runs migrations
+or triggers ArgoCD sync.
