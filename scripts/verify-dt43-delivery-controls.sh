@@ -44,5 +44,15 @@ grep -Fq 'RENDER_GITOPS=true' scripts/run-zabisa-jenkins-delivery.sh \
   || fail 'controlled render parameter is missing'
 grep -Fq 'disable_parent' scripts/run-zabisa-jenkins-delivery.sh \
   || fail 'Jenkins disable cleanup is missing'
+grep -Fq -- '--globoff' scripts/run-zabisa-jenkins-delivery.sh \
+  || fail 'literal Jenkins API URL handling is missing'
+grep -Fq 'existing main branch job reused; indexing not repeated.' \
+  scripts/run-zabisa-jenkins-delivery.sh \
+  || fail 'existing main branch reuse guard is missing'
+grep -Fq '#!/bin/sh' scripts/npm-audit-gate.sh \
+  || fail 'npm audit gate must run on the Node Alpine POSIX shell'
+if grep -Eq '\[\[|pipefail|BASH_SOURCE' scripts/npm-audit-gate.sh; then
+  fail 'npm audit gate still contains Bash-only syntax'
+fi
 
 echo '[dt43-control] PASS: default-off readiness and explicit build/push/render controls are consistent.'

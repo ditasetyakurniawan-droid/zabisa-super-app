@@ -130,6 +130,14 @@ print(str(build.get("building", True)).lower(), build.get("result") or "pending"
       if [[ "$building" == "false" ]]; then
         [[ "$result" == "SUCCESS" ]] || {
           echo "ERROR: $label build #$build_number result=$result" >&2
+          echo "===== SANITIZED $label BUILD LOG TAIL =====" >&2
+          curl "${curl_auth[@]}" \
+            "$jenkins_url/job/$target_job/job/$branch_job/$build_number/consoleText" \
+            2>/dev/null |
+            sed -E \
+              -e 's/([Tt]oken|[Pp]assword|[Ss]ecret)([=:][^[:space:]]*)?/\1=[REDACTED]/g' \
+              -e 's/(Authorization:)[[:space:]]*[^[:space:]]+/\1 [REDACTED]/Ig' |
+            tail -n 240 >&2 || true
           return 1
         }
         return 0
@@ -227,6 +235,7 @@ chmod 600 "$temp_dir/jenkins.netrc"
 unset jenkins_api_token
 
 curl_auth=(
+  --globoff
   --silent --show-error --fail
   --netrc-file "$temp_dir/jenkins.netrc"
   --connect-timeout 5 --max-time 30
@@ -261,11 +270,13 @@ grep -Eq '<disabled>[[:space:]]*true[[:space:]]*</disabled>' "$parent_xml" || {
 }
 
 before_build=0
+branch_exists=false
 if branch_json="$(
   curl "${curl_auth[@]}" \
     "$jenkins_url/job/$target_job/job/$branch_job/api/json?tree=lastBuild[number]" \
     2>/dev/null
 )"; then
+  branch_exists=true
   before_build="$(
     python3 -c '
 import json
@@ -287,23 +298,28 @@ status="$(jenkins_post "/job/$target_job/enable")"
 }
 job_enabled=true
 
-status="$(jenkins_post "/job/$target_job/build?delay=0sec")"
-[[ "$status" == "200" || "$status" == "201" || "$status" == "302" ]] || {
-  echo "ERROR: multibranch indexing returned HTTP $status" >&2
-  exit 31
-}
-
 branch_ready=false
-for attempt in $(seq 1 60); do
-  if curl "${curl_auth[@]}" \
-    "$jenkins_url/job/$target_job/job/$branch_job/api/json?tree=nextBuildNumber,lastBuild[number]" \
-    >"$temp_dir/branch.json" 2>/dev/null; then
-    branch_ready=true
-    break
-  fi
-  echo "[jenkins-delivery] waiting for main branch job: attempt $attempt"
-  sleep 5
-done
+if [[ "$branch_exists" == true ]]; then
+  branch_ready=true
+  echo "[jenkins-delivery] existing main branch job reused; indexing not repeated."
+else
+  status="$(jenkins_post "/job/$target_job/build?delay=0sec")"
+  [[ "$status" == "200" || "$status" == "201" || "$status" == "302" ]] || {
+    echo "ERROR: multibranch indexing returned HTTP $status" >&2
+    exit 31
+  }
+
+  for attempt in $(seq 1 60); do
+    if curl "${curl_auth[@]}" \
+      "$jenkins_url/job/$target_job/job/$branch_job/api/json?tree=nextBuildNumber,lastBuild[number]" \
+      >"$temp_dir/branch.json" 2>/dev/null; then
+      branch_ready=true
+      break
+    fi
+    echo "[jenkins-delivery] waiting for main branch job: attempt $attempt"
+    sleep 5
+  done
+fi
 [[ "$branch_ready" == true ]] || {
   echo "ERROR: main branch job was not discovered." >&2
   exit 32

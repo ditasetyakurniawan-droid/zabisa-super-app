@@ -1,7 +1,7 @@
-#!/usr/bin/env bash
-set -Eeuo pipefail
+#!/bin/sh
+set -eu
 
-ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
 
 mkdir -p coverage
@@ -13,7 +13,7 @@ if ! npm audit --omit=dev --json > "$report"; then
   :
 fi
 
-if [[ ! -s "$report" ]]; then
+if [ ! -s "$report" ]; then
   echo '[npm-audit] ERROR: npm did not produce an audit report.' >&2
   exit 1
 fi
