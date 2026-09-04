@@ -349,9 +349,16 @@ print((data.get("lastBuild") or {}).get("number", 0))
 
   if [[ "$attempt" == "3" ]]; then
     status="$(
-      jenkins_post "/job/$target_job/job/$branch_job/build?delay=0sec"
+      jenkins_post "/job/$target_job/job/$branch_job/buildWithParameters" \
+        --data-urlencode 'BUILD_IMAGES=false' \
+        --data-urlencode 'PUSH_IMAGES=false' \
+        --data-urlencode 'RENDER_GITOPS=false' \
+        --data-urlencode "HARBOR_CREDENTIALS_ID=$harbor_credentials_id"
     )"
-    [[ "$status" == "200" || "$status" == "201" || "$status" == "302" ]] || exit 33
+    [[ "$status" == "200" || "$status" == "201" || "$status" == "302" ]] || {
+      echo "ERROR: readiness trigger returned HTTP $status" >&2
+      exit 33
+    }
     echo "[jenkins-delivery] explicit readiness build requested."
   fi
 

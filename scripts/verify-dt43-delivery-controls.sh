@@ -49,6 +49,15 @@ grep -Fq -- '--globoff' scripts/run-zabisa-jenkins-delivery.sh \
 grep -Fq 'existing main branch job reused; indexing not repeated.' \
   scripts/run-zabisa-jenkins-delivery.sh \
   || fail 'existing main branch reuse guard is missing'
+grep -Fq '/buildWithParameters' scripts/run-zabisa-jenkins-delivery.sh \
+  || fail 'parameterized Jenkins build endpoint is missing'
+for readiness_control in \
+  'BUILD_IMAGES=false' \
+  'PUSH_IMAGES=false' \
+  'RENDER_GITOPS=false'; do
+  grep -Fq "$readiness_control" scripts/run-zabisa-jenkins-delivery.sh \
+    || fail "explicit readiness control missing: $readiness_control"
+done
 grep -Fq '#!/bin/sh' scripts/npm-audit-gate.sh \
   || fail 'npm audit gate must run on the Node Alpine POSIX shell'
 if grep -Eq '\[\[|pipefail|BASH_SOURCE' scripts/npm-audit-gate.sh; then
