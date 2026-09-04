@@ -246,3 +246,7 @@ Calico, or the Kubernetes cluster.
   closed when the selected client lacks `--ssl-mode=VERIFY_CA`.
 - Local MySQL readiness now requires an authenticated TCP query, preventing the
   initialization-only server from being reported healthy.
+- Follow-up recovery hardened the Docker client with standard-input forwarding;
+  without it, piped SQL could be discarded while non-mutating `-e` checks still
+  succeeded. The live verifier detected the empty schema set before any
+  migration or deployment was allowed.

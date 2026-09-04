@@ -84,6 +84,7 @@ source_verify() {
   grep -Fq 'ssl-mode=VERIFY_CA' "$provisioner" || fail 'MySQL admin VERIFY_CA is required'
   grep -Fq 'MYSQL_CLIENT_BIN' "$provisioner" || fail 'explicit MySQL client selection is required'
   grep -Fq -- '--entrypoint mysql' "$docker_mysql_client" || fail 'Docker wrapper must invoke the Oracle mysql entrypoint directly'
+  grep -Fq -- '--interactive' "$docker_mysql_client" || fail 'Docker wrapper must forward SQL standard input'
   grep -Fq 'mysql@sha256:' "$docker_mysql_client" || fail 'Docker MySQL client image must be pinned by digest'
   grep -Fq 'MYSQL_PASSWORD=-' "$provisioner" || fail 'Vault password must be supplied via stdin'
   grep -Fq 'set +x' "$provisioner" || fail 'provisioner must disable shell xtrace'

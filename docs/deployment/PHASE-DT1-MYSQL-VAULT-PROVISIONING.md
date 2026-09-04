@@ -75,7 +75,9 @@ certificate verification. Operators can set
 `MYSQL_CLIENT_BIN=./scripts/mysql-client-docker.sh` to use the repository's
 digest-pinned MySQL 8.4 client runner. The pinned image must be pulled and
 reviewed explicitly before use; the wrapper never pulls a mutable image during
-provisioning.
+provisioning. The runner keeps Docker standard input attached because rendered
+account SQL is streamed to the client rather than written to a credential-bearing
+file.
 
 `deploy/local/mysql/01-zabisa-users.sql` is an operator-rendered template, not
 a local-development initialization script. Docker Compose mounts only

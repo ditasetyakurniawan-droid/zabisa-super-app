@@ -28,6 +28,7 @@ docker image inspect "$client_image" >/dev/null 2>&1 || {
 docker_arguments=(
   run
   --rm
+  --interactive
   --pull=never
   --network=host
   --user "$(id -u):$(id -g)"
