@@ -78,6 +78,10 @@ pass 'external MySQL DNS abstraction invariants'
 ./scripts/verify-db-security-boundary.sh || fail 'DB TLS/runtime-migrator boundary invariants failed'
 pass 'DB TLS + runtime/migrator boundary invariants'
 
+./scripts/verify-zabisa-mysql-vault-provision.sh --source \
+  || fail 'MySQL/Vault provisioning source invariants failed'
+pass 'MySQL/Vault provisioning source invariants'
+
 # Vault Agent Injector guardrails introduced by Hotfix 0.3.
 ./scripts/verify-vault-injector.sh || fail 'Vault Agent Injector invariants failed'
 pass 'Vault Agent Injector + per-service identity invariants'

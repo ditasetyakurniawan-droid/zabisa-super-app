@@ -213,3 +213,36 @@ contract.
 
 Phase 3.8 remains open until the workflow passes in GitHub and both jobs become
 required branch-protection checks.
+
+## DT deployment track 1 - MySQL and Vault provisioning source
+
+Replaced the initial operator scaffold with a fail-closed provisioning contract
+for seven MySQL databases, fourteen least-privilege identities per bounded
+client source, mandatory TLS, and the exact Vault KV v2 paths consumed by
+runtime and migration manifests.
+
+The workflow rejects wildcard MySQL hosts, avoids credentials in process
+arguments, reuses existing Vault passwords on rerun, supports explicit rotation,
+and verifies the complete database/account/privilege/Vault matrix without
+printing secret values. This records source readiness only; live provisioning
+remains pending until the plan gate and Phase 3.8 remote CI both pass.
+
+After the DT topology inspection, account scope was aligned with the existing
+Calico behavior. DB-dt is external to Kubernetes but lies inside the current
+`192.168.0.0/16` Calico pool, so MySQL observes pod source IPs rather than only
+worker-node IPs. The provisioner now accepts canonical IPv4 network scopes,
+normalizes `/16` to MySQL netmask notation, rejects broader or wildcard scopes,
+and retains the narrower per-workload Kubernetes egress policy.
+
+Docker Compose now mounts only `00-databases.sql`; the DT account template can
+no longer be auto-executed with unresolved placeholders during local/E2E MySQL
+initialization. This is source alignment only and does not mutate MySQL, Vault,
+Calico, or the Kubernetes cluster.
+### DT1 MySQL operator-client compatibility hardening
+
+- Added a digest-pinned Oracle MySQL 8.4 Docker client runner for operator
+  workstations where `/usr/bin/mysql` is MariaDB.
+- Provisioning and live verification now accept `MYSQL_CLIENT_BIN` and fail
+  closed when the selected client lacks `--ssl-mode=VERIFY_CA`.
+- Local MySQL readiness now requires an authenticated TCP query, preventing the
+  initialization-only server from being reported healthy.

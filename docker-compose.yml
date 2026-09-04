@@ -9,9 +9,9 @@ services:
     ports: ["3307:3306"]
     volumes:
       - mysql_data:/var/lib/mysql
-      - ./deploy/local/mysql:/docker-entrypoint-initdb.d:ro
+      - ./deploy/local/mysql/00-databases.sql:/docker-entrypoint-initdb.d/00-databases.sql:ro
     healthcheck:
-      test: ["CMD","mysqladmin","ping","-h","localhost","-plocal-root-change-me"]
+      test: ["CMD-SHELL", "MYSQL_PWD=$${MYSQL_ROOT_PASSWORD} mysql --protocol=TCP --host=127.0.0.1 --user=root --connect-timeout=2 --silent --skip-column-names --execute='SELECT 1' | grep -qx 1"]
       interval: 5s
       timeout: 3s
       retries: 30
