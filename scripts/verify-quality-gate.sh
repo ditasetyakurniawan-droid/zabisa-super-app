@@ -15,6 +15,7 @@ for required in \
   scripts/go-quality.sh \
   scripts/npm-audit-gate.sh \
   scripts/quality-gate.sh \
+  scripts/test_mobile_seed_readiness.py \
   scripts/verify-npm-audit.mjs \
   scripts/verify-secret-hygiene.sh \
   sonar-project.properties; do
@@ -44,6 +45,10 @@ grep -Fq '"audit:production": "./scripts/npm-audit-gate.sh"' package.json \
   || fail 'policy-aware production dependency audit command is missing'
 grep -Fq 'GHSA-W3RX-R6R6-PGPR' scripts/verify-npm-audit.mjs \
   || fail 'time-bounded image-size advisory policy is missing'
+grep -Fq "python3 -m unittest discover -s scripts -p 'test_*.py'" scripts/quality-gate.sh \
+  || fail 'Python seed readiness regression tests are not wired into the quality gate'
+grep -Fq 'login_when_identity_ready' scripts/mobile-seed-demo-all.py \
+  || fail 'development seed does not wait for the Identity dependency'
 
 if grep -RInE --include='*.ts' --include='*.tsx' \
   'navigation:[[:space:]]*any|route:[[:space:]]*any|api<any' apps/mobile/src; then

@@ -16,12 +16,17 @@ import urllib.parse
 import urllib.request
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
+from collections.abc import Callable
 from typing import Any
 
 BASE = os.getenv("ZABISA_API_URL", "http://127.0.0.1:8088").rstrip("/")
 PASSWORD = os.getenv("ZABISA_DEMO_PASSWORD", "ChangeMe123!")
 PRIMARY_STUDENT_ID = os.getenv("ZABISA_STUDENT_ID", "00000000-0000-4000-8000-000000000101")
 ACADEMIC_YEAR = "2026/2027"
+READY_TIMEOUT_SECONDS = float(os.getenv("ZABISA_SEED_READY_TIMEOUT_SECONDS", "120"))
+INITIAL_RETRY_DELAY_SECONDS = 0.5
+MAX_RETRY_DELAY_SECONDS = 3.0
+TRANSIENT_UPSTREAM_STATUSES = frozenset({502, 503, 504})
 
 parsed = urllib.parse.urlparse(BASE)
 if parsed.scheme != "http" or parsed.hostname not in {"127.0.0.1", "localhost", "::1"}:
@@ -29,7 +34,18 @@ if parsed.scheme != "http" or parsed.hostname not in {"127.0.0.1", "localhost", 
 
 
 class ApiFailure(RuntimeError):
-    pass
+    """An API request failure with an explicit retry classification."""
+
+    def __init__(
+        self,
+        message: str,
+        *,
+        status_code: int | None = None,
+        retryable: bool = False,
+    ) -> None:
+        super().__init__(message)
+        self.status_code = status_code
+        self.retryable = retryable
 
 
 @dataclass
@@ -62,12 +78,19 @@ class Client:
         except urllib.error.HTTPError as exc:
             raw = exc.read()
             status = exc.code
-        except Exception as exc:  # noqa: BLE001 - diagnostic CLI
-            raise ApiFailure(f"{method} {path}: {exc}") from exc
+        except (urllib.error.URLError, TimeoutError) as exc:
+            raise ApiFailure(
+                f"{method} {path}: {exc}",
+                retryable=True,
+            ) from exc
 
         if status not in expected:
             detail = raw.decode(errors="replace")[:1200]
-            raise ApiFailure(f"{method} {path}: HTTP {status}: {detail}")
+            raise ApiFailure(
+                f"{method} {path}: HTTP {status}: {detail}",
+                status_code=status,
+                retryable=status in TRANSIENT_UPSTREAM_STATUSES,
+            )
         if not raw:
             return None
         payload = json.loads(raw)
@@ -89,6 +112,48 @@ api = Client(BASE)
 
 def log(message: str) -> None:
     print(message, flush=True)
+
+
+def login_when_identity_ready(
+    client: Client,
+    email: str,
+    device: str,
+    *,
+    timeout_seconds: float = READY_TIMEOUT_SECONDS,
+    monotonic: Callable[[], float] = time.monotonic,
+    sleep: Callable[[float], None] = time.sleep,
+) -> tuple[str, dict[str, Any]]:
+    """Wait for the routed Identity dependency without hiding contract failures."""
+    if timeout_seconds <= 0:
+        raise ValueError("identity readiness timeout must be greater than zero")
+
+    deadline = monotonic() + timeout_seconds
+    delay_seconds = INITIAL_RETRY_DELAY_SECONDS
+    attempt = 0
+
+    while True:
+        attempt += 1
+        try:
+            return client.login(email, device)
+        except ApiFailure as exc:
+            if not exc.retryable:
+                raise
+
+            remaining_seconds = deadline - monotonic()
+            if remaining_seconds <= 0:
+                raise ApiFailure(
+                    "Identity dependency did not become ready within "
+                    f"{timeout_seconds:g}s after {attempt} attempts; last error: {exc}",
+                    status_code=exc.status_code,
+                ) from exc
+
+            wait_seconds = min(delay_seconds, remaining_seconds)
+            log(
+                "WAIT identity dependency: "
+                f"attempt={attempt} retry_in={wait_seconds:g}s error={exc}"
+            )
+            sleep(wait_seconds)
+            delay_seconds = min(delay_seconds * 2, MAX_RETRY_DELAY_SECONDS)
 
 
 def find(items: list[dict[str, Any]], **criteria: Any) -> dict[str, Any] | None:
@@ -401,7 +466,11 @@ def main() -> None:
     log(f"API: {BASE}")
     log("All records below are fictitious DEVELOPMENT DATA.\n")
 
-    admin_token, _ = api.login("admin@zabisa.local", "phase33-admin")
+    admin_token, _ = login_when_identity_ready(
+        api,
+        "admin@zabisa.local",
+        "phase33-admin",
+    )
     guardian_token, guardian_session_user = api.login("guardian@zabisa.local", "phase33-guardian")
     ustadz_token, _ = api.login("ustadz@zabisa.local", "phase33-ustadz")
     teacher_token, _ = api.login("teacher@zabisa.local", "phase33-teacher")

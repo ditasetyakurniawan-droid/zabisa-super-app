@@ -9,6 +9,7 @@ pipeline {
     PROJECT = 'zabisa'
     GO_IMAGE = 'golang:1.26.7-alpine'
     NODE_IMAGE = 'node:22-alpine'
+    PYTHON_IMAGE = 'python:3.13-alpine'
   }
   stages {
     stage('Checkout') {
@@ -50,6 +51,15 @@ pipeline {
           npm run test --workspace=@zabisa/mobile
           npm run build --workspace=@zabisa/admin-web
           npm run audit:production
+        ' '''
+      }
+    }
+    stage('Seed Readiness Quality') {
+      steps {
+        sh '''docker run --rm -v "$PWD:/src" -w /src $PYTHON_IMAGE sh -c '
+          set -eu
+          python3 -m py_compile scripts/mobile-seed-demo-all.py scripts/test_mobile_seed_readiness.py
+          python3 -m unittest discover -s scripts -p "test_*.py"
         ' '''
       }
     }

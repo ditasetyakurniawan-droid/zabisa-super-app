@@ -15,6 +15,11 @@ export NEXT_TELEMETRY_DISABLED=1
 ./scripts/preflight-offline.sh
 ./scripts/go-quality.sh
 
+python3 -m py_compile \
+  scripts/mobile-seed-demo-all.py \
+  scripts/test_mobile_seed_readiness.py
+python3 -m unittest discover -s scripts -p 'test_*.py'
+
 npm run node:lock:verify
 npm run lint --workspace=@zabisa/admin-web -- --max-warnings=0
 npm run lint --workspace=@zabisa/mobile -- --max-warnings=0
