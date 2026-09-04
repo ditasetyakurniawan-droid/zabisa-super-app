@@ -8,6 +8,8 @@ fail() { printf '[dt3-source] ERROR: %s\n' "$*" >&2; exit 1; }
 migrations='deploy/kubernetes/base/migrations.yaml'
 inventory='deploy/kubernetes/canary/mysql-schema-inventory.yaml'
 runner='scripts/run-zabisa-mysql-schema-inventory.sh'
+engine='packages/go/platform/migrate/migrate.go'
+engine_test='packages/go/platform/migrate/migrate_test.go'
 
 [[ "$(grep -c '^kind: Job$' "$migrations")" -eq 7 ]] || fail 'expected seven migration Jobs'
 
@@ -37,4 +39,12 @@ grep -Fq -- '--plan|--run' "$runner" || fail 'runner modes missing'
 grep -Fq 'RUN-READ-ONLY-DT3-INVENTORY' "$runner" || fail 'explicit DT3 confirmation missing'
 grep -Fq 'temporary canary pods remain' "$runner" || fail 'temporary-pod cleanup assertion missing'
 
-echo '[dt3-source] PASS: manual ArgoCD control, sequential migration waves, zero automatic retry and read-only schema inventory invariants.'
+grep -Fq 'SELECT GET_LOCK(?, ?)' "$engine" || fail 'migration advisory-lock acquisition missing'
+grep -Fq 'SELECT RELEASE_LOCK(?)' "$engine" || fail 'migration advisory-lock release missing'
+grep -Fq 'checksum CHAR(64) NOT NULL' "$engine" || fail 'migration checksum column missing'
+grep -Fq 'migration checksum drift' "$engine" || fail 'checksum-drift fail-closed path missing'
+grep -Fq 'explicit operator baselining is required' "$engine" || fail 'legacy migration records must fail closed'
+grep -Fq 'TestRepositoryMigrationStatementShapes' "$engine_test" || fail 'repository migration-shape test missing'
+grep -Fq 'want 18' "$engine_test" || fail 'repository migration-count assertion missing'
+
+echo '[dt3-source] PASS: manual ArgoCD control, sequential waves, zero retries, read-only inventory, advisory locking, checksums and reviewed SQL-shape invariants.'

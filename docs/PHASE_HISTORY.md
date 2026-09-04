@@ -289,3 +289,27 @@ Next: **DT3 migration readiness audit (read-only)**.
 
 See [`CURRENT-STATE-AND-ROADMAP.md`](deployment/CURRENT-STATE-AND-ROADMAP.md).
 <!-- DT2_CLOSURE_END -->
+
+## DT3.1-DT3.3 — Controlled migration readiness
+
+Status: **SOURCE GATES ACTIVE / DATABASE NOT MUTATED**
+
+Verified date: `2026-09-04`
+
+DT3.1 committed deterministic PreSync waves, disabled automated ArgoCD sync,
+set migration Jobs to zero automatic retries and added a sequential read-only
+schema inventory (`cee801f`; CI run `33865841795` passed).
+
+DT3.2 executed only that read-only inventory. All seven Zabisa databases
+reported zero tables and zero migration records, and every temporary Pod was
+removed. Evidence SHA-256:
+`951809641f4c094f7abc8a800a6e7b26e97c78f6ce49e3acf82449429957e8b5`.
+
+DT3.3 hardens the shared migration engine with a per-database advisory lock,
+exact SQL checksums, fail-closed legacy handling and tests covering all eighteen
+current migration files' reviewed statement shapes. It also expands the
+backup/restore evidence contract.
+
+No migration, application Deployment or ArgoCD sync is authorized by these
+source changes. Immutable migration images and tested recovery evidence remain
+mandatory before a separately approved `content` canary.

@@ -1,16 +1,19 @@
 # DT3 — Controlled migration readiness
 
-Status: **SOURCE HARDENING / DATABASE NOT MUTATED**
+Status: **DT3.2 PASS / DT3.3 SOURCE HARDENING / DATABASE NOT MUTATED**
 
-Baseline commit: `6553d80`
+Source baseline: `cee801f`
 
 ## Audit findings
 
 - Seven bounded contexts contain eighteen ordered SQL migration files.
 - Each context owns a distinct database and a distinct Vault migrator identity.
-- The DT namespace currently contains no migration Job or application Pod.
+- DT3.2 inventoried all seven live target databases read-only. Every database
+  contained zero tables, zero `schema_migrations` rows and no checksum column.
+- All temporary inventory Pods were removed after the successful run.
 - Base manifests intentionally retain `REPLACE_SHA` until immutable images are built and rendered.
-- The migration engine records filenames but currently has no checksum validation or advisory lock.
+- DT3.3 adds a per-database MySQL advisory lock, exact source checksums and
+  fail-closed handling for any future legacy unchecksummed records.
 - The backup runbook states policy but no current backup/restore evidence has been supplied.
 
 DT3 therefore does not authorize migration execution.
@@ -59,18 +62,39 @@ KUBECTL="$HOME/.local/bin/kubectl-zabisa-1.30.14" \
 This is a Kubernetes temporary-resource mutation, but not a database mutation.
 It requires an explicit operator decision and cleans every temporary Pod.
 
+DT3.2 result (`2026-09-04`): **PASS**. `identity_db`, `content_db`,
+`student_db`, `tahfidz_db`, `academic_db`, `donation_db` and
+`notification_db` each reported `tables=0`, `migration_table=0` and
+`migration_rows=0`. Report SHA-256:
+`951809641f4c094f7abc8a800a6e7b26e97c78f6ce49e3acf82449429957e8b5`.
+
+## Migration engine controls
+
+- `GET_LOCK` serializes migration execution per target database.
+- `RELEASE_LOCK` is attempted before the pinned connection returns to the pool.
+- SHA-256 of the exact SQL file bytes is stored with the applied filename.
+- A changed previously applied file fails with checksum drift instead of being
+  silently accepted.
+- A pre-existing migration table with rows but no checksum column fails closed
+  and requires explicit operator baselining.
+- Because DT3.2 proved every target database empty, first deployment can create
+  the checksum-aware table without a legacy data conversion.
+- MySQL DDL is not described as transactional. Repository tests restrict the
+  eighteen current migrations to reviewed shapes and reject multi-statement
+  `ALTER` files. The two existing single-statement `ALTER` files still require
+  operator inspection after an interrupted run; they are not advertised as
+  transactionally rollback-safe.
+
 ## Remaining blockers
 
-1. Capture the live seven-database schema inventory.
-2. Prove a current encrypted full backup and tested isolated restore, including
+1. Merge DT3.3 migration engine hardening and pass the remote CI gate.
+2. Build/scan/push immutable service images and record Harbor digests.
+3. Prove a current encrypted full backup and tested isolated restore, including
    timestamp, checksum, binlog coordinates, duration, row/table validation and
    operator.
-3. Add migration advisory locking and applied-file checksum drift detection,
-   with tests, before any Job is run.
-4. Build/scan/push immutable service images and record Harbor digests.
-5. Render the reviewed manifests with the approved Git SHA.
-6. Confirm Harbor image-pull authentication and the real GitOps repository.
-7. Obtain explicit approval for exactly the `content` canary.
+4. Render the reviewed canary manifest with an approved immutable image.
+5. Confirm Harbor image-pull authentication and the real GitOps repository.
+6. Obtain explicit approval for exactly the `content` canary.
 
 ## Prohibited until all blockers close
 
