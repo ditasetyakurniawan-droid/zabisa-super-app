@@ -21,8 +21,8 @@ done
 
 grep -Fq "defaultValue: 'harbor-cred'" Jenkinsfile \
   || fail 'Jenkinsfile must reuse existing harbor-cred'
-grep -Fq "withSonarQubeEnv('sonar-dt')" Jenkinsfile \
-  || fail 'Jenkinsfile must reuse existing sonar-dt server'
+grep -Fq "withSonarQubeEnv('SonarQube')" Jenkinsfile \
+  || fail 'Jenkinsfile must reuse existing SonarQube installation'
 grep -Fq 'waitForQualityGate abortPipeline: true' Jenkinsfile \
   || fail 'Jenkins Sonar quality gate must remain blocking'
 grep -Fq -- '--volumes-from "$HOSTNAME"' Jenkinsfile \
