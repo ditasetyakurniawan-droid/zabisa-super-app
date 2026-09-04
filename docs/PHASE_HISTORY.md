@@ -383,3 +383,19 @@ database migration, application Deployment or ArgoCD sync occurred. DT4.3 must
 add default-off delivery parameters before the first controlled Jenkins run.
 The repository checkpoint tag is
 `dt4.2.1-jenkins-integration-locked-2026-09-04`.
+
+## DT4.3-DT4.4 — Controlled Jenkins development delivery
+
+Status: **SOURCE READY / LIVE EXECUTION PENDING**
+
+DT4.3 adds three explicit Jenkins parameters—image build, Harbor push and
+GitOps render—with all defaults set to off and dependency checks between them.
+The first indexed build proves repository quality, private Sonar and the pinned
+Dockerized Trivy vulnerability database without publishing images.
+
+For development speed, the same operator session may then run DT4.4 with all
+three controls explicitly enabled. It builds and scans nine immutable
+`linux/amd64` images, records SBOM/scan attestations, pushes them through the
+existing `harbor-cred`, verifies remote digests, renders sixteen GitOps image
+references and returns the Jenkins parent job to disabled. Migration, workload
+deployment and ArgoCD sync remain outside this phase.

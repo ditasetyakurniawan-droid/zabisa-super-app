@@ -81,19 +81,20 @@ path.
 
 1. GitHub source and Browser E2E gates pass.
 2. DT4.3 explicitly defaults image build, Harbor push and GitOps publication to
-   off.
+   off through `BUILD_IMAGES`, `PUSH_IMAGES` and `RENDER_GITOPS`.
 3. An operator approves one Jenkins readiness run for quality, private Sonar
    and Dockerized Trivy only.
-4. The job returns to disabled and evidence is reviewed.
-5. A separate approval proves bounded Harbor access with a canary.
-6. Another approval builds, scans and pushes the nine immutable images.
+4. For the development delivery cycle, a second explicitly parameterized build
+   performs the DT4.4 build, scan, SBOM, Harbor push and GitOps render.
+5. The runner verifies all nine Harbor digest references and returns the parent
+   job to disabled.
 7. Remote Harbor digests and worker/containerd pull are verified.
 8. Backup/restore and migration phases remain separate.
 9. ArgoCD sync occurs only after reviewed GitOps render and explicit approval.
 
 ## Current prohibitions
 
-Until DT4.3 source and operator gates pass, do not:
+Outside `scripts/run-zabisa-jenkins-delivery.sh`, do not:
 
 - click `Enable` or `Scan Multibranch Pipeline Now`;
 - invoke a Jenkins build endpoint;

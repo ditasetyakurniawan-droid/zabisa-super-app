@@ -94,13 +94,19 @@ read back and verified. No indexing, build or push ran.
 
 ### DT4.3 — Controlled Jenkins readiness
 
-Status: **NEXT / NOT AUTHORIZED YET**
+Status: **SOURCE READY / CONTROLLED LIVE EXECUTION NEXT**
 
 Before enabling or scanning the Multibranch job, make image build, Harbor push
 and GitOps publication explicit opt-in parameters that default to off. The
 first approved run is limited to repository quality, private Sonar and the
 digest-pinned Dockerized Trivy version/database readiness. The job must return
 to disabled after evidence is captured.
+
+For development speed, the same operator session may continue with a second,
+explicitly parameterized DT4.4 build. `BUILD_IMAGES`, `PUSH_IMAGES` and
+`RENDER_GITOPS` all default to `false`; push requires build, and render requires
+push. The runner verifies nine remote Harbor digests and returns the parent job
+to disabled. Migration and ArgoCD remain separate phases.
 
 ### DT5 — Backup and isolated restore readiness
 

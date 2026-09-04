@@ -8,8 +8,8 @@
 | DT3 | PASS / migration not run | Empty-schema inventory and controlled migration engine ready |
 | DT4.1 | PASS / source only | Immutable image, SBOM, scan and digest-proof source controls ready |
 | DT4.2.1 | PASS / locked | Existing Jenkins Multibranch job created disabled; no indexing/build |
-| DT4.3 | NEXT | Quality, private Sonar and Dockerized Trivy readiness only |
-| DT4.4 | BLOCKED | Controlled image build, scan, SBOM and Harbor publication |
+| DT4.3 | SOURCE READY / LIVE NEXT | Default-off quality, private Sonar and Dockerized Trivy readiness |
+| DT4.4 | SOURCE READY / LIVE NEXT | Explicit build, scan, SBOM, Harbor push and GitOps render in the same controlled session |
 | DT5 | BLOCKED | Backup and isolated restore evidence |
 | DT6 | BLOCKED | Sequential database migration with explicit approval |
 | DT7 | BLOCKED | Reviewed GitOps render and controlled ArgoCD sync |

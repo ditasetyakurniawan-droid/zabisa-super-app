@@ -63,7 +63,8 @@ echo '[image-verify] OK: Jenkins Compose workspace and digest-pinned Dockerized 
 
 grep -Fq 'refusing to build/push from a dirty worktree' scripts/build-images.sh || fail 'dirty-worktree build rejection missing'
 grep -Fq 'VERIFY all scan attestations before first push' scripts/build-images.sh || fail 'pre-push scan attestation gate missing'
-grep -Fq 'docker buildx imagetools inspect' scripts/build-images.sh || fail 'remote digest inspection missing'
+grep -Fq 'docker push "$image" | tee "$push_log_tmp"' scripts/build-images.sh || fail 'registry push digest capture missing'
+grep -Fq 'awk '\''$1 == "digest:" {print $2; exit}'\'' "$push_log"' scripts/build-images.sh || fail 'registry-returned digest parsing missing'
 grep -Fq 'harbor-digests-${SHA}.tsv' scripts/build-images.sh || fail 'Harbor digest evidence report missing'
 grep -Fq 'local/remote digest proof mismatch' scripts/build-images.sh || fail 'local/remote digest comparison missing'
 

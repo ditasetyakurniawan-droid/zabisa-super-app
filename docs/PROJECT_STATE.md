@@ -45,8 +45,11 @@ Not run:
 - database backup/isolated restore drill or migration;
 - application Deployment or ArgoCD sync.
 
-The active next gate is DT4.3: prove Jenkins quality, private Sonar and the
-digest-pinned Dockerized Trivy runtime while image publication remains blocked.
+The active next execution is the combined DT4.3/DT4.4 development delivery:
+first prove Jenkins quality, private Sonar and digest-pinned Dockerized Trivy
+with publication defaulted off, then use a separate parameterized build to
+build, scan, push nine immutable images and render GitOps manifests. The parent
+job returns to disabled afterward. This does not authorize migration or sync.
 
 ## Verified at lock
 

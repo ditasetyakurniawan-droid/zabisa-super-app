@@ -157,10 +157,6 @@ if (( need_scan )); then
 fi
 
 if (( need_push )); then
-  docker buildx version >/dev/null 2>&1 || {
-    echo 'ERROR: docker buildx is required for remote digest verification.' >&2
-    exit 127
-  }
   mkdir -p "$IMAGE_EVIDENCE_DIR"
 fi
 
@@ -263,12 +259,15 @@ if (( need_push )); then
     scan_json="$(scan_json_file "$name")"
     sbom="$(sbom_file "$name")"
 
+    push_log="$IMAGE_EVIDENCE_DIR/push-${name}-${SHA}.log"
+    push_log_tmp="${push_log}.tmp"
+
     echo "[images] PUSH  $image"
-    docker push "$image"
+    docker push "$image" | tee "$push_log_tmp"
+    mv "$push_log_tmp" "$push_log"
 
     remote_digest="$(
-      docker buildx imagetools inspect "$image" |
-        awk '$1 == "Digest:" {print $2; exit}'
+      awk '$1 == "digest:" {print $2; exit}' "$push_log"
     )"
     [[ "$remote_digest" =~ ^sha256:[0-9a-f]{64}$ ]] || {
       echo "ERROR: invalid remote Harbor digest for $name: $remote_digest" >&2

@@ -17,8 +17,10 @@ Start or resume development from:
 2. `docs/deployment/CURRENT-STATE-AND-ROADMAP.md`;
 3. `docs/runbook/JENKINS_DELIVERY.md` for the controlled delivery path.
 
-The next deployment gate is DT4.3: a quality/Sonar/Trivy readiness run with
-image build and Harbor push still disabled.
+The active delivery package combines the DT4.3 default-off readiness run with
+an explicitly approved DT4.4 build, scan, SBOM, Harbor push and GitOps render.
+The Jenkins parent job is returned to disabled before the operator proceeds to
+backup/restore and database migration.
 
 ## Local stack
 
