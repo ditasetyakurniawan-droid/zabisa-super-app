@@ -13,12 +13,12 @@ git log --oneline -5
 ./scripts/preflight-offline.sh
 ```
 
-Expected repository state after DT4.5.3 hotfix installation:
+Expected repository state after DT4.5.4 hotfix installation:
 
 ```text
 main synchronized with origin/main
 clean worktree
-DT4.5.3 Jenkins/Sonar/Harbor/GitOps source invariants: PASS
+DT4.5.4 Jenkins/Sonar/Trivy/Harbor/GitOps source invariants: PASS
 ```
 
 ## 2. Read in this order
@@ -95,7 +95,7 @@ npm run mobile:quality
 
 Current source checkpoint:
 
-**DT4.5.3 — New-code coverage and controlled delivery resume ready**
+**DT4.5.4 — Trivy evidence and controlled delivery resume ready**
 
 The Multibranch job `zabisa-super-app-v1` exists on the existing Docker Compose
 Jenkins and is disabled with no automatic trigger. Readiness build `#6` passed
@@ -104,9 +104,14 @@ Sonar Quality Gate and Trivy with publication controls off. Delivery build
 metadata triggered the dirty-worktree safety gate. No image or manifest was
 published by that build.
 
+Build `#10` passed Sonar with 96.2% new-code coverage and built all nine images.
+It stopped at the first Trivy image-policy result; Harbor push and GitOps publish
+were not reached. DT4.5.4 retains full evidence, evaluates all images and blocks
+only fixable HIGH/CRITICAL findings.
+
 Next controlled execution:
 
-**DT4.5.1 — Build, scan, Harbor push and GitOps publish**
+**DT4.5.4 — Build, scan, Harbor push and GitOps publish**
 
 Use `scripts/run-zabisa-jenkins-delivery.sh --resume-after-readiness` with
 `DT43_READINESS_BUILD=6`. The runner verifies build `#6` and performs only one

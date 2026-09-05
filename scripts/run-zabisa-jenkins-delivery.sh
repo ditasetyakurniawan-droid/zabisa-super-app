@@ -274,8 +274,14 @@ fi
 
 parent_xml="$temp_dir/parent.xml"
 curl "${curl_auth[@]}" "$jenkins_url/job/$target_job/config.xml" >"$parent_xml"
+if ! grep -Eq '<disabled>[[:space:]]*true[[:space:]]*</disabled>' "$parent_xml"; then
+  echo '[jenkins-delivery] recovering parent job left enabled by an interrupted operator terminal.'
+  job_enabled=true
+  disable_parent
+  curl "${curl_auth[@]}" "$jenkins_url/job/$target_job/config.xml" >"$parent_xml"
+fi
 grep -Eq '<disabled>[[:space:]]*true[[:space:]]*</disabled>' "$parent_xml" || {
-  echo "ERROR: parent job is not at the required disabled checkpoint." >&2
+  echo "ERROR: parent job could not be returned to the required disabled checkpoint." >&2
   exit 24
 }
 

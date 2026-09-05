@@ -72,6 +72,10 @@ if grep -Eq '(^|[/$"])\.gitsha|WORKSPACE/report-task\.txt' Jenkinsfile; then
   fail 'repository-root Jenkins control artifact remains'
 fi
 grep -Fq 'VERIFY all scan attestations before first push' scripts/build-images.sh || fail 'pre-push scan attestation gate missing'
+grep -Fq -- '--ignore-unfixed' scripts/build-images.sh || fail 'fixable-vulnerability blocking policy is missing'
+grep -Fq 'complete HIGH/CRITICAL evidence' scripts/build-images.sh || fail 'complete vulnerability evidence scan is missing'
+grep -Fq 'scan_policy_failed=0' scripts/build-images.sh || fail 'all-image scan aggregation is missing'
+grep -Fq "allowEmptyArchive: true" Jenkinsfile || fail 'failure-path scan evidence archival is missing'
 grep -Fq 'docker push "$image" | tee "$push_log_tmp"' scripts/build-images.sh || fail 'registry push digest capture missing'
 grep -Fq 'awk '\''$1 == "digest:" {print $2; exit}'\'' "$push_log"' scripts/build-images.sh || fail 'registry-returned digest parsing missing'
 grep -Fq 'harbor-digests-${SHA}.tsv' scripts/build-images.sh || fail 'Harbor digest evidence report missing'

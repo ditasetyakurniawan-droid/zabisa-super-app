@@ -32,6 +32,9 @@ Environment:
 Non-plan modes require a clean worktree and an exact full HEAD SHA. Base images
 are digest-pinned in Dockerfiles. Registry authentication and CA trust remain
 external; this script never performs docker login or weakens TLS verification.
+The blocking policy rejects fixable HIGH/CRITICAL vulnerabilities. Unfixed
+findings remain in the archived JSON evidence and do not create a false
+remediation requirement that cannot be completed by an image rebuild.
 USAGE
 }
 
@@ -200,6 +203,7 @@ fi
 
 if (( need_scan )); then
   trivy_version="$($TRIVY_BIN --version | head -1 | tr '\t' ' ')"
+  scan_policy_failed=0
   for name in "${ZABISA_IMAGE_NAMES[@]}"; do
     image="$(image_ref "$name")"
     image_id="$(image_id_for "$image")"
@@ -214,13 +218,28 @@ if (( need_scan )); then
       exit 1
     }
 
-    echo "[images] SCAN  $image"
+    echo "[images] SCAN  $image (complete HIGH/CRITICAL evidence)"
     "$TRIVY_BIN" image \
-      --exit-code 1 \
+      --exit-code 0 \
+      --scanners vuln \
       --severity "$TRIVY_SEVERITY" \
       --format json \
       --output "$scan_json" \
       "$image"
+
+    echo "[images] POLICY $image (block fixable HIGH/CRITICAL only)"
+    if ! "$TRIVY_BIN" image \
+      --exit-code 1 \
+      --ignore-unfixed \
+      --scanners vuln \
+      --severity "$TRIVY_SEVERITY" \
+      --format table \
+      "$image"; then
+      scan_policy_failed=1
+      echo "[images] POLICY FAIL: fixable HIGH/CRITICAL finding in $image" >&2
+    else
+      echo "[images] POLICY PASS: no fixable HIGH/CRITICAL finding in $image"
+    fi
 
     echo "[images] SBOM  $image"
     "$TRIVY_BIN" image \
@@ -236,6 +255,12 @@ if (( need_scan )); then
     mv "$attestation_tmp" "$attestation"
     echo "[images] ATTEST $attestation"
   done
+
+  if (( scan_policy_failed )); then
+    echo 'ERROR: one or more images contain fixable HIGH/CRITICAL vulnerabilities.' >&2
+    echo 'Review the tables above and archived Trivy JSON before updating a pinned base image or dependency.' >&2
+    exit 1
+  fi
 fi
 
 verify_all_scan_attestations() {

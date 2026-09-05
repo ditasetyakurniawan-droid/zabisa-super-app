@@ -2,7 +2,7 @@
 
 **Historical application lock:** Phase 3.7.6
 
-**Current deployment checkpoint:** DT4.5.3 — Sonar new-code coverage ready
+**Current deployment checkpoint:** DT4.5.4 — Trivy evidence and delivery resume
 
 **Deployment lock tag:** `dt4.2.1-jenkins-integration-locked-2026-09-04`
 
@@ -38,6 +38,7 @@ Read `NEXT_SESSION_START_HERE.md` first when work resumes.
 | `deployment/PHASE-DT451-JENKINS-ARTIFACT-HOTFIX.md` | Build #6/#7 evidence, repository-cleanliness correction and controlled resume |
 | `deployment/PHASE-DT452-SONAR-HOTSPOT-CLOSURE.md` | Build #8 Quality Gate evidence and complete ten-hotspot source closure |
 | `deployment/PHASE-DT453-NEW-CODE-COVERAGE.md` | Build #9 evidence and real unit coverage for secured new code |
+| `deployment/PHASE-DT454-TRIVY-DELIVERY-RESUME.md` | Build #10 evidence, all-image Trivy policy and interrupted-terminal recovery |
 | `runbook/JENKINS_DELIVERY.md` | Existing Jenkins/Harbor workflow, controls and developer procedure |
 
 ## Rule

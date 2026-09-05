@@ -163,7 +163,6 @@ pipeline {
       when { expression { return params.BUILD_IMAGES } }
       steps {
         sh 'TRIVY_BIN=./scripts/trivy-docker.sh ./scripts/build-images.sh "$(cat build/jenkins/source-revision)" --build-scan'
-        archiveArtifacts artifacts: 'build/sbom/*.cdx.json,build/image-evidence/scans/*', fingerprint: true
       }
     }
     stage('Push Immutable Images') {
@@ -214,6 +213,7 @@ pipeline {
   }
   post {
     always {
+      archiveArtifacts artifacts: 'build/sbom/*.cdx.json,build/image-evidence/scans/*', fingerprint: true, allowEmptyArchive: true
       sh '''set +e
         if test -s build/jenkins/source-revision; then
           ./scripts/build-images.sh "$(cat build/jenkins/source-revision)" --cleanup-local

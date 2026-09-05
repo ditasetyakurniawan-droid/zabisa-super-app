@@ -65,6 +65,9 @@ grep -Fq 'refusing to build/push from a dirty worktree' \
   || fail 'live Jenkins worktree-cleanliness evidence gate is missing'
 grep -Fq 'disable_parent' scripts/run-zabisa-jenkins-delivery.sh \
   || fail 'Jenkins disable cleanup is missing'
+grep -Fq 'recovering parent job left enabled by an interrupted operator terminal.' \
+  scripts/run-zabisa-jenkins-delivery.sh \
+  || fail 'interrupted-terminal parent-job recovery is missing'
 grep -Fq -- '--globoff' scripts/run-zabisa-jenkins-delivery.sh \
   || fail 'literal Jenkins API URL handling is missing'
 grep -Fq 'existing main branch job reused; indexing not repeated.' \

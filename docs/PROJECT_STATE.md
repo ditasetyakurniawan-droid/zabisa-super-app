@@ -1,4 +1,4 @@
-# Project State — Application Baseline and DT4.5.3 Coverage Checkpoint
+# Project State — Application Baseline and DT4.5.4 Trivy Checkpoint
 
 ## Executive status
 
@@ -49,15 +49,21 @@ Verified:
 - build `#9` proves zero remaining Security Hotspots; focused Admin and Mobile
   unit tests now provide LCOV evidence for the secured new code while retaining
   the 80% Quality Gate requirement.
+- build `#10` proves the private Quality Gate passes with 96.2% new-code coverage
+  and all nine immutable images build successfully; its first Trivy policy exit
+  occurred before Harbor or GitOps publication;
+- DT4.5.4 preserves complete scan/SBOM evidence on failure, evaluates all images,
+  blocks fixable HIGH/CRITICAL findings and repairs a stale enabled Jenkins parent
+  after an interrupted operator terminal.
 
 Not run:
 
-- application image build, vulnerability scan or Harbor push;
+- successful all-image vulnerability policy gate or Harbor push;
 - worker/containerd image-pull proof;
 - database backup/isolated restore drill or migration;
 - application Deployment or ArgoCD sync.
 
-The active next execution is the DT4.5.3 controlled resume. It verifies and
+The active next execution is the DT4.5.4 controlled resume. It verifies and
 reuses successful readiness build `#6`, then runs one new parameterized build
 containing source quality, private Sonar, Quality Gate, Trivy readiness, nine
 image builds/scans/SBOMs, Harbor push and GitOps publication. The parent job

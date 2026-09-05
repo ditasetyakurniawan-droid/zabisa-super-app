@@ -447,3 +447,11 @@ Build `#9` confirmed zero remaining security hotspots, then exposed the next
 blocking condition: new-code coverage was 0% against the unchanged 80% gate.
 Added focused Admin and Mobile unit tests, executed all workspace test suites
 in CI/Jenkins, and imported both LCOV reports into Sonar.
+
+## DT4.5.4 — Trivy evidence and delivery resume
+
+Build `#10` passed private SonarQube with 96.2% new-code coverage and built all
+nine images, then stopped on the first Trivy policy exit. Harbor push and GitOps
+publication were not reached. DT4.5.4 scans and attests every image, archives
+evidence even on failure, blocks only fixable HIGH/CRITICAL findings, and recovers
+the Jenkins parent-job disabled checkpoint after an interrupted operator terminal.
