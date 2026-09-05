@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-require-imports */
 const {describe, expect, it} = require("@jest/globals");
 const {resolveBackendURL} = require("./backend-url");
 
