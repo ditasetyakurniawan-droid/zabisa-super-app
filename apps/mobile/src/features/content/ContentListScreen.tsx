@@ -2,6 +2,7 @@ import React from 'react';
 import {FlatList, StyleSheet, Text, View} from 'react-native';
 import {useQuery} from '@tanstack/react-query';
 import {api, userMessage} from '../../api/client';
+import {AppIcon} from '../../components/AppIcon';
 import {Card, Empty, ErrorState, Loading, Muted, Screen, Title} from '../../components/UI';
 import {colors, space, type} from '../../theme/tokens';
 import {contentTypeLabel, normalizeContentType} from '../../utils/content';
@@ -33,9 +34,8 @@ export default function ContentListScreen({navigation, route}: RootStackScreenPr
           ListEmptyComponent={<Empty text={`Belum ada ${title.toLowerCase()} yang dipublikasikan.`} />}
           renderItem={({item}) => (
             <Card onPress={() => navigation.navigate('ContentDetail', {id: item.id, title: item.title})}>
-              <Text style={styles.type}>{contentTypeLabel(item.type)}</Text>
-              <Text style={styles.title}>{item.title}</Text>
-              {item.summary ? <Muted>{item.summary}</Muted> : null}
+              <View style={styles.cardLead}><AppIcon name="news" size={21} background /><View style={styles.cardCopy}><Text style={styles.type}>{contentTypeLabel(item.type)}</Text><Text style={styles.title}>{item.title}</Text></View><AppIcon name="chevronRight" size={18} color={colors.muted} /></View>
+              {item.summary ? <Muted style={styles.summary}>{item.summary}</Muted> : null}
               <Text style={styles.link}>Baca selengkapnya ›</Text>
             </Card>
           )}
@@ -49,7 +49,10 @@ const styles = StyleSheet.create({
   header: {paddingHorizontal: space.lg, paddingTop: space.lg},
   body: {paddingHorizontal: space.lg},
   list: {padding: space.lg, paddingBottom: space.xxxl},
+  cardLead: {flexDirection: 'row', alignItems: 'center', gap: space.md},
+  cardCopy: {flex: 1},
   type: {...type.caption, color: colors.primary, fontWeight: '900', marginBottom: space.xs},
   title: {...type.bodyStrong, color: colors.text, marginBottom: space.xs},
+  summary: {marginTop: space.md},
   link: {...type.caption, color: colors.primary, marginTop: space.md, fontWeight: '800'},
 });

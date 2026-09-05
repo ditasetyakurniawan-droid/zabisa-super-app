@@ -1,6 +1,6 @@
 import React from 'react';
 import {StyleSheet, Text, View} from 'react-native';
-import {AppHeader, Button, Card, Muted, ScrollScreen, TextField} from '../../components/UI';
+import {AppHeader, Button, Card, IslamicOrnament, Muted, ScrollScreen, TextField} from '../../components/UI';
 import {colors, radius, space, type} from '../../theme/tokens';
 import {useAuth} from '../../store/auth';
 import {userMessage} from '../../api/client';
@@ -33,11 +33,14 @@ export default function LoginScreen({navigation}: RootStackScreenProps<'Login'>)
 
   return (
     <ScrollScreen safeTop={false} contentStyle={styles.content}>
-      <View style={styles.brandRow}>
-        <View style={styles.brandMark}><Text style={styles.brandMarkText}>Z</Text></View>
-        <View style={styles.brandCopy}>
-          <Text style={styles.brand}>Zabisa</Text>
-          <Muted>Portal digital pesantren</Muted>
+      <View style={styles.brandPanel}>
+        <IslamicOrnament light compact />
+        <View style={styles.brandRow}>
+          <View style={styles.brandMark}><Text style={styles.brandMarkText}>Z</Text></View>
+          <View style={styles.brandCopy}>
+            <Text style={styles.brand}>Zabisa</Text>
+            <Text style={styles.brandSubtitle}>Tumbuh dalam ilmu dan keberkahan</Text>
+          </View>
         </View>
       </View>
       <AppHeader eyebrow="PORTAL WALI SANTRI" title="Selamat datang kembali" subtitle="Masuk untuk melihat perkembangan ananda secara privat dan aman." />
@@ -61,12 +64,14 @@ export default function LoginScreen({navigation}: RootStackScreenProps<'Login'>)
 
 const styles = StyleSheet.create({
   content: {paddingTop: space.md},
-  brandRow: {flexDirection: 'row', alignItems: 'center', marginBottom: space.md},
-  brandMark: {width: 48, height: 48, borderRadius: 17, backgroundColor: colors.primary, alignItems: 'center', justifyContent: 'center', marginRight: space.md},
+  brandPanel: {position: 'relative', overflow: 'hidden', backgroundColor: colors.primaryDeep, borderRadius: radius.arch, padding: space.xl, minHeight: 116, justifyContent: 'center'},
+  brandRow: {flexDirection: 'row', alignItems: 'center', zIndex: 2},
+  brandMark: {width: 52, height: 52, borderRadius: 19, backgroundColor: colors.primary, borderWidth: 1.5, borderColor: colors.accent, alignItems: 'center', justifyContent: 'center', marginRight: space.md},
   brandMarkText: {fontSize: 23, fontWeight: '900', color: colors.white},
   brandCopy: {flex: 1},
-  brand: {fontSize: 22, lineHeight: 27, fontWeight: '900', color: colors.text},
-  loginCard: {backgroundColor: colors.surface, borderRadius: radius.xl, borderWidth: 1, borderColor: colors.line, padding: space.lg, marginTop: space.sm},
+  brand: {fontSize: 24, lineHeight: 29, fontWeight: '900', color: colors.white},
+  brandSubtitle: {...type.caption, color: colors.onPrimaryMuted, marginTop: 2},
+  loginCard: {backgroundColor: colors.surface, borderRadius: radius.xl, borderWidth: 1, borderColor: colors.line, padding: space.xl, marginTop: space.sm},
   loginTitle: {...type.section, color: colors.text, marginBottom: space.lg},
   errorBox: {backgroundColor: colors.dangerSoft, borderRadius: radius.md, padding: space.md, marginBottom: space.sm},
   error: {...type.caption, color: colors.danger},

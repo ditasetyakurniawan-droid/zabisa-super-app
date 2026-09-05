@@ -1,4 +1,4 @@
-# Project State — Application Baseline and DT4.5.7 Harbor Repository Alignment
+# Project State — DT4.5.7 Complete and Phase 3.9 Mobile Redesign
 
 ## Executive status
 
@@ -16,8 +16,8 @@ Zabisa currently has a production-shaped local platform composed of:
 
 Phase 3.7.6 remains the historical application restore point where the
 Backoffice critical functional matrix was first verified through a real Chrome
-browser. Delivery work has advanced through DT4.2.1 without declaring the
-application deployed.
+browser. DT4.5.7 immutable delivery is complete, but application deployment is
+not declared because migration and ArgoCD sync have not run.
 
 ## Current DT deployment status
 
@@ -67,19 +67,25 @@ Verified:
   first-column-only Docker digest parser;
 - DT4.5.7 uses `devops-apps/zabisa/<image>` consistently and parses the validated
   digest at its actual position in Docker push output.
+- Jenkins build `#14` passes the complete source/Sonar/Trivy/build/scan/push
+  pipeline for application revision
+  `e1af81dc96d5dc59876f090614e68dc48a32c59f`;
+- nine Harbor digest references are verified and the evidence report SHA-256 is
+  `9d5e3ef9c5f5fa3a58a9d565de1913a1d0fb21ed3df468658cfafc31b0d83d87`;
+- GitOps commit `96cef84` validates 16 immutable references across 12 manifests,
+  all bound to the same application revision;
+- the Jenkins parent job returned to DISABLED.
 
 Not run:
 
-- successful Harbor publication of all nine images and GitOps publication;
 - worker/containerd image-pull proof;
 - database backup/isolated restore drill or migration;
 - application Deployment or ArgoCD sync.
 
-The active next execution is the DT4.5.7 controlled resume. It verifies and
-reuses successful readiness build `#6`, then runs one new parameterized build
-containing source quality, private Sonar, Quality Gate, Trivy readiness, nine
-image builds/scans/SBOMs, Harbor push and GitOps publication. The parent job
-returns to disabled afterward. This does not authorize migration or sync.
+The active development phase is Phase 3.9 Mobile Sakinah UI/UX Redesign. Its
+source scope is presentation-only. Physical Android and Backoffice acceptance
+must be recorded before the backup/migration track resumes. This does not
+authorize migration or sync.
 
 ## Verified at lock
 
@@ -133,7 +139,7 @@ Verified quality/runtime foundation:
 - populated development data across Tahfidz, grades, attendance, reports and
   notifications;
 - Android physical-device deployment workflow;
-- sky-blue production-shaped UI baseline;
+- Phase 3.9 Sakinah emerald/ivory/gold UI source baseline;
 - standalone login outside bottom tabs;
 - secure session storage;
 - contextual deep-link parsing and native URL scheme configuration.

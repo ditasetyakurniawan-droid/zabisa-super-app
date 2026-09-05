@@ -1,6 +1,6 @@
 import React from 'react';
 import {Linking, StyleSheet, Text} from 'react-native';
-import {Button, Card, ScrollScreen, SectionTitle, Title} from '../../components/UI';
+import {Button, Card, DetailHeader, ScrollScreen, SectionTitle} from '../../components/UI';
 import {colors, space, type} from '../../theme/tokens';
 import type {RootStackScreenProps} from '../../navigation/types';
 
@@ -11,8 +11,7 @@ export default function KajianDetailScreen({route}: RootStackScreenProps<'Kajian
 
   return (
     <ScrollScreen safeTop={false}>
-      <Title>{kajian.title}</Title>
-      <Text style={styles.speaker}>{kajian.speaker || 'Pemateri akan diumumkan'}</Text>
+      <DetailHeader eyebrow="Majelis ilmu" title={kajian.title} subtitle={kajian.speaker || 'Pemateri akan diumumkan'} icon="kajian" />
       <Card>
         <Text style={styles.label}>WAKTU</Text><Text style={styles.value}>{new Date(kajian.start_at).toLocaleString('id-ID')}</Text>
         <Text style={styles.label}>LOKASI</Text><Text style={styles.value}>{kajian.location || 'Lokasi menyusul'}</Text>
@@ -26,7 +25,6 @@ export default function KajianDetailScreen({route}: RootStackScreenProps<'Kajian
 }
 
 const styles = StyleSheet.create({
-  speaker: {...type.bodyStrong, color: colors.primary, marginTop: space.sm, marginBottom: space.lg},
   label: {...type.caption, color: colors.muted, fontWeight: '900', marginTop: space.sm},
   value: {...type.bodyStrong, color: colors.text, marginTop: 2, marginBottom: space.md},
   body: {...type.body, color: colors.text},

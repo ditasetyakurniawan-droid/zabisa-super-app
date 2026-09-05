@@ -1,8 +1,8 @@
 # Jenkins Delivery Runbook
 
-Status: **DT4.2.1 integration checkpoint locked**
+Status: **DT4.5.7 immutable delivery complete; Jenkins disabled**
 
-Verified date: `2026-09-04`
+Verified date: `2026-09-05`
 
 ## Purpose
 
@@ -79,6 +79,14 @@ Production image references must remain full-Git-SHA tags. Never introduce
 `:latest`, mutable base images, manual manifest tag edits or a second registry
 path.
 
+The canonical Zabisa repository prefix is:
+
+```text
+harbor-dt.co.id/devops-apps/zabisa/<image>
+```
+
+Do not collapse it to `devops-apps/<image>` or `zabisa/<image>`.
+
 ## Delivery sequence
 
 1. GitHub source and Browser E2E gates pass.
@@ -96,6 +104,19 @@ path.
 7. Remote Harbor digests and worker/containerd pull are verified.
 8. Backup/restore and migration phases remain separate.
 9. ArgoCD sync occurs only after reviewed GitOps commit and explicit approval.
+
+## DT4.5.7 completion evidence
+
+- Jenkins delivery `#14`: SUCCESS.
+- Application revision: `e1af81dc96d5dc59876f090614e68dc48a32c59f`.
+- Harbor: nine tags and nine digest references verified.
+- GitOps: commit `96cef84`, 16 image references, 12 manifests.
+- Jenkins parent: DISABLED.
+- Migration and ArgoCD sync: NOT RUN.
+
+Do not rerun build `#14` merely to validate GitOps. The image set is immutable;
+future application source changes require a new full-SHA delivery only after
+their source and runtime acceptance gates pass.
 
 Before the next controlled run, reconcile the existing job once:
 

@@ -8,6 +8,14 @@ npm run lint --workspace=@zabisa/mobile
 npm run mobile:e2e:guardian
 ```
 
+For a presentation-only change, also prove that Backoffice remains healthy:
+
+```bash
+npm run admin:typecheck
+npm run lint --workspace=@zabisa/admin-web -- --max-warnings=0
+npm run admin:build
+```
+
 For a full local Tahfidz event chain:
 
 ```bash
@@ -34,6 +42,27 @@ A Guardian flow is not DONE until all are verified:
 Phase 3 adds the React Native Jest preset, safe API error-mapping tests, and a component test for the password visibility control. `npm test --workspace=@zabisa/mobile` writes genuine LCOV output to `apps/mobile/coverage/lcov.info`, which matches the existing Sonar configuration.
 
 Component and navigation coverage is still intentionally marked as remaining work until those tests are implemented and stable on RN 0.87. Do not inflate coverage with meaningless snapshots.
+
+## Phase 3.9 physical-device acceptance
+
+Run a native rebuild because shared theme/navigation source changed:
+
+```bash
+ZABISA_REBUILD=1 npm run mobile:device
+```
+
+Verify on the connected Android phone:
+
+- emerald CTA treatment is consistent across Login, Guardian and Donation;
+- Islamic ornament moves subtly and never captures touch;
+- Android reduced-motion accessibility setting produces a static ornament;
+- Home quick actions and all five bottom tabs retain their original behavior;
+- Login, secure password toggle and logout behave unchanged;
+- Guardian private sections remain inaccessible before login;
+- Kajian, Donation, Notifications and Content retain loading/empty/error states;
+- normal and larger font settings do not clip titles, buttons or navigation.
+
+Record physical-device and Backoffice PASS before requesting migration approval.
 
 
 ## Password visibility regression

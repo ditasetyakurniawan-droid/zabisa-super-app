@@ -1,6 +1,6 @@
 # Zabisa Current State and Delivery Roadmap
 
-> Official checkpoint: **DT4.5.1 CONTROLLED DELIVERY HOTFIX READY**
+> Official checkpoint: **DT4.5.7 COMPLETE / PHASE 3.9 DEVELOPMENT ACTIVE**
 >
 > Live job: `zabisa-super-app-v1` — `DISABLED`, no automatic trigger
 >
@@ -24,12 +24,12 @@ delivery.
 | Seven target schemas | EMPTY / VERIFIED | DT3.2 read-only inventory: 0 tables and 0 migration rows in every database |
 | Temporary canaries | PASS | Removed after DT2 and DT3.2 verification |
 | Migration source controls | PASS | Sequential waves, zero retry, advisory lock and checksums committed |
-| Immutable deployment images | SOURCE READY | Base digests and Harbor digest evidence controls committed; images not built |
+| Immutable deployment images | PASS / PUBLISHED | Jenkins #14 built, scanned and pushed nine source-SHA images; nine Harbor digests verified |
 | Existing Jenkins/Harbor path | PASS / LOCKED | Compose Jenkins uses Docker socket, `harbor-cred`, private Sonar and existing Harbor compatibility mode |
 | Zabisa Jenkins job | PASS / DISABLED | Remote job was reconciled main-only and trigger-free; controlled runner returned it to disabled |
-| Private Sonar | PASS / TS HOTFIX READY | Quality Gate passed; standalone configs correct the 70-file legacy-analyzer skip exposed by build #7 |
-| Image scanning | READINESS PASS | Digest-pinned Trivy 0.74.0 and vulnerability DB succeeded in build #6 |
-| GitOps repository | SEEDED / JENKINS PUBLISH PENDING | Dedicated repository contains the DT overlay; first post-Harbor Jenkins publication has not run |
+| Private Sonar | PASS | Build #14 analysis and blocking Quality Gate passed with complete TypeScript scope |
+| Image scanning | PASS | All nine images passed the fixable HIGH/CRITICAL policy and produced SBOM/scan evidence |
+| GitOps repository | PASS / PUBLISHED | Commit `96cef84` validates source `e1af81dc...`, 16 image references and 12 manifests |
 | Cluster Harbor pull | UNPROVEN | No namespace Docker config Secret or ServiceAccount imagePullSecret found |
 | Backup and isolated restore proof | NOT PROVEN | Mandatory before any database mutation |
 | Database migration | NOT RUN | Blocked by image, backup/restore and operator approval gates |
@@ -94,29 +94,27 @@ disabled with no automatic trigger. Authentication, rendered
 `GitHubSCMSource`, repository, SCM credential identifier and script path were
 read back and verified. No indexing, build or push ran.
 
-### DT4.3 — Controlled Jenkins readiness
+### DT4.3-DT4.5.7 — Controlled immutable delivery
 
-Status: **READINESS PASS / DELIVERY HOTFIX READY**
+Status: **COMPLETE**
 
-Readiness build `#6` passed repository quality, private Sonar, Quality Gate and
-the digest-pinned Dockerized Trivy version/database readiness with all
-publication controls off. The job returned to disabled after delivery build
-`#7` stopped before its first image build on the dirty-worktree safety gate.
+Readiness build `#6` remains the verified default-off checkpoint. Delivery
+build `#14` passed all quality, Sonar, Trivy, image build/scan/SBOM, Harbor push,
+digest verification and GitOps publication stages for source
+`e1af81dc96d5dc59876f090614e68dc48a32c59f`. All images use
+`harbor-dt.co.id/devops-apps/zabisa/<image>:<source-sha>`. GitOps commit
+`96cef84` validates 16 immutable references across 12 manifests. The parent
+Jenkins job is disabled and automatic triggers remain absent.
 
-DT4.5.1 stores Jenkins control artifacts below ignored `build/` and provides a
-verified resume path. The next run reuses build `#6`, then performs one complete
-parameterized delivery. `BUILD_IMAGES`, `PUSH_IMAGES` and `RENDER_GITOPS` still
-default to `false`; push requires build, and render requires push. Migration
-and ArgoCD remain separate phases.
+### Phase 3.9 — Mobile UI/UX redesign and runtime acceptance
 
-### DT4.5 — Dedicated GitOps publication
+Status: **SOURCE IMPLEMENTATION ACTIVE / DEVICE PROOF PENDING**
 
-Status: **SOURCE READY / LIVE EXECUTION NEXT**
-
-The application monorepo retains code and Kubernetes templates. Jenkins renders
-and commits the immutable DT overlay to `zabisa-super-app-gitops/main` at
-`apps/zabisa/overlays/dt`. ArgoCD points only at this desired-state path and
-remains manual. See `PHASE-DT45-GITOPS-SEPARATION.md`.
+Redesign presentation only through shared tokens, UI primitives, screen layout
+and navigation styling. Do not change API/state/authentication/validation or
+business behavior. Automated mobile and Backoffice gates run before a physical
+Android test. Database migration remains blocked until both mobile-device and
+Backoffice runtime acceptance are recorded.
 
 ### DT5 — Backup and isolated restore readiness
 
@@ -128,7 +126,7 @@ This phase prepares a recovery point; it does not authorize migration.
 
 ### DT6 — Controlled migration
 
-Status: **BLOCKED BY DT4, DT5 AND OPERATOR APPROVAL**
+Status: **BLOCKED BY DT5, PHASE 3.9 ACCEPTANCE AND OPERATOR APPROVAL**
 
 Render and review exactly one `content` canary Job. Run it only after explicit
 approval, verify completion and schema/checksum state, then stop. Remaining Jobs
@@ -196,10 +194,14 @@ DT4.2 existing Jenkins pattern: PASS
 DT4.2.1 Zabisa Multibranch bootstrap: PASS; job created disabled
 Jenkins Sonar and Quality Gate: PASS
 DT4.3 Dockerized Trivy readiness: PASS in build #6
-DT4.4 delivery build #7: stopped before first image build; no Harbor mutation
-DT4.5.1 Jenkins artifact/Sonar compatibility hotfix: controlled resume next
-DT4.5 dedicated GitOps publication: SOURCE READY; live publish not run
-Dockerized Trivy / first Harbor publication / GitOps publication / cluster pull: NOT COMPLETE
+DT4.4-DT4.5.7 immutable delivery: PASS in Jenkins build #14
+Application image revision: e1af81dc96d5dc59876f090614e68dc48a32c59f
+Harbor: 9 image tags and digests verified at devops-apps/zabisa
+GitOps: PASS at 96cef84; 16 image references / 12 manifests
+Jenkins parent: DISABLED
+Physical Android redesign acceptance: PENDING
+Backoffice post-redesign acceptance: PENDING
+Cluster image pull: NOT PROVEN
 Migration: NOT RUN
 Application: NOT DEPLOYED
 ArgoCD sync: NOT RUN

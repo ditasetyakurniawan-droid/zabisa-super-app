@@ -2,7 +2,9 @@
 
 **Historical application lock:** Phase 3.7.6
 
-**Current deployment checkpoint:** DT4.5.7 — Harbor repository hierarchy
+**Current deployment checkpoint:** DT4.5.7 COMPLETE — immutable Harbor/GitOps delivery
+
+**Current development checkpoint:** Phase 3.9 — mobile Sakinah UI/UX redesign
 
 **Deployment lock tag:** `dt4.2.1-jenkins-integration-locked-2026-09-04`
 
@@ -42,6 +44,8 @@ Read `NEXT_SESSION_START_HERE.md` first when work resumes.
 | `deployment/PHASE-DT455-TRIVY-CVE-REMEDIATION.md` | Build #11 evidence and remediation of all three shared CVE sources |
 | `deployment/PHASE-DT456-HARBOR-PROJECT-ALIGNMENT.md` | Build #12 evidence and authorized devops-apps registry path alignment |
 | `deployment/PHASE-DT457-HARBOR-REPOSITORY-HIERARCHY.md` | Build #13 evidence, nested Zabisa repositories and robust push-digest parsing |
+| `mobile/PHASE3_9_UI_UX_REDESIGN.md` | UI-only redesign scope, zero-logic invariant and device acceptance gate |
+| `architecture/ADR-011-MOBILE-SAKINAH-DESIGN-SYSTEM.md` | Sakinah design-system decision and migration safety boundary |
 | `runbook/JENKINS_DELIVERY.md` | Existing Jenkins/Harbor workflow, controls and developer procedure |
 
 ## Rule

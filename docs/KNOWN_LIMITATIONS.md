@@ -27,14 +27,15 @@ have not been validated on macOS/Xcode.
 
 ## CI/CD
 
-The repository has strong local scripts but GitHub CI/CD has not yet been
-established as the authoritative gate.
+GitHub Actions is the authoritative source gate and Jenkins build `#14` proved
+the private Sonar/Trivy/Harbor/GitOps delivery chain. Cluster image pulling,
+database migration, deployment and ArgoCD reconciliation are still unproven.
 
 ## Sonar/security scanning
 
-Sonar configuration exists, but final GitHub quality-gate enforcement,
-dependency classification, SBOM/container scanning and SAST/secret scanning
-remain future work.
+Private Sonar Quality Gate, secret hygiene, Trivy policy, nine SBOMs and Harbor
+digest evidence passed in build `#14`. This is not a claim that future source or
+new dependencies are automatically risk-free; every revision must pass again.
 
 ## Observability
 

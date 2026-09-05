@@ -8,3 +8,19 @@ Before accepting a mobile UI increment:
 4. Confirm no raw backend errors, clipped text, broken icons, inaccessible controls or private data exposure.
 5. Capture screenshots at normal font size and one larger system font size.
 6. Update the relevant implementation document and ADR when design/architecture decisions change.
+
+## Phase 3.9 zero-logic review
+
+For the Sakinah redesign, inspect the changeset before acceptance:
+
+```bash
+git diff --name-only <baseline>...HEAD -- apps/mobile/src
+```
+
+Allowed paths are presentation modules under `theme/`, `components/`, screen
+`.tsx` files and navigation visual configuration. Reject the changeset if it
+modifies `api/`, `store/`, `types/`, `utils/`, donation idempotency,
+notification deep-link parsing or navigation parameter definitions.
+
+The migration gate remains closed until both physical-device UI review and the
+local Backoffice critical navigation check pass.

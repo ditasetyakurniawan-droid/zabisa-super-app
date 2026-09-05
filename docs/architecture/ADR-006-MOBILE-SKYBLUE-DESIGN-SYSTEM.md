@@ -1,6 +1,6 @@
 # ADR-006: Zabisa Sky-Blue Mobile Design System
 
-Status: Accepted for Phase 3.1
+Status: Superseded for visual presentation by ADR-011 in Phase 3.9
 
 ## Context
 The mobile foundation was functional but visually prototype-like. Product feedback requested a professional, modern sky-blue direction familiar to high-trust Indonesian digital-service applications.

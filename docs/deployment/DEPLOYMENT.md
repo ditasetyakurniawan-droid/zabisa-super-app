@@ -43,8 +43,9 @@ Zabisa reuses `github-credentials-id`, `harbor-cred`, `sonar-dt` and the
 established Docker socket/Harbor compatibility contract.
 
 The Multibranch job `zabisa-super-app-v1` was cloned from the proven
-`tropical-management-v1` pattern. It is disabled, contains no automatic
-trigger and has never indexed or built a branch. See
+`tropical-management-v1` pattern. It is disabled and contains no automatic
+trigger. Build `#14` successfully published nine immutable images under
+`harbor-dt.co.id/devops-apps/zabisa` and the matching GitOps desired state. See
 `../runbook/JENKINS_DELIVERY.md` before changing that state.
 
 The repository renders immutable manifests with `scripts/update-gitops.sh` and
@@ -52,6 +53,7 @@ publishes them with `scripts/publish-gitops.sh` to the dedicated
 `zabisa-super-app-gitops` repository. ArgoCD reads
 `apps/zabisa/overlays/dt`; Jenkins does not apply workloads or start a sync.
 
-The controlled Trivy retry, first Harbor publication, cluster image-pull
-authentication and first GitOps publication remain explicit live gates. TLS
-bypass flags must not be added to Zabisa pipeline source.
+Trivy, Harbor publication and GitOps publication are proven. Cluster image-pull
+authentication, backup/isolated restore, migration and first ArgoCD sync remain
+explicit live gates. TLS bypass flags must not be added to Zabisa pipeline
+source.

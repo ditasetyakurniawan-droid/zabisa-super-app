@@ -1,6 +1,9 @@
 import React from 'react';
 import {
+  AccessibilityInfo,
   ActivityIndicator,
+  Animated,
+  Easing,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -12,16 +15,61 @@ import {
 } from 'react-native';
 import {SafeAreaView, useSafeAreaInsets} from 'react-native-safe-area-context';
 import {AppIcon, type AppIconName} from './AppIcon';
-import {colors, radius, shadow, shadowSoft, space, type} from '../theme/tokens';
+import {colors, control, motion, radius, shadow, shadowSoft, space, type} from '../theme/tokens';
+
+function useAmbientMotion() {
+  const value = React.useRef(new Animated.Value(0)).current;
+
+  React.useEffect(() => {
+    let active = true;
+    let animation: Animated.CompositeAnimation | undefined;
+
+    AccessibilityInfo.isReduceMotionEnabled().then(reduced => {
+      if (!active || reduced) return;
+      animation = Animated.loop(Animated.sequence([
+        Animated.timing(value, {toValue: 1, duration: motion.ambient, easing: Easing.inOut(Easing.sin), useNativeDriver: true}),
+        Animated.timing(value, {toValue: 0, duration: motion.ambient, easing: Easing.inOut(Easing.sin), useNativeDriver: true}),
+      ]));
+      animation.start();
+    }).catch(() => undefined);
+
+    return () => {
+      active = false;
+      animation?.stop();
+    };
+  }, [value]);
+
+  return value;
+}
+
+export function IslamicOrnament({light = false, compact = false}: {light?: boolean; compact?: boolean}) {
+  const motionValue = useAmbientMotion();
+  const translateY = motionValue.interpolate({inputRange: [0, 1], outputRange: [0, compact ? -3 : -7]});
+  const opacity = motionValue.interpolate({inputRange: [0, 1], outputRange: [0.58, 0.9]});
+
+  return (
+    <View accessibilityElementsHidden importantForAccessibility="no-hide-descendants" pointerEvents="none" style={[styles.ornament, compact && styles.ornamentCompact]}>
+      <Animated.View style={[styles.ornamentHalo, compact && styles.ornamentHaloCompact, light && styles.ornamentHaloLight, {opacity, transform: [{translateY}]}]} />
+      <Animated.View style={[styles.ornamentStar, compact && styles.ornamentStarCompact, light && styles.ornamentStarLight, {transform: [{translateY}, {rotate: '45deg'}]}]} />
+      <View style={[styles.ornamentArch, compact && styles.ornamentArchCompact, light && styles.ornamentArchLight]} />
+    </View>
+  );
+}
 
 export function Screen({children, style, safeTop = true}: {children: React.ReactNode; style?: ViewStyle; safeTop?: boolean}) {
-  return <SafeAreaView edges={safeTop ? ['top'] : []} style={[styles.screen, style]}>{children}</SafeAreaView>;
+  return (
+    <SafeAreaView edges={safeTop ? ['top'] : []} style={[styles.screen, style]}>
+      <View pointerEvents="none" style={styles.canvasGlow} />
+      <View style={styles.screenContent}>{children}</View>
+    </SafeAreaView>
+  );
 }
 
 export function ScrollScreen({children, contentStyle, safeTop = true}: {children: React.ReactNode; contentStyle?: ViewStyle; safeTop?: boolean}) {
   const insets = useSafeAreaInsets();
   return (
     <SafeAreaView edges={safeTop ? ['top'] : []} style={styles.screen}>
+      <View pointerEvents="none" style={styles.canvasGlow} />
       <ScrollView
         style={styles.screen}
         contentContainerStyle={[styles.scrollContent, {paddingBottom: space.jumbo + insets.bottom}, contentStyle]}
@@ -36,9 +84,12 @@ export function ScrollScreen({children, contentStyle, safeTop = true}: {children
 export function AppHeader({eyebrow, title, subtitle}: {eyebrow?: string; title: string; subtitle?: string}) {
   return (
     <View style={styles.appHeader}>
-      {eyebrow ? <Text style={styles.eyebrow}>{eyebrow}</Text> : null}
-      <Text accessibilityRole="header" style={styles.headerTitle}>{title}</Text>
-      {subtitle ? <Text style={styles.headerSubtitle}>{subtitle}</Text> : null}
+      <View style={styles.headerCopy}>
+        {eyebrow ? <View style={styles.eyebrowRow}><View style={styles.eyebrowLine} /><Text style={styles.eyebrow}>{eyebrow}</Text></View> : null}
+        <Text accessibilityRole="header" style={styles.headerTitle}>{title}</Text>
+        {subtitle ? <Text style={styles.headerSubtitle}>{subtitle}</Text> : null}
+      </View>
+      <IslamicOrnament compact />
     </View>
   );
 }
@@ -53,8 +104,8 @@ export function Card({children, style, onPress}: {children: React.ReactNode; sty
 export function HeroCard({children}: {children: React.ReactNode}) {
   return (
     <View style={styles.hero}>
-      <View pointerEvents="none" style={styles.heroBubbleLarge} />
-      <View pointerEvents="none" style={styles.heroBubbleSmall} />
+      <View pointerEvents="none" style={styles.heroGlow} />
+      <IslamicOrnament light />
       <View style={styles.heroContent}>{children}</View>
     </View>
   );
@@ -66,6 +117,22 @@ export function Title({children}: {children: React.ReactNode}) {
 
 export function DisplayTitle({children}: {children: React.ReactNode}) {
   return <Text accessibilityRole="header" style={styles.display}>{children}</Text>;
+}
+
+export function DetailHeader({eyebrow, title, subtitle, icon}: {eyebrow: string; title: string; subtitle?: string; icon: AppIconName}) {
+  return (
+    <View style={styles.detailHeader}>
+      <IslamicOrnament compact />
+      <View style={styles.detailHeaderRow}>
+        <View style={styles.detailHeaderCopy}>
+          <Text style={styles.detailEyebrow}>{eyebrow}</Text>
+          <Text accessibilityRole="header" style={styles.detailTitle}>{title}</Text>
+          {subtitle ? <Text style={styles.detailSubtitle}>{subtitle}</Text> : null}
+        </View>
+        <AppIcon name={icon} size={24} color={colors.primary} background />
+      </View>
+    </View>
+  );
 }
 
 export function SectionTitle({children, action}: {children: React.ReactNode; action?: React.ReactNode}) {
@@ -85,9 +152,10 @@ export function Button({title, onPress, disabled, secondary, icon}: {title: stri
     <Pressable
       accessibilityRole="button"
       accessibilityState={{disabled: !!disabled}}
+      accessibilityLabel={title}
       disabled={disabled}
       onPress={onPress}
-      android_ripple={{color: secondary ? colors.skySoft : 'rgba(255,255,255,0.16)'}}
+      android_ripple={{color: secondary ? colors.skySoft : colors.onPrimaryRipple}}
       style={({pressed}) => [styles.button, secondary && styles.secondaryButton, disabled && styles.disabled, pressed && styles.pressed]}>
       {icon ? <AppIcon name={icon} size={19} color={secondary ? colors.primary : colors.white} /> : null}
       <Text style={[styles.buttonText, secondary && styles.secondaryButtonText]}>{title}</Text>
@@ -96,7 +164,7 @@ export function Button({title, onPress, disabled, secondary, icon}: {title: stri
 }
 
 export function TextButton({title, onPress}: {title: string; onPress: () => void}) {
-  return <Pressable accessibilityRole="button" onPress={onPress} hitSlop={10}><Text style={styles.textButton}>{title}</Text></Pressable>;
+  return <Pressable accessibilityRole="button" accessibilityLabel={title} onPress={onPress} hitSlop={8} style={({pressed}) => [styles.textButtonControl, pressed && styles.pressed]}><Text style={styles.textButton}>{title}</Text></Pressable>;
 }
 
 export function TextField({label, error, secureToggle, style, ...props}: TextInputProps & {label?: string; error?: string; secureToggle?: boolean}) {
@@ -175,41 +243,63 @@ export function StatCard({icon, value, label}: {icon: AppIconName; value: string
 }
 
 const styles = StyleSheet.create({
-  screen: {flex: 1, backgroundColor: colors.background},
-  scrollContent: {paddingHorizontal: space.lg, paddingTop: space.lg, paddingBottom: space.jumbo},
-  appHeader: {paddingHorizontal: space.lg, paddingTop: space.lg, paddingBottom: space.md},
-  eyebrow: {...type.micro, color: colors.primary, textTransform: 'uppercase', marginBottom: 4},
+  screen: {flex: 1, backgroundColor: colors.background, overflow: 'hidden'},
+  screenContent: {flex: 1, zIndex: 1},
+  canvasGlow: {position: 'absolute', width: 260, height: 260, borderRadius: 130, backgroundColor: colors.primarySoft, opacity: 0.45, right: -150, top: -120},
+  scrollContent: {paddingHorizontal: space.lg, paddingTop: space.lg, paddingBottom: space.jumbo, zIndex: 1},
+  appHeader: {paddingHorizontal: space.lg, paddingTop: space.xl, paddingBottom: space.lg, minHeight: 126, flexDirection: 'row', alignItems: 'flex-start', overflow: 'hidden'},
+  headerCopy: {flex: 1, zIndex: 2, paddingRight: space.md},
+  eyebrowRow: {flexDirection: 'row', alignItems: 'center', marginBottom: space.xs},
+  eyebrowLine: {width: 22, height: 2, borderRadius: radius.pill, backgroundColor: colors.accent, marginRight: space.sm},
+  eyebrow: {...type.micro, color: colors.primary, textTransform: 'uppercase'},
   headerTitle: {...type.title, color: colors.text},
-  headerSubtitle: {...type.body, color: colors.muted, marginTop: 4},
+  headerSubtitle: {...type.body, color: colors.muted, marginTop: space.xs, maxWidth: 520},
   card: {backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.line, borderRadius: radius.lg, padding: space.lg, marginBottom: space.md, ...shadowSoft},
   pressableCard: {overflow: 'hidden'},
-  hero: {backgroundColor: colors.primary, borderRadius: radius.xl, minHeight: 198, overflow: 'hidden', position: 'relative', ...shadow},
-  heroContent: {padding: space.xl, zIndex: 2},
-  heroBubbleLarge: {position: 'absolute', width: 210, height: 210, borderRadius: 105, backgroundColor: 'rgba(255,255,255,0.10)', right: -82, top: -72},
-  heroBubbleSmall: {position: 'absolute', width: 92, height: 92, borderRadius: 46, backgroundColor: 'rgba(255,255,255,0.09)', right: 78, bottom: -38},
+  hero: {backgroundColor: colors.primaryDeep, borderRadius: radius.arch, minHeight: 220, overflow: 'hidden', position: 'relative', ...shadow},
+  heroContent: {padding: space.xl, zIndex: 3},
+  heroGlow: {position: 'absolute', width: 250, height: 250, borderRadius: 125, backgroundColor: colors.primary, opacity: 0.72, left: -116, bottom: -155},
+  ornament: {position: 'absolute', width: 172, height: 172, right: -18, top: 8, alignItems: 'center', justifyContent: 'center', opacity: 0.92},
+  ornamentCompact: {width: 92, height: 92, right: -8, top: 8, opacity: 0.7},
+  ornamentHalo: {position: 'absolute', width: 116, height: 116, borderRadius: 58, borderWidth: 1, borderColor: colors.ornament},
+  ornamentHaloCompact: {width: 60, height: 60, borderRadius: 30},
+  ornamentHaloLight: {borderColor: colors.ornamentSoft},
+  ornamentStar: {width: 38, height: 38, borderRadius: 8, borderWidth: 1.5, borderColor: colors.accent},
+  ornamentStarCompact: {width: 22, height: 22, borderRadius: 5},
+  ornamentStarLight: {borderColor: colors.ornamentStrong},
+  ornamentArch: {position: 'absolute', bottom: 4, width: 82, height: 62, borderTopLeftRadius: 41, borderTopRightRadius: 41, borderWidth: 1, borderBottomWidth: 0, borderColor: colors.ornament},
+  ornamentArchCompact: {width: 44, height: 32, borderTopLeftRadius: 22, borderTopRightRadius: 22, bottom: 2},
+  ornamentArchLight: {borderColor: colors.ornamentSoft},
   title: {...type.title, color: colors.text},
   display: {...type.display, color: colors.text},
-  sectionRow: {flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: space.xxl, marginBottom: space.md},
+  detailHeader: {position: 'relative', overflow: 'hidden', backgroundColor: colors.surfaceWarm, borderWidth: 1, borderColor: colors.line, borderRadius: radius.arch, padding: space.xl, minHeight: 150, justifyContent: 'center', marginBottom: space.lg},
+  detailHeaderRow: {flexDirection: 'row', alignItems: 'center', gap: space.lg, zIndex: 2},
+  detailHeaderCopy: {flex: 1},
+  detailEyebrow: {...type.micro, color: colors.accentDark, textTransform: 'uppercase', marginBottom: space.xs},
+  detailTitle: {...type.title, color: colors.text},
+  detailSubtitle: {...type.body, color: colors.muted, marginTop: space.xs},
+  sectionRow: {flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: space.xxl, marginBottom: space.md, gap: space.md},
   section: {...type.section, color: colors.text, flexShrink: 1},
   muted: {...type.body, color: colors.muted},
   body: {...type.body, color: colors.textSoft},
-  button: {minHeight: 52, backgroundColor: colors.primary, borderRadius: radius.md, paddingVertical: 14, paddingHorizontal: 18, alignItems: 'center', justifyContent: 'center', flexDirection: 'row', gap: space.sm, marginTop: space.sm, ...shadowSoft},
-  secondaryButton: {backgroundColor: colors.primarySoft, borderWidth: 1, borderColor: colors.lineStrong, shadowOpacity: 0},
+  button: {minHeight: control.buttonHeight, backgroundColor: colors.primary, borderRadius: radius.md, paddingVertical: 14, paddingHorizontal: 18, alignItems: 'center', justifyContent: 'center', flexDirection: 'row', gap: space.sm, marginTop: space.sm, borderWidth: 1, borderColor: colors.primary, ...shadowSoft},
+  secondaryButton: {backgroundColor: colors.primarySofter, borderColor: colors.primary, shadowOpacity: 0},
   disabled: {opacity: 0.55},
-  pressed: {opacity: 0.78, transform: [{scale: 0.99}]},
+  pressed: {opacity: 0.82, transform: [{scale: 0.985}]},
   buttonText: {...type.bodyStrong, color: colors.white},
   secondaryButtonText: {color: colors.primary},
+  textButtonControl: {minHeight: control.minimumTapSize, minWidth: control.minimumTapSize, alignItems: 'center', justifyContent: 'center', paddingHorizontal: space.sm, marginVertical: -12},
   textButton: {...type.caption, color: colors.primary, fontWeight: '900'},
   fieldGroup: {marginBottom: space.lg},
   fieldLabel: {...type.caption, color: colors.textSoft, fontWeight: '800', marginBottom: space.sm},
-  inputShell: {minHeight: 58, backgroundColor: colors.surface, borderWidth: 1.2, borderColor: colors.lineStrong, borderRadius: radius.md, flexDirection: 'row', alignItems: 'center'},
+  inputShell: {minHeight: control.fieldHeight, backgroundColor: colors.surfaceWarm, borderWidth: 1.2, borderColor: colors.lineStrong, borderRadius: radius.md, flexDirection: 'row', alignItems: 'center'},
   inputError: {borderColor: colors.danger},
   input: {...type.body, color: colors.text, flex: 1, minHeight: 56, paddingHorizontal: space.lg, paddingVertical: 12},
   inputWithAction: {paddingRight: 4},
   inputAction: {minWidth: 76, minHeight: 48, alignItems: 'center', justifyContent: 'center', paddingHorizontal: space.sm},
   inputActionText: {...type.caption, color: colors.primary, fontWeight: '900'},
   fieldError: {...type.caption, color: colors.danger, marginTop: space.sm},
-  iconTile: {width: '23.5%', minHeight: 104, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.line, borderRadius: radius.lg, alignItems: 'center', justifyContent: 'center', paddingHorizontal: space.xs, paddingVertical: space.md, ...shadowSoft},
+  iconTile: {width: '23.5%', minHeight: 108, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.line, borderRadius: radius.lg, alignItems: 'center', justifyContent: 'center', paddingHorizontal: space.xs, paddingVertical: space.md, ...shadowSoft},
   iconTileText: {...type.caption, color: colors.text, fontWeight: '900', marginTop: space.sm, textAlign: 'center'},
   pill: {alignSelf: 'flex-start', borderRadius: radius.pill, paddingHorizontal: 11, paddingVertical: 6},
   pillNeutral: {backgroundColor: colors.surfaceMuted},
@@ -224,8 +314,8 @@ const styles = StyleSheet.create({
   pillTextDanger: {color: colors.danger},
   state: {paddingVertical: space.xxxl, paddingHorizontal: space.lg, alignItems: 'center', justifyContent: 'center'},
   stateText: {marginTop: space.md, textAlign: 'center', maxWidth: 300},
-  errorState: {marginVertical: space.md, padding: space.xl, borderWidth: 1, borderColor: '#F2CBD0', backgroundColor: colors.dangerSoft, borderRadius: radius.lg, alignItems: 'center'},
-  errorIcon: {width: 42, height: 42, borderRadius: 21, alignItems: 'center', justifyContent: 'center', backgroundColor: '#FFDDE1', marginBottom: space.sm},
+  errorState: {marginVertical: space.md, padding: space.xl, borderWidth: 1, borderColor: colors.dangerLine, backgroundColor: colors.dangerSoft, borderRadius: radius.lg, alignItems: 'center'},
+  errorIcon: {width: 42, height: 42, borderRadius: 21, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.dangerIcon, marginBottom: space.sm},
   errorMark: {fontSize: 20, fontWeight: '900', color: colors.danger},
   errorTitle: {...type.bodyStrong, color: colors.danger, marginBottom: space.xs},
   statCard: {flex: 1, minWidth: 0, minHeight: 136, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.line, borderRadius: radius.lg, padding: space.md, ...shadowSoft},

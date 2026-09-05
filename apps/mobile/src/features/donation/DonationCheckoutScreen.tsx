@@ -2,7 +2,7 @@ import React from 'react';
 import {StyleSheet, Text, View} from 'react-native';
 import {useMutation, useQuery} from '@tanstack/react-query';
 import {api, userMessage} from '../../api/client';
-import {Button, Card, ErrorState, Loading, Muted, ScrollScreen, SectionTitle, TextField, Title} from '../../components/UI';
+import {Button, Card, DetailHeader, ErrorState, Loading, Muted, ScrollScreen, SectionTitle, TextField} from '../../components/UI';
 import {colors, space, type} from '../../theme/tokens';
 import type {DonationResult, PaymentMethod} from '../../types/domain';
 import type {RootStackScreenProps} from '../../navigation/types';
@@ -32,8 +32,7 @@ export default function DonationCheckoutScreen({route}: RootStackScreenProps<'Do
 
   return (
     <ScrollScreen safeTop={false}>
-      <Title>Konfirmasi donasi</Title>
-      <Muted>{campaign.name}</Muted>
+      <DetailHeader eyebrow="Niat baik Anda" title="Konfirmasi donasi" subtitle={campaign.name} icon="donation" />
       {result ? (
         <>
           <Card style={styles.successCard}>
@@ -68,7 +67,7 @@ export default function DonationCheckoutScreen({route}: RootStackScreenProps<'Do
 const styles = StyleSheet.create({
   presets: {flexDirection: 'row', flexWrap: 'wrap', gap: space.sm},
   preset: {width: '48%'},
-  successCard: {marginTop: space.lg, borderColor: '#BBDDCB'},
+  successCard: {marginTop: space.lg, borderColor: colors.successLine},
   success: {...type.section, color: colors.success, marginBottom: space.md},
   id: {...type.caption, color: colors.text, marginVertical: space.xs},
   heading: {...type.bodyStrong, color: colors.text},

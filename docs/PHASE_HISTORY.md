@@ -480,3 +480,19 @@ contract defects: repositories must be nested below `devops-apps/zabisa`, and
 the Docker push digest may appear after the image tag rather than in output
 column one. DT4.5.7 corrects both contracts across Jenkins, image publication,
 GitOps rendering and all sixteen manifest references.
+
+Delivery build `#14` completed successfully for source
+`e1af81dc96d5dc59876f090614e68dc48a32c59f`. It verified nine Harbor digest
+references and published 16 image references across 12 GitOps manifests. The
+GitOps verifier was aligned with the nested path in commit `96cef84`; this
+post-publication correction did not rebuild or repush images. DT4.5.7 is closed
+with Jenkins disabled and with migration and ArgoCD sync still not run.
+
+## Phase 3.9 — Mobile Sakinah UI/UX redesign
+
+Phase 3.9 refreshes only the mobile presentation layer: semantic design tokens,
+shared UI primitives, screen hierarchy, navigation styling and accessible
+ambient Islamic geometry. API, state, auth, validation, deep links, navigation
+destinations and business transactions remain unchanged. Automated mobile and
+Backoffice gates precede physical Android acceptance; migration remains blocked
+until both runtime surfaces pass.

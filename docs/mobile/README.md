@@ -9,6 +9,12 @@ This is the entry point for engineers working on `apps/mobile`.
 - Android physical-device local development is the preferred low-memory workflow.
 - Local API gateway: host `8088`; Metro: host `8082`; device Metro port remains `8081` through ADB reverse.
 - Production-like environments must use HTTPS and must not embed credentials in mobile code.
+- Phase 3.9 uses the Sakinah emerald/ivory/gold presentation system. The change
+  is UI-only; API, state, authentication, validation and business flows remain
+  unchanged.
+- DT4.5.7 delivery is complete at application revision
+  `e1af81dc96d5dc59876f090614e68dc48a32c59f`; migration and ArgoCD sync have
+  not run.
 
 ## One-command workflow
 
@@ -54,5 +60,7 @@ A passing API script does not replace physical-device UI validation.
 - [Android physical device](ANDROID_PHYSICAL_DEVICE.md)
 - [Environments](ENVIRONMENTS.md)
 - [Testing](TESTING.md)
+- [Sakinah design system](DESIGN_SYSTEM.md)
+- [Phase 3.9 UI/UX redesign](PHASE3_9_UI_UX_REDESIGN.md)
 - [Troubleshooting](TROUBLESHOOTING.md)
 - [Release](RELEASE.md)

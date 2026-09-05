@@ -22,14 +22,14 @@ export default function HomeScreen({navigation}: MainTabScreenProps<'Home'>) {
       <View style={styles.topBar}>
         <View>
           <Text style={styles.greet}>Assalamu'alaikum{firstName ? `, ${firstName}` : ''}</Text>
-          <Text style={styles.brand}>Zabisa</Text>
+          <View style={styles.brandRow}><Text style={styles.brand}>Zabisa</Text><View style={styles.brandAccent} /></View>
         </View>
         <View style={styles.brandMark}><Text style={styles.brandMarkText}>Z</Text></View>
       </View>
 
       <HeroCard>
         <View style={styles.heroMetaRow}>
-          <Text style={styles.heroEyebrow}>ZABISA PESANTREN</Text>
+          <Text style={styles.heroEyebrow}>BISMILLAH · ZABISA PESANTREN</Text>
           {guardian ? <View style={styles.portalPill}><Text style={styles.portalPillText}>Portal wali aktif</Text></View> : null}
         </View>
         <Text style={styles.heroTitle}>Semua layanan pesantren dalam satu genggaman.</Text>
@@ -42,6 +42,7 @@ export default function HomeScreen({navigation}: MainTabScreenProps<'Home'>) {
         ) : null}
       </HeroCard>
 
+      <SectionTitle>Layanan utama</SectionTitle>
       <View style={styles.actions}>
         <IconTile icon="donation" label="Donasi" onPress={() => navigation.navigate('Donasi')} />
         <IconTile icon="kajian" label="Kajian" onPress={() => navigation.navigate('Kajian')} />
@@ -92,22 +93,24 @@ export default function HomeScreen({navigation}: MainTabScreenProps<'Home'>) {
 }
 
 const styles = StyleSheet.create({
-  topBar: {flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: space.xl},
+  topBar: {flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: space.xl, backgroundColor: colors.surfaceWarm, borderWidth: 1, borderColor: colors.line, borderRadius: radius.lg, padding: space.md},
   greet: {...type.caption, color: colors.muted, marginBottom: 1},
+  brandRow: {flexDirection: 'row', alignItems: 'center'},
   brand: {fontSize: 30, lineHeight: 35, fontWeight: '900', color: colors.text, letterSpacing: -0.7},
-  brandMark: {width: 46, height: 46, borderRadius: 16, backgroundColor: colors.primary, alignItems: 'center', justifyContent: 'center'},
+  brandAccent: {width: 28, height: 3, borderRadius: radius.pill, backgroundColor: colors.accent, marginLeft: space.sm, marginTop: space.sm},
+  brandMark: {width: 48, height: 48, borderRadius: 18, backgroundColor: colors.primary, borderWidth: 2, borderColor: colors.accentLine, alignItems: 'center', justifyContent: 'center'},
   brandMarkText: {fontSize: 23, fontWeight: '900', color: colors.white},
   heroMetaRow: {flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: space.sm},
   heroEyebrow: {...type.micro, color: colors.onPrimaryMuted, flexShrink: 1},
-  portalPill: {backgroundColor: 'rgba(255,255,255,0.15)', borderRadius: radius.pill, paddingHorizontal: 9, paddingVertical: 5},
+  portalPill: {backgroundColor: colors.onPrimarySurface, borderRadius: radius.pill, paddingHorizontal: 9, paddingVertical: 5},
   portalPillText: {...type.micro, color: colors.white, letterSpacing: 0},
-  heroTitle: {fontSize: 27, lineHeight: 34, fontWeight: '900', color: colors.white, marginTop: space.md, maxWidth: 520},
+  heroTitle: {fontSize: 28, lineHeight: 35, fontWeight: '900', color: colors.white, marginTop: space.md, maxWidth: 520, letterSpacing: -0.35},
   heroBody: {...type.body, color: colors.onPrimaryMuted, marginTop: space.md, maxWidth: 520},
-  heroAction: {minHeight: 48, marginTop: space.xl, borderRadius: radius.md, backgroundColor: 'rgba(255,255,255,0.15)', paddingHorizontal: space.lg, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between'},
-  heroActionPressed: {backgroundColor: 'rgba(255,255,255,0.22)'},
+  heroAction: {minHeight: 48, marginTop: space.xl, borderRadius: radius.md, backgroundColor: colors.onPrimarySurface, paddingHorizontal: space.lg, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between'},
+  heroActionPressed: {backgroundColor: colors.onPrimarySurfacePressed},
   heroActionText: {...type.caption, color: colors.white, fontWeight: '900'},
   heroActionArrow: {fontSize: 25, color: colors.white, marginLeft: space.md},
-  actions: {flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', rowGap: space.md, marginTop: space.xl},
+  actions: {flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', rowGap: space.md},
   cardTitle: {...type.bodyStrong, color: colors.text, marginBottom: space.xs},
   primaryText: {...type.caption, color: colors.primary, marginBottom: space.xs},
   cardLink: {...type.caption, color: colors.primary, fontWeight: '900', marginTop: space.md},

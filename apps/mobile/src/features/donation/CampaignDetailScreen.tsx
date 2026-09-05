@@ -2,7 +2,7 @@ import React from 'react';
 import {StyleSheet, Text} from 'react-native';
 import {useQuery} from '@tanstack/react-query';
 import {api, userMessage} from '../../api/client';
-import {Button, Card, Empty, ErrorState, Loading, Muted, ScrollScreen, SectionTitle, Title} from '../../components/UI';
+import {Button, Card, DetailHeader, Empty, ErrorState, Loading, Muted, ScrollScreen, SectionTitle} from '../../components/UI';
 import {colors, space, type} from '../../theme/tokens';
 import type {CampaignUpdate} from '../../types/domain';
 import type {RootStackScreenProps} from '../../navigation/types';
@@ -12,8 +12,7 @@ export default function CampaignDetailScreen({navigation, route}: RootStackScree
   const updates = useQuery({queryKey: ['campaign-updates', campaign.id], queryFn: () => api<CampaignUpdate[]>(`/api/v1/donation/campaigns/${campaign.id}/updates`)});
   return (
     <ScrollScreen safeTop={false}>
-      <Title>{campaign.name}</Title>
-      <Muted>{campaign.category}</Muted>
+      <DetailHeader eyebrow="Program kebaikan" title={campaign.name} subtitle={campaign.category} icon="donation" />
       <Card style={styles.summary}>
         <Text style={styles.label}>TERKUMPUL</Text>
         <Text style={styles.money}>Rp {Number(campaign.collected_amount || 0).toLocaleString('id-ID')}</Text>

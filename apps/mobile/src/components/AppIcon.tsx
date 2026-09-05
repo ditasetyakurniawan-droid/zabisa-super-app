@@ -29,5 +29,5 @@ export function AppIcon({name, size = 22, color = colors.primary, background = f
 }
 
 const styles = StyleSheet.create({
-  background: {width: 46, height: 46, borderRadius: 15, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.primarySoft},
+  background: {width: 48, height: 48, borderRadius: 18, borderWidth: 1, borderColor: colors.lineStrong, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.primarySofter},
 });

@@ -21,7 +21,7 @@ import GuardianStudentScreen from '../features/guardian/GuardianStudentScreen';
 import ContentListScreen from '../features/content/ContentListScreen';
 import ContentDetailScreen from '../features/content/ContentDetailScreen';
 import {AppIcon, type AppIconName} from '../components/AppIcon';
-import {colors} from '../theme/tokens';
+import {colors, radius, shadowSoft, space} from '../theme/tokens';
 import {useAuth} from '../store/auth';
 import {api} from '../api/client';
 import type {Kajian, Student} from '../types/domain';
@@ -50,15 +50,20 @@ const tabBaseOptions: BottomTabNavigationOptions = {
   tabBarActiveBackgroundColor: colors.primarySofter,
   tabBarHideOnKeyboard: true,
   tabBarStyle: {
-    height: 66,
-    paddingBottom: 6,
-    paddingTop: 6,
-    borderTopColor: colors.line,
+    height: 76,
+    paddingBottom: space.sm,
+    paddingTop: space.sm,
+    marginHorizontal: space.md,
+    marginBottom: space.sm,
+    borderColor: colors.line,
+    borderWidth: 1,
     borderTopWidth: 1,
+    borderRadius: radius.lg,
     backgroundColor: colors.surface,
+    ...shadowSoft,
   },
-  tabBarLabelStyle: {fontSize: 10.5, fontWeight: '800'},
-  tabBarItemStyle: {borderRadius: 15, marginHorizontal: 3, marginVertical: 4},
+  tabBarLabelStyle: {fontSize: 10.5, fontWeight: '800', marginTop: 2},
+  tabBarItemStyle: {borderRadius: radius.md, marginHorizontal: 2, marginVertical: 2},
 };
 
 function Tabs() {
@@ -159,7 +164,7 @@ export default function RootNavigator() {
         }
       }}
       theme={{...DefaultTheme, colors: {...DefaultTheme.colors, primary: colors.primary, background: colors.background, card: colors.surface, text: colors.text, border: colors.line, notification: colors.danger}}}>
-      <Stack.Navigator screenOptions={{headerTintColor: colors.text, headerStyle: {backgroundColor: colors.surface}, headerTitleStyle: {fontWeight: '800'}, headerShadowVisible: false, contentStyle: {backgroundColor: colors.background}}}>
+      <Stack.Navigator screenOptions={{headerTintColor: colors.primary, headerStyle: {backgroundColor: colors.surfaceWarm}, headerTitleStyle: {fontWeight: '800', color: colors.text}, headerShadowVisible: false, contentStyle: {backgroundColor: colors.background}}}>
         <Stack.Screen name="Main" component={Tabs} options={{headerShown: false}} />
         <Stack.Screen name="Login" component={LoginScreen} options={{title: 'Masuk ke Zabisa'}} />
         <Stack.Screen name="KajianDetail" component={KajianDetailScreen} options={{title: 'Detail Kajian'}} />

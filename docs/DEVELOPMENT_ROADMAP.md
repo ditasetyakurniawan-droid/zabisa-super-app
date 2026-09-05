@@ -8,10 +8,10 @@
 | DT3 | PASS / migration not run | Empty-schema inventory and controlled migration engine ready |
 | DT4.1 | PASS / source only | Immutable image, SBOM, scan and digest-proof source controls ready |
 | DT4.2.1 | PASS / locked | Existing Jenkins Multibranch job created disabled; no indexing/build |
-| DT4.3 | PARTIAL LIVE / FIX READY | GitHub and private Sonar passed; Dockerized Trivy flag compatibility fixed for controlled rerun |
-| DT4.4 | SOURCE READY / LIVE NEXT | Explicit build, scan, SBOM and Harbor push in one controlled session |
-| DT4.5 | SOURCE READY / LIVE NEXT | Publish immutable DT overlay to the dedicated Zabisa GitOps repository |
-| DT5 | BLOCKED | Backup and isolated restore evidence |
+| DT4.3 | PASS | Default-off readiness build #6 verified |
+| DT4.4-DT4.5.7 | PASS / COMPLETE | Build #14 published nine verified images and 16 GitOps references; Jenkins disabled |
+| Phase 3.9 | SOURCE ACTIVE | Mobile UI-only redesign, physical Android and Backoffice acceptance |
+| DT5 | BLOCKED BY ACCEPTANCE | Backup and isolated restore evidence after Phase 3.9 runtime proof |
 | DT6 | BLOCKED | Sequential database migration with explicit approval |
 | DT7 | BLOCKED | Reviewed GitOps render and controlled ArgoCD sync |
 | DT8 | BLOCKED | Service, ingress, observability and rollback acceptance |
@@ -62,6 +62,8 @@ Implementation result:
 
 ## Phase 3.9 — Mobile test and UX completion
 
+Status: **SAKINAH REDESIGN IMPLEMENTED / AUTOMATED AND DEVICE ACCEPTANCE REQUIRED**
+
 Goal: raise confidence in the end-user application.
 
 Work:
@@ -75,6 +77,11 @@ Work:
 - deep-link physical-device verification;
 - increase meaningful coverage, prioritizing critical flows rather than an
   arbitrary percentage.
+
+The Phase 3.9 presentation increment uses emerald/ivory/gold semantic tokens,
+consistent controls, modern information hierarchy and reduced-motion-aware
+Islamic geometry. It is constrained by a zero-logic-change invariant. Physical
+Android and local Backoffice acceptance are mandatory before DT5/DT6.
 
 ## Phase 4.0 — Production notification integration
 
@@ -168,6 +175,6 @@ On macOS/Xcode:
 
 ## Recommended next-session first task
 
-Resume **DT4.3/DT4.4/DT4.5 controlled Jenkins delivery**. Reconcile the parent
-job to disabled, trigger-free and `main`-only, then run readiness followed by
-the explicitly parameterized build/scan/push/GitOps publication.
+Complete **Phase 3.9 physical Android and Backoffice acceptance**. Keep the
+Jenkins parent disabled and do not start DT5/DT6 until the UI, original user
+flows and local Backoffice are recorded PASS.

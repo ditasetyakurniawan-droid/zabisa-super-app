@@ -1,5 +1,7 @@
 # Phase DT4.5 — GitOps Repository Separation
 
+Status: **COMPLETE through DT4.5.7**
+
 ## Decision
 
 Zabisa follows the existing Tropical delivery pattern with two repositories:
@@ -10,7 +12,7 @@ Zabisa follows the existing Tropical delivery pattern with two repositories:
   ArgoCD under `apps/zabisa/overlays/dt`.
 
 Jenkins builds and scans nine images, pushes immutable full-Git-SHA tags to
-`harbor-dt.co.id/devops-apps`, verifies the Harbor digests, renders the Kubernetes
+`harbor-dt.co.id/devops-apps/zabisa`, verifies the Harbor digests, renders the Kubernetes
 templates, then commits the rendered overlay to the GitOps repository. Jenkins
 never runs an imperative application deployment. ArgoCD remains the deployment
 authority and sync remains manual.
@@ -48,6 +50,8 @@ edited manually.
 
 ## Execution boundary
 
-Committing this phase does not build or push images, apply the ArgoCD
-Application, run migration Jobs, or sync workloads. Live DT4.3/DT4.4 delivery
-must pass before the backup/migration and ArgoCD sync runbook is authorized.
+Jenkins build `#14` completed image publication and GitOps rendering for source
+`e1af81dc96d5dc59876f090614e68dc48a32c59f`. GitOps commit `96cef84` validates
+16 image references across 12 manifests. This completion does not apply the
+ArgoCD Application, run migration Jobs or sync workloads. Backup/restore proof,
+Phase 3.9 runtime acceptance and explicit migration approval remain mandatory.

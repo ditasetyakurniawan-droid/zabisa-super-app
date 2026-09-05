@@ -13,12 +13,14 @@ git log --oneline -5
 ./scripts/preflight-offline.sh
 ```
 
-Expected repository state after DT4.5.7 Harbor repository alignment installation:
+Expected repository state after DT4.5.7 completion and Phase 3.9 installation:
 
 ```text
 main synchronized with origin/main
 clean worktree
-DT4.5.7 nested Harbor repository and digest parser invariants: PASS
+DT4.5.7 immutable delivery: COMPLETE
+Phase 3.9 automated mobile/Backoffice gates: PASS
+Physical Android acceptance: PENDING
 ```
 
 ## 2. Read in this order
@@ -95,29 +97,18 @@ npm run mobile:quality
 
 Current source checkpoint:
 
-**DT4.5.7 — Nested Harbor repositories and controlled delivery resume ready**
+**Phase 3.9 — Mobile Sakinah UI/UX redesign acceptance**
 
-The Multibranch job `zabisa-super-app-v1` exists on the existing Docker Compose
-Jenkins and is disabled with no automatic trigger. Readiness build `#6` passed
-Sonar Quality Gate and Trivy with publication controls off. Delivery build
-`#7` stopped before its first image build because repository-root Jenkins
-metadata triggered the dirty-worktree safety gate. No image or manifest was
-published by that build.
-
-Build `#10` passed Sonar with 96.2% new-code coverage and built all nine images.
-It stopped at the first Trivy image-policy result; Harbor push and GitOps publish
-were not reached. DT4.5.4 retains full evidence, evaluates all images and blocks
-only fixable HIGH/CRITICAL findings.
-
-Build `#13` passed build and scan for all nine images and authenticated to
-Harbor, but used the incomplete `devops-apps/<image>` path and then failed to
-parse Docker's `<tag>: digest: sha256:...` output. DT4.5.7 corrects both issues.
+Jenkins build `#14` completed successfully for application revision
+`e1af81dc96d5dc59876f090614e68dc48a32c59f`. Harbor has nine verified images;
+GitOps commit `96cef84` has 16 immutable references across 12 manifests. The
+Jenkins parent job is disabled. Migration and ArgoCD sync have not run.
 
 Next controlled execution:
 
-**DT4.5.7 — Build, scan, Harbor push and GitOps publish**
+**Physical Android dev-mode and Backoffice acceptance**
 
-Use `scripts/run-zabisa-jenkins-delivery.sh --resume-after-readiness` with
-`DT43_READINESS_BUILD=6`. The runner verifies build `#6` and performs only one
-new explicitly enabled build/scan/push/publish run. Migration, Kubernetes
-application and ArgoCD sync remain separate approvals.
+Run `ZABISA_REBUILD=1 npm run mobile:device`, follow
+`docs/mobile/PHASE3_9_UI_UX_REDESIGN.md`, then verify the local Backoffice.
+Only after both are recorded PASS may DT5 backup/restore preparation begin.
+Migration, Kubernetes application and ArgoCD sync remain separate approvals.
