@@ -13,12 +13,12 @@ git log --oneline -5
 ./scripts/preflight-offline.sh
 ```
 
-Expected repository state after DT4.5.2 hotfix installation:
+Expected repository state after DT4.5.3 hotfix installation:
 
 ```text
 main synchronized with origin/main
 clean worktree
-DT4.5.2 Jenkins/Sonar/Harbor/GitOps source invariants: PASS
+DT4.5.3 Jenkins/Sonar/Harbor/GitOps source invariants: PASS
 ```
 
 ## 2. Read in this order
@@ -95,7 +95,7 @@ npm run mobile:quality
 
 Current source checkpoint:
 
-**DT4.5.2 — Sonar hotspot closure and controlled delivery resume ready**
+**DT4.5.3 — New-code coverage and controlled delivery resume ready**
 
 The Multibranch job `zabisa-super-app-v1` exists on the existing Docker Compose
 Jenkins and is disabled with no automatic trigger. Readiness build `#6` passed

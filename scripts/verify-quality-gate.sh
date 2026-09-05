@@ -37,8 +37,10 @@ fi
 
 grep -Fq 'sonar.go.tests.reportPaths=coverage/go-test-report.json' sonar-project.properties \
   || fail 'Sonar Go test report path is not configured'
-grep -Fq 'sonar.javascript.lcov.reportPaths=apps/mobile/coverage/lcov.info' sonar-project.properties \
-  || fail 'Sonar mobile LCOV path is not configured'
+grep -Fq 'sonar.javascript.lcov.reportPaths=apps/admin-web/coverage/lcov.info,apps/mobile/coverage/lcov.info' sonar-project.properties \
+  || fail 'Sonar admin and mobile LCOV paths are not configured'
+grep -Fq 'npm run test --workspaces --if-present' scripts/quality-gate.sh \
+  || fail 'all workspace unit coverage producers must run in the quality gate'
 grep -Fq '**/*_test.go' sonar-project.properties \
   || fail 'Sonar source exclusions must prevent duplicate test indexing'
 grep -Fq '"audit:production": "./scripts/npm-audit-gate.sh"' package.json \

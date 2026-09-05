@@ -68,6 +68,7 @@ jobs:
             coverage/go-cover.out
             coverage/go-test-report.json
             coverage/npm-audit.json
+            apps/admin-web/coverage/
             apps/mobile/coverage/
 
   browser-e2e:

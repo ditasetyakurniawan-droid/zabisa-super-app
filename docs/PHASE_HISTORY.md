@@ -440,3 +440,10 @@ eight Docker wildcard copies, one weak donation identifier generator and one
 hard-coded clear-text Backoffice backend default. Expanded the Sonar TypeScript
 set to 70/70 files and added an offline regression verifier. The blocking
 Quality Gate remains unchanged.
+
+## DT4.5.3 — Sonar new-code coverage
+
+Build `#9` confirmed zero remaining security hotspots, then exposed the next
+blocking condition: new-code coverage was 0% against the unchanged 80% gate.
+Added focused Admin and Mobile unit tests, executed all workspace test suites
+in CI/Jenkins, and imported both LCOV reports into Sonar.

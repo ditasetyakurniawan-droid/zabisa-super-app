@@ -24,7 +24,7 @@ npm run node:lock:verify
 npm run lint --workspace=@zabisa/admin-web -- --max-warnings=0
 npm run lint --workspace=@zabisa/mobile -- --max-warnings=0
 npm run typecheck --workspaces --if-present
-npm run test --workspace=@zabisa/mobile
+npm run test --workspaces --if-present
 npm run build --workspace=@zabisa/admin-web
 npm run audit:production
 
