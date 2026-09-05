@@ -45,6 +45,10 @@ trivy_digest='sha256:62b1e65e8869bc4b4c6aa4fa2b21595256c7c2f6018a9d9ad61caf87187
 [[ "$(grep -RhF "$go_digest" services/*/Dockerfile | wc -l | tr -d ' ')" == '8' ]] || fail 'Go builder digest mismatch'
 [[ "$(grep -RhF "$distroless_digest" services/*/Dockerfile | wc -l | tr -d ' ')" == '8' ]] || fail 'distroless runtime digest mismatch'
 [[ "$(grep -F "$node_digest" apps/admin-web/Dockerfile | wc -l | tr -d ' ')" == '2' ]] || fail 'admin-web build/runtime digest mismatch'
+grep -Fq "'libcrypto3>=3.5.8-r0'" apps/admin-web/Dockerfile || fail 'Admin runtime libcrypto3 fix floor missing'
+grep -Fq "'libssl3>=3.5.8-r0'" apps/admin-web/Dockerfile || fail 'Admin runtime libssl3 fix floor missing'
+grep -Fq 'rm -rf /usr/local/lib/node_modules/npm' apps/admin-web/Dockerfile || fail 'Admin runtime npm tooling removal missing'
+grep -Fq '/usr/local/lib/node_modules/corepack' apps/admin-web/Dockerfile || fail 'Admin runtime Corepack tooling removal missing'
 grep -Fq "aquasec/trivy:0.74.0@$trivy_digest" scripts/trivy-docker.sh || fail 'Trivy image/version digest mismatch'
 if grep -Fq -- '--disable-telemetry' scripts/trivy-docker.sh; then
   fail 'unsupported Trivy 0.74.0 --disable-telemetry flag remains'

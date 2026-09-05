@@ -150,6 +150,9 @@ pass 'DT4.3 default-off Jenkins build/push/render controls'
 ./scripts/verify-dt452-sonar-hotspots.sh || fail 'DT4.5.2 Sonar hotspot closure invariants failed'
 pass 'DT4.5.2 Sonar hotspot and TypeScript coverage invariants'
 
+./scripts/verify-dt455-trivy-remediation.sh || fail 'DT4.5.5 Trivy remediation invariants failed'
+pass 'DT4.5.5 Go crypto and Admin runtime vulnerability remediation invariants'
+
 ./scripts/verify-quality-gate.sh || fail 'CI/Sonar quality gate invariants failed'
 pass 'CI/Sonar quality gate invariants'
 

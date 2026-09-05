@@ -14,6 +14,15 @@ ENV NEXT_TELEMETRY_DISABLED=1
 ENV HOSTNAME=0.0.0.0
 ENV PORT=3000
 
+RUN apk add --no-cache --upgrade \
+      'libcrypto3>=3.5.8-r0' \
+      'libssl3>=3.5.8-r0' \
+    && rm -rf /usr/local/lib/node_modules/npm \
+                  /usr/local/lib/node_modules/corepack \
+    && rm -f /usr/local/bin/npm /usr/local/bin/npx \
+             /usr/local/bin/corepack /usr/local/bin/yarn \
+             /usr/local/bin/yarnpkg /usr/local/bin/pnpm /usr/local/bin/pnpx
+
 RUN addgroup -S nodejs -g 1001 && adduser -S nextjs -u 1001 -G nodejs
 
 COPY --from=build --chown=nextjs:nodejs /src/apps/admin-web/.next/standalone ./

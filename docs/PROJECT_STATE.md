@@ -1,4 +1,4 @@
-# Project State — Application Baseline and DT4.5.4 Trivy Checkpoint
+# Project State — Application Baseline and DT4.5.5 CVE Remediation
 
 ## Executive status
 
@@ -55,6 +55,9 @@ Verified:
 - DT4.5.4 preserves complete scan/SBOM evidence on failure, evaluates all images,
   blocks fixable HIGH/CRITICAL findings and repairs a stale enabled Jenkins parent
   after an interrupted operator terminal.
+- build `#11` archived 109 fixable HIGH/CRITICAL rows, reduced to three shared
+  dependency/runtime sources; DT4.5.5 upgrades Go crypto, fixes Admin OpenSSL and
+  removes unnecessary package-manager tooling from the Admin runtime image.
 
 Not run:
 
@@ -63,7 +66,7 @@ Not run:
 - database backup/isolated restore drill or migration;
 - application Deployment or ArgoCD sync.
 
-The active next execution is the DT4.5.4 controlled resume. It verifies and
+The active next execution is the DT4.5.5 controlled resume. It verifies and
 reuses successful readiness build `#6`, then runs one new parameterized build
 containing source quality, private Sonar, Quality Gate, Trivy readiness, nine
 image builds/scans/SBOMs, Harbor push and GitOps publication. The parent job

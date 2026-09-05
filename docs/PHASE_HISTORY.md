@@ -455,3 +455,11 @@ nine images, then stopped on the first Trivy policy exit. Harbor push and GitOps
 publication were not reached. DT4.5.4 scans and attests every image, archives
 evidence even on failure, blocks only fixable HIGH/CRITICAL findings, and recovers
 the Jenkins parent-job disabled checkpoint after an interrupted operator terminal.
+
+## DT4.5.5 — Trivy CVE remediation
+
+Build `#11` retained all nine Trivy reports and identified 109 fixable rows.
+They collapse to three shared sources: an old Go `x/crypto` version repeated in
+eight binaries, two Alpine OpenSSL packages, and package-manager tooling bundled
+in the Admin runtime base. DT4.5.5 upgrades the Go modules, requires the fixed
+OpenSSL packages and removes npm/Corepack tooling from the final runtime image.
