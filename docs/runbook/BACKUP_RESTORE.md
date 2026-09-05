@@ -42,6 +42,18 @@ The operator must confirm:
 If any item is missing, stale or ambiguous, stop. Do not run a migration,
 ArgoCD sync, destructive cleanup or an untested restore against DT.
 
+## Executable DT5 control
+
+Use `scripts/run-zabisa-dt5-backup-restore.sh --run` only through the DT5–DT8
+controlled rollout. It uses the existing pinned Oracle MySQL image, TLS
+`VERIFY_CA`, consistent snapshot coordinates, AES-256/PBKDF2 encryption and a
+`--network none` restore container. Review the retained evidence before entering
+the separate content-canary confirmation.
+
+The script is intentionally not a restore-to-DT command. Restoring the backup
+to DT remains a separate incident operation requiring an exact target, outage
+plan and approval.
+
 ## DT3 checkpoint
 
 DT3.2 proved all seven target schemas empty on `2026-09-04`. This simplifies the

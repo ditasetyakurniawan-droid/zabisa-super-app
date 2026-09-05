@@ -162,6 +162,9 @@ pass 'DT4.5.7 nested Harbor repository and digest parser invariants'
 ./scripts/verify-phase39-mobile-redesign.sh || fail 'Phase 3.9 mobile redesign invariants failed'
 pass 'Phase 3.9.1 Nawasena UI and zero-logic-change invariants'
 
+./scripts/verify-dt58-source.sh || fail 'DT5-DT8 controlled rollout invariants failed'
+pass 'DT5-DT8 backup, migration, GitOps and internal acceptance controls'
+
 ./scripts/verify-quality-gate.sh || fail 'CI/Sonar quality gate invariants failed'
 pass 'CI/Sonar quality gate invariants'
 

@@ -86,5 +86,15 @@ grep -q '"@typescript-eslint/no-explicit-any": "error"' apps/admin-web/eslint.co
 echo "PASS authored-source boundary"
 echo "Generated artifacts (.next) and dependencies (node_modules) are intentionally outside source invariants."
 
+echo "Check: production login UI contains no development credential"
+if grep -Fq 'admin@zabisa.local' apps/admin-web/app/login/LoginForm.tsx ||
+  grep -Fq 'ChangeMe123!' apps/admin-web/app/login/LoginForm.tsx ||
+  grep -Fq 'Development seed:' apps/admin-web/app/login/LoginForm.tsx; then
+  echo "ERROR: Backoffice login UI exposes a development credential or seed hint."
+  exit 5
+fi
+grep -Fq 'useState("")' apps/admin-web/app/login/LoginForm.tsx
+echo "PASS production login fields start empty and contain no credential hint"
+
 echo "Check: centralized auth/session query cache"
 ./scripts/verify-admin-session-cache.sh apps/admin-web

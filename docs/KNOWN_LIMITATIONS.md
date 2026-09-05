@@ -28,8 +28,10 @@ have not been validated on macOS/Xcode.
 ## CI/CD
 
 GitHub Actions is the authoritative source gate and Jenkins build `#14` proved
-the private Sonar/Trivy/Harbor/GitOps delivery chain. Cluster image pulling,
-database migration, deployment and ArgoCD reconciliation are still unproven.
+the private Sonar/Trivy/Harbor/GitOps delivery chain for the earlier immutable
+revision. DT5–DT8 source controls are ready, but cluster image pulling,
+database migration, deployment and ArgoCD reconciliation remain unproven until
+the controlled run produces `RESULT.env` with `status=PASS`.
 
 ## Sonar/security scanning
 
@@ -49,7 +51,7 @@ No claim is made yet for:
 - HA deployment;
 - rolling production rollout;
 - managed secrets;
-- TLS/domain ingress;
+- public TLS/domain ingress (the first DT acceptance is internal-only);
 - disaster recovery;
 - production backup/restore drill;
 - autoscaling;

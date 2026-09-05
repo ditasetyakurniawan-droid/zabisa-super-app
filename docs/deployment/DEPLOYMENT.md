@@ -57,3 +57,9 @@ Trivy, Harbor publication and GitOps publication are proven. Cluster image-pull
 authentication, backup/isolated restore, migration and first ArgoCD sync remain
 explicit live gates. TLS bypass flags must not be added to Zabisa pipeline
 source.
+
+The executable first-rollout sequence is documented in
+`PHASE-DT5-DT8-CONTROLLED-ROLLOUT.md`. Its source is ready, but deployment must
+not be marked complete until the live run records matching application,
+GitOps and ArgoCD revisions in sanitized evidence. The first exposure is
+internal port-forward/ADB reverse only.

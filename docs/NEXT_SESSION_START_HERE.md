@@ -13,14 +13,14 @@ git log --oneline -5
 ./scripts/preflight-offline.sh
 ```
 
-Expected repository state after DT4.5.7 completion and Phase 3.9.1 installation:
+Expected repository state after DT4.5.7 and Phase 3.9.1 acceptance:
 
 ```text
 main synchronized with origin/main
 clean worktree
 DT4.5.7 immutable delivery: COMPLETE
 Phase 3.9.1 source/mobile/Backoffice gates: PASS
-Nawasena physical Android acceptance: PENDING
+Nawasena physical Android acceptance: PASS at f1ba188
 ```
 
 ## 2. Read in this order
@@ -97,20 +97,19 @@ npm run mobile:quality
 
 Current source checkpoint:
 
-**Phase 3.9.1 — Mobile Nawasena UI/UX redesign acceptance**
+**DT5–DT8 — controlled migration and internal rollout**
 
 Jenkins build `#14` completed successfully for application revision
 `e1af81dc96d5dc59876f090614e68dc48a32c59f`. Harbor has nine verified images;
 GitOps commit `96cef84` has 16 immutable references across 12 manifests. The
 Jenkins parent job is disabled. Migration and ArgoCD sync have not run.
 
-Next controlled execution:
+Phase 3.9.1 passed 25 mobile tests, Guardian API E2E, Backoffice source/runtime,
+GitHub Engineering Quality Gate and physical Android installation/opening at
+`f1ba18854af2a2a965090af41eb8bfc40a637cb1`. UI development may continue later
+from this checkpoint.
 
-**Physical Android dev-mode and Backoffice acceptance**
-
-If the local stack reports legacy migration records without checksums, use the
-backed-up local-only reset documented in `docs/LOCAL_DEVELOPMENT.md`. Then run
-`ZABISA_REBUILD=1 npm run mobile:device`, follow
-`docs/mobile/PHASE3_9_1_NAWASENA_REDESIGN.md`, and verify Backoffice.
-Only after both are recorded PASS may DT5 backup/restore preparation begin.
-Migration, Kubernetes application and ArgoCD sync remain separate approvals.
+Read `docs/deployment/PHASE-DT5-DT8-CONTROLLED-ROLLOUT.md` before the next live
+operation. Run its plan mode first. DT5 recovery proof, DT6 content canary, DT7
+exact-revision sync and DT8 manual acceptance remain separate fail-closed gates.
+The first deployment is internal-only; public DNS/TLS/Ingress is not implied.

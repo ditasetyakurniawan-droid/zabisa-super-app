@@ -1,4 +1,4 @@
-# Project State — DT4.5.7 Complete and Phase 3.9 Mobile Redesign
+# Project State — Phase 3.9.1 Complete / DT5–DT8 Ready
 
 ## Executive status
 
@@ -82,10 +82,17 @@ Not run:
 - database backup/isolated restore drill or migration;
 - application Deployment or ArgoCD sync.
 
-The active development phase is Phase 3.9.1 Mobile Nawasena UI/UX Redesign. Its
-source scope is presentation-only. Physical Android and Backoffice acceptance
-must be recorded before the backup/migration track resumes. This does not
-authorize migration or sync.
+Phase 3.9.1 Mobile Nawasena UI/UX Redesign is complete at
+`f1ba18854af2a2a965090af41eb8bfc40a637cb1`. Its 25 mobile tests, Guardian API
+E2E, Backoffice source/runtime checks, GitHub gate and physical Android
+installation/opening passed. Its source scope remained presentation-only.
+Further UI development may resume later from this checkpoint.
+
+DT5–DT8 is ready for controlled execution. This readiness adds an encrypted
+backup/isolated-restore gate, content-only migration canary, exact-revision
+manual ArgoCD sync, one-time secure SUPER_ADMIN bootstrap and internal
+Backoffice/Android acceptance. It is not evidence that migration or sync has
+already run.
 
 ## Verified at lock
 

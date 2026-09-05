@@ -510,3 +510,21 @@ remain unchanged. Local Backoffice 502 diagnosis found no port collision; the
 old local MySQL volume contains pre-checksum migration records and requires an
 explicit backed-up local-only reinitialization. Migration and ArgoCD sync for
 DT remain prohibited during this phase.
+
+## Phase 3.9.1 — Accepted checkpoint
+
+Application revision `f1ba18854af2a2a965090af41eb8bfc40a637cb1` passed 25
+mobile tests, Guardian API E2E, Backoffice source/runtime, the GitHub
+Engineering Quality Gate and Android debug installation/opening on the physical
+device. Mobile logic checksums remained unchanged. Product review accepted this
+UI as the current development checkpoint; future visual work is deferred and
+may continue from this commit.
+
+## DT5–DT8 — Controlled rollout preparation
+
+Added fail-closed operator controls for an encrypted seven-schema snapshot,
+network-isolated restore drill, content-only migration canary, exact GitOps SHA
+ArgoCD sync, secure one-time SUPER_ADMIN bootstrap, full migration inventory,
+Vault/readiness checks and internal Backoffice/Android acceptance. Removed the
+development credentials from the production Backoffice login presentation.
+This entry records source readiness only; completion requires live evidence.

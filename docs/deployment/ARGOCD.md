@@ -8,3 +8,10 @@ DT4.5.7 published source revision
 evidence only: the Application has not been synced and migration Jobs have not
 run. Phase 3.9 physical-device/Backoffice acceptance and the backup/restore gate
 must complete before an operator authorizes the first manual sync.
+
+Phase 3.9.1 acceptance is now complete. The first sync is controlled by
+`scripts/run-zabisa-dt5-dt8-rollout.sh`: it runs a content-only canary after a
+tested recovery point, requires a second confirmation tied to the exact GitOps
+commit, and places that commit in the ArgoCD operation request. Automated sync
+and pruning remain disabled. Internal acceptance does not create public
+Ingress, DNS or TLS.

@@ -1,6 +1,6 @@
 # Zabisa Current State and Delivery Roadmap
 
-> Official checkpoint: **DT4.5.7 COMPLETE / PHASE 3.9 DEVELOPMENT ACTIVE**
+> Official checkpoint: **PHASE 3.9.1 COMPLETE / DT5-DT8 READY FOR CONTROLLED EXECUTION**
 >
 > Live job: `zabisa-super-app-v1` — `DISABLED`, no automatic trigger
 >
@@ -30,7 +30,8 @@ delivery.
 | Private Sonar | PASS | Build #14 analysis and blocking Quality Gate passed with complete TypeScript scope |
 | Image scanning | PASS | All nine images passed the fixable HIGH/CRITICAL policy and produced SBOM/scan evidence |
 | GitOps repository | PASS / PUBLISHED | Commit `96cef84` validates source `e1af81dc...`, 16 image references and 12 manifests |
-| Cluster Harbor pull | UNPROVEN | No namespace Docker config Secret or ServiceAccount imagePullSecret found |
+| Phase 3.9.1 acceptance | PASS | 25 mobile tests, Guardian E2E, Backoffice runtime and physical Android open at `f1ba188` |
+| Cluster Harbor pull | UNPROVEN | First content canary and ArgoCD rollout will prove public-project pull from each rendered image |
 | Backup and isolated restore proof | NOT PROVEN | Mandatory before any database mutation |
 | Database migration | NOT RUN | Blocked by image, backup/restore and operator approval gates |
 | Application deployment | NOT DEPLOYED | Blocked until migration and render gates pass |
@@ -106,19 +107,20 @@ digest verification and GitOps publication stages for source
 `96cef84` validates 16 immutable references across 12 manifests. The parent
 Jenkins job is disabled and automatic triggers remain absent.
 
-### Phase 3.9 — Mobile UI/UX redesign and runtime acceptance
+### Phase 3.9–3.9.1 — Mobile UI/UX redesign and runtime acceptance
 
-Status: **SOURCE IMPLEMENTATION ACTIVE / DEVICE PROOF PENDING**
+Status: **COMPLETE / `f1ba188`**
 
-Redesign presentation only through shared tokens, UI primitives, screen layout
-and navigation styling. Do not change API/state/authentication/validation or
-business behavior. Automated mobile and Backoffice gates run before a physical
-Android test. Database migration remains blocked until both mobile-device and
-Backoffice runtime acceptance are recorded.
+The Nawasena redesign changed presentation only through shared tokens, UI
+primitives, screen layout and navigation styling. API/state/authentication,
+validation and business behavior checksums remained unchanged. Twenty-five
+mobile tests, Guardian API E2E, Backoffice runtime, GitHub gate and physical
+Android installation/opening passed. Further UI development is deferred and can
+resume from this checkpoint.
 
 ### DT5 — Backup and isolated restore readiness
 
-Status: **BLOCKED / EVIDENCE REQUIRED**
+Status: **READY FOR CONTROLLED EXECUTION / EVIDENCE REQUIRED**
 
 Produce a current encrypted full backup, capture checksum and binlog position,
 restore it to an isolated target, and record validation and restore duration.
@@ -126,7 +128,7 @@ This phase prepares a recovery point; it does not authorize migration.
 
 ### DT6 — Controlled migration
 
-Status: **BLOCKED BY DT5, PHASE 3.9 ACCEPTANCE AND OPERATOR APPROVAL**
+Status: **READY AFTER DT5 PASS / EXACT OPERATOR APPROVAL REQUIRED**
 
 Render and review exactly one `content` canary Job. Run it only after explicit
 approval, verify completion and schema/checksum state, then stop. Remaining Jobs
@@ -134,14 +136,14 @@ run sequentially and stop at the first failure.
 
 ### DT7 — GitOps render and controlled sync
 
-Status: **BLOCKED**
+Status: **READY AFTER DT6 CANARY / EXACT OPERATOR APPROVAL REQUIRED**
 
 Render all runtime references with reviewed immutable digests, inspect the full
 GitOps diff and sync only after explicit operator approval.
 
 ### DT8 — Service acceptance
 
-Status: **BLOCKED**
+Status: **READY AFTER DT7 / INTERNAL-FIRST ACCEPTANCE**
 
 Acceptance requires stable Ready pods, Vault injection, probes, internal service
 discovery, API Gateway routing, ingress, observability, smoke/E2E tests, resource
@@ -199,8 +201,8 @@ Application image revision: e1af81dc96d5dc59876f090614e68dc48a32c59f
 Harbor: 9 image tags and digests verified at devops-apps/zabisa
 GitOps: PASS at 96cef84; 16 image references / 12 manifests
 Jenkins parent: DISABLED
-Physical Android redesign acceptance: PENDING
-Backoffice post-redesign acceptance: PENDING
+Physical Android redesign acceptance: PASS at f1ba188
+Backoffice post-redesign acceptance: PASS at f1ba188
 Cluster image pull: NOT PROVEN
 Migration: NOT RUN
 Application: NOT DEPLOYED
