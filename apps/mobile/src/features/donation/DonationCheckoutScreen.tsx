@@ -11,6 +11,7 @@ const presets = [50000, 100000, 250000, 500000];
 
 export default function DonationCheckoutScreen({route}: RootStackScreenProps<'DonationCheckout'>) {
   const campaign = route.params.campaign;
+  const idempotencySequence = React.useRef(0);
   const [amount, setAmount] = React.useState('100000');
   const [name, setName] = React.useState('');
   const [email, setEmail] = React.useState('');
@@ -19,10 +20,14 @@ export default function DonationCheckoutScreen({route}: RootStackScreenProps<'Do
   const [result, setResult] = React.useState<DonationResult | null>(null);
   const methods = useQuery({queryKey: ['payment-methods'], queryFn: () => api<PaymentMethod[]>('/api/v1/donation/payment-methods')});
   React.useEffect(() => { if (methods.data?.length && !method) setMethod(methods.data[0].method_code); }, [methods.data, method]);
+  const nextIdempotencyKey = React.useCallback(() => {
+    idempotencySequence.current += 1;
+    return `donation-${campaign.id}-${Date.now()}-${idempotencySequence.current}`;
+  }, [campaign.id]);
   const mutation = useMutation({
     mutationFn: () => api<DonationResult>('/api/v1/donations', {
       method: 'POST',
-      headers: {'Idempotency-Key': `${Date.now()}-${Math.random().toString(36).slice(2)}`},
+      headers: {'Idempotency-Key': nextIdempotencyKey()},
       body: JSON.stringify({campaign_id: campaign.id, donor_name: name, donor_email: email, anonymous: false, message, amount: Number(amount), payment_method: method}),
     }),
     onSuccess: setResult,

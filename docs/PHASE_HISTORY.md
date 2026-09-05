@@ -432,3 +432,11 @@ rejected the inherited value before applying the override and skipped all 70
 TypeScript files. DT4.5.1 moves Jenkins control metadata below ignored
 `build/`, makes the Sonar configs standalone and adds a verified resume path
 that reuses readiness evidence while running one new complete delivery build.
+
+## DT4.5.2 — Sonar hotspot closure
+
+Removed the ten source-level security hotspots reported by Jenkins build `#8`:
+eight Docker wildcard copies, one weak donation identifier generator and one
+hard-coded clear-text Backoffice backend default. Expanded the Sonar TypeScript
+set to 70/70 files and added an offline regression verifier. The blocking
+Quality Gate remains unchanged.

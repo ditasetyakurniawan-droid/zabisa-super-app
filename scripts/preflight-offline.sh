@@ -147,6 +147,9 @@ pass 'DT4.2 existing Jenkins/Sonar/Harbor delivery alignment invariants'
 ./scripts/verify-dt43-delivery-controls.sh || fail 'DT4.3 controlled Jenkins delivery invariants failed'
 pass 'DT4.3 default-off Jenkins build/push/render controls'
 
+./scripts/verify-dt452-sonar-hotspots.sh || fail 'DT4.5.2 Sonar hotspot closure invariants failed'
+pass 'DT4.5.2 Sonar hotspot and TypeScript coverage invariants'
+
 ./scripts/verify-quality-gate.sh || fail 'CI/Sonar quality gate invariants failed'
 pass 'CI/Sonar quality gate invariants'
 

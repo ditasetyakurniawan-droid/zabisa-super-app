@@ -1,4 +1,4 @@
-# Project State — Application Baseline and DT4.5.1 Hotfix Checkpoint
+# Project State — Application Baseline and DT4.5.2 Sonar Checkpoint
 
 ## Executive status
 
@@ -43,6 +43,9 @@ Verified:
 - the Trivy 0.74.0 readiness incompatibility is proven corrected live;
 - Jenkins root-artifact handling and the legacy Sonar TypeScript analyzer
   compatibility gap are corrected by the DT4.5.1 source hotfix.
+- all ten DT4.5.2 Sonar security hotspots are removed from source without
+  marking findings safe or weakening the private Quality Gate;
+- the admin Sonar project includes all intended 70 TypeScript source files.
 
 Not run:
 
@@ -51,7 +54,7 @@ Not run:
 - database backup/isolated restore drill or migration;
 - application Deployment or ArgoCD sync.
 
-The active next execution is the DT4.5.1 controlled resume. It verifies and
+The active next execution is the DT4.5.2 controlled resume. It verifies and
 reuses successful readiness build `#6`, then runs one new parameterized build
 containing source quality, private Sonar, Quality Gate, Trivy readiness, nine
 image builds/scans/SBOMs, Harbor push and GitOps publication. The parent job

@@ -30,7 +30,10 @@
     "components/**/*.ts",
     "components/**/*.tsx",
     "lib/**/*.ts",
-    "lib/**/*.tsx"
+    "lib/**/*.tsx",
+    "e2e/**/*.ts",
+    "e2e/**/*.tsx",
+    "playwright.config.ts"
   ],
   "exclude": [
     "node_modules",
