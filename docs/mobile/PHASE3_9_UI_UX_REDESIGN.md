@@ -2,17 +2,22 @@
 
 ## Scope
 
-Phase 3.9 is a pure UI/UX redesign. It changes visual tokens, component shape,
+Phase 3.9/3.9.1 is a pure UI/UX redesign. It changes visual tokens, component shape,
 layout hierarchy, microcopy presentation, navigation styling and ambient
 Islamic geometry. It does not change application logic, backend contracts,
 state management, validation, authentication, transactions or user-flow order.
 
-## Implemented presentation
+## Accepted direction
 
-- Sakinah emerald/ivory/gold semantic tokens.
+- The first Sakinah emerald direction was implemented and physically reviewed,
+  then rejected because its four-column shortcuts and monochrome treatment felt
+  rigid and dated. It is not the forward design baseline.
+- Nawasena cobalt/navy/cyan/gold semantic tokens are the active direction.
+- Original Quran learner mascot is bundled locally with no external dependency.
+- Eight actions retain the same routes but now have distinct service identity.
 - Shared animated Islamic ornament with reduced-motion fallback.
-- Consistent button family and 48dp minimum touch target.
-- Warm layered canvas, arch feature surfaces and restrained card elevation.
+- 48dp minimum touch target and readable text hierarchy.
+- Cool layered canvas, premium hero surface and restrained card elevation.
 - Decorated contextual headers and detail headers.
 - Floating five-item bottom navigation with unchanged destinations.
 - Icon-led Kajian, Donation and Content lists.

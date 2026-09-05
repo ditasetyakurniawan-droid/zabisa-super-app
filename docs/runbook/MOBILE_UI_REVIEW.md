@@ -11,7 +11,7 @@ Before accepting a mobile UI increment:
 
 ## Phase 3.9 zero-logic review
 
-For the Sakinah redesign, inspect the changeset before acceptance:
+For the Nawasena redesign, inspect the changeset before acceptance:
 
 ```bash
 git diff --name-only <baseline>...HEAD -- apps/mobile/src

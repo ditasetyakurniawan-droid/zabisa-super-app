@@ -1,6 +1,6 @@
-# ADR-011: Mobile Sakinah Presentation System
+# ADR-011: Mobile Presentation System
 
-Status: Accepted for Phase 3.9
+Status: Amended by Phase 3.9.1 physical review
 
 ## Context
 
@@ -11,8 +11,10 @@ before the first controlled database migration.
 
 ## Decision
 
-Adopt the Sakinah semantic design system: emerald action color, warm ivory
-canvas, restrained gold ornament, local icons, 48dp minimum controls, floating
+The original Sakinah direction was implemented but rejected in physical review.
+Adopt the Nawasena semantic design system: cobalt global actions, deep navy
+hero surfaces, digital cyan, restrained gold, a stable colour per service,
+local icons, an original Quran learner mascot, 48dp minimum controls, unchanged
 five-destination navigation and reduced-motion-aware geometric animation.
 
 Implementation is limited to `src/theme`, shared presentational components,
@@ -23,7 +25,8 @@ transaction payloads and navigation order are invariant.
 ## Consequences
 
 - A shared token change updates the entire application consistently.
-- Buttons have one recognizable brand treatment across screens.
+- Buttons share one component contract while service actions retain a stable,
+  recognizable colour identity.
 - Islamic character is visible without delaying interaction or data loading.
 - Automated source checks can prohibit changes to logic-bearing mobile files.
 - Physical Android and Backoffice acceptance remain mandatory before database

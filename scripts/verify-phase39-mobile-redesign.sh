@@ -13,8 +13,10 @@ fail() {
 sha256sum -c docs/mobile/PHASE3_9_LOGIC_BASELINE.sha256 >/dev/null \
   || fail 'a protected mobile logic/dependency file changed'
 
-grep -Fq "primary: '#087A68'" apps/mobile/src/theme/tokens.ts \
-  || fail 'Sakinah primary token missing'
+grep -Fq "primary: '#1769E0'" apps/mobile/src/theme/tokens.ts \
+  || fail 'Nawasena primary token missing'
+grep -Fq 'export const serviceColors' apps/mobile/src/theme/tokens.ts \
+  || fail 'distinct service colour tokens missing'
 grep -Fq 'minimumTapSize: 48' apps/mobile/src/theme/tokens.ts \
   || fail '48dp accessibility target missing'
 grep -Fq 'AccessibilityInfo.isReduceMotionEnabled()' apps/mobile/src/components/UI.tsx \
@@ -23,6 +25,10 @@ grep -Fq 'Animated.loop' apps/mobile/src/components/UI.tsx \
   || fail 'ambient Islamic motion missing'
 grep -Fq 'export function IslamicOrnament' apps/mobile/src/components/UI.tsx \
   || fail 'shared Islamic ornament missing'
+grep -Fq "require('../../assets/zabisa-quran-mascot.png')" apps/mobile/src/features/home/HomeScreen.tsx \
+  || fail 'original Quran learner mascot missing from Home'
+[[ -s apps/mobile/src/assets/zabisa-quran-mascot.png ]] \
+  || fail 'mascot asset missing'
 grep -Fq 'backgroundColor: colors.primary' apps/mobile/src/components/UI.tsx \
   || fail 'shared primary button styling missing'
 
@@ -43,4 +49,4 @@ for doc in \
   [[ -s "$doc" ]] || fail "required redesign document missing: $doc"
 done
 
-echo '[phase39-mobile] PASS: Sakinah presentation is present and protected mobile logic is unchanged.'
+echo '[phase39-mobile] PASS: Nawasena presentation is present and protected mobile logic is unchanged.'

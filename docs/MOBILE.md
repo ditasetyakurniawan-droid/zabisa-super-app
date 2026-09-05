@@ -47,10 +47,11 @@ Avoid returning to a gigantic `App.tsx` or oversized screens.
 
 ## UI baseline
 
-Current Phase 3.9 design uses the Sakinah emerald, warm-ivory and restrained
-gold palette. It is an independent Zabisa design and must not copy another
-application's trade dress or assets. Islamic geometry is presentation-only,
-non-blocking and reduced-motion aware.
+Current Phase 3.9.1 design uses the Nawasena cobalt, navy, cyan and restrained
+gold palette. It supersedes the rejected Sakinah physical-review candidate and
+remains an independent Zabisa design that does not copy another application's
+trade dress or assets. Islamic motion is presentation-only, non-blocking and
+reduced-motion aware.
 
 Implemented UI foundations include:
 
@@ -62,7 +63,7 @@ Implemented UI foundations include:
 - Guardian overview/student views;
 - Content/Kajian/Donation/Notification flows;
 - bottom-tab polish and safe-area handling.
-- one consistent emerald button family and 48dp minimum tap targets;
+- one component family, distinct service colours and 48dp minimum tap targets;
 - shared ambient arch/star ornament hidden from accessibility traversal.
 
 ## Authentication/navigation

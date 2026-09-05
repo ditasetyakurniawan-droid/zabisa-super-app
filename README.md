@@ -13,7 +13,8 @@ contains 16 matching image references across 12 manifests. The Jenkins parent
 job is disabled. Database migration, Kubernetes workload deployment and ArgoCD
 sync have not run.
 
-The active development checkpoint is Phase 3.9, a mobile UI/UX-only redesign.
+The active development checkpoint is Phase 3.9.1 Nawasena, a mobile UI/UX-only
+redesign that supersedes the rejected Sakinah visual direction.
 Physical Android and Backoffice acceptance must pass before database migration
 is considered.
 

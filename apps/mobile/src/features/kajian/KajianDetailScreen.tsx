@@ -1,7 +1,7 @@
 import React from 'react';
 import {Linking, StyleSheet, Text} from 'react-native';
 import {Button, Card, DetailHeader, ScrollScreen, SectionTitle} from '../../components/UI';
-import {colors, space, type} from '../../theme/tokens';
+import {colors, serviceColors, space, type} from '../../theme/tokens';
 import type {RootStackScreenProps} from '../../navigation/types';
 
 export default function KajianDetailScreen({route}: RootStackScreenProps<'KajianDetail'>) {
@@ -15,8 +15,8 @@ export default function KajianDetailScreen({route}: RootStackScreenProps<'Kajian
       <Card>
         <Text style={styles.label}>WAKTU</Text><Text style={styles.value}>{new Date(kajian.start_at).toLocaleString('id-ID')}</Text>
         <Text style={styles.label}>LOKASI</Text><Text style={styles.value}>{kajian.location || 'Lokasi menyusul'}</Text>
-        {mapURL ? <Button secondary title="Buka peta" onPress={() => Linking.openURL(mapURL)} /> : null}
-        {liveURL ? <Button secondary title="Buka live stream" onPress={() => Linking.openURL(liveURL)} /> : null}
+        {mapURL ? <Button secondary color={serviceColors.kajian.solid} softColor={serviceColors.kajian.soft} title="Buka peta" onPress={() => Linking.openURL(mapURL)} /> : null}
+        {liveURL ? <Button secondary color={serviceColors.kajian.solid} softColor={serviceColors.kajian.soft} title="Buka live stream" onPress={() => Linking.openURL(liveURL)} /> : null}
       </Card>
       <SectionTitle>Deskripsi</SectionTitle>
       <Text style={styles.body}>{kajian.description || 'Deskripsi kajian belum tersedia.'}</Text>

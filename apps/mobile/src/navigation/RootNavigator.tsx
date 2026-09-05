@@ -1,5 +1,5 @@
 import React from 'react';
-import {Linking} from 'react-native';
+import {Linking, StyleSheet, View} from 'react-native';
 import {
   createNavigationContainerRef,
   DefaultTheme,
@@ -21,7 +21,7 @@ import GuardianStudentScreen from '../features/guardian/GuardianStudentScreen';
 import ContentListScreen from '../features/content/ContentListScreen';
 import ContentDetailScreen from '../features/content/ContentDetailScreen';
 import {AppIcon, type AppIconName} from '../components/AppIcon';
-import {colors, radius, shadowSoft, space} from '../theme/tokens';
+import {colors, radius, serviceColors, shadowSoft, space} from '../theme/tokens';
 import {useAuth} from '../store/auth';
 import {api} from '../api/client';
 import type {Kajian, Student} from '../types/domain';
@@ -31,30 +31,29 @@ import type {MainTabParamList, RootStackParamList} from './types';
 const Tab = createBottomTabNavigator<MainTabParamList>();
 const Stack = createNativeStackNavigator<RootStackParamList>();
 const navigationRef = createNavigationContainerRef<RootStackParamList>();
-type IconProps = {color: string; size: number};
-const makeIcon = (name: AppIconName) => function TabIcon({color, size}: IconProps) {
-  return <AppIcon name={name} color={color} size={Math.min(size, 22)} />;
+type IconProps = {color: string; size: number; focused: boolean};
+const makeIcon = (name: AppIconName, solid: string, soft: string) => function TabIcon({color, size, focused}: IconProps) {
+  return <View style={[styles.tabIcon, focused && {backgroundColor: soft}]}><AppIcon name={name} color={focused ? solid : color} size={Math.min(size, 21)} /></View>;
 };
 const iconRenderers = {
-  Home: makeIcon('home'),
-  Kajian: makeIcon('kajian'),
-  Donasi: makeIcon('donation'),
-  Notifikasi: makeIcon('notification'),
-  Akun: makeIcon('account'),
+  Home: makeIcon('home', colors.primary, colors.primarySoft),
+  Kajian: makeIcon('kajian', serviceColors.kajian.solid, serviceColors.kajian.soft),
+  Donasi: makeIcon('donation', serviceColors.donation.solid, serviceColors.donation.soft),
+  Notifikasi: makeIcon('notification', serviceColors.notification.solid, serviceColors.notification.soft),
+  Akun: makeIcon('account', serviceColors.account.solid, serviceColors.account.soft),
 };
 
 const tabBaseOptions: BottomTabNavigationOptions = {
   headerShown: false,
   tabBarActiveTintColor: colors.primary,
   tabBarInactiveTintColor: colors.muted,
-  tabBarActiveBackgroundColor: colors.primarySofter,
   tabBarHideOnKeyboard: true,
   tabBarStyle: {
-    height: 76,
-    paddingBottom: space.sm,
-    paddingTop: space.sm,
-    marginHorizontal: space.md,
-    marginBottom: space.sm,
+    height: 78,
+    paddingBottom: 7,
+    paddingTop: 7,
+    marginHorizontal: space.sm,
+    marginBottom: 6,
     borderColor: colors.line,
     borderWidth: 1,
     borderTopWidth: 1,
@@ -62,8 +61,8 @@ const tabBaseOptions: BottomTabNavigationOptions = {
     backgroundColor: colors.surface,
     ...shadowSoft,
   },
-  tabBarLabelStyle: {fontSize: 10.5, fontWeight: '800', marginTop: 2},
-  tabBarItemStyle: {borderRadius: radius.md, marginHorizontal: 2, marginVertical: 2},
+  tabBarLabelStyle: {fontSize: 10, fontWeight: '800', marginTop: 1},
+  tabBarItemStyle: {borderRadius: radius.md, marginHorizontal: 1},
 };
 
 function Tabs() {
@@ -90,6 +89,10 @@ function Tabs() {
     </Tab.Navigator>
   );
 }
+
+const styles = StyleSheet.create({
+  tabIcon: {width: 38, height: 32, borderRadius: 12, alignItems: 'center', justifyContent: 'center'},
+});
 
 export default function RootNavigator() {
   const user = useAuth(s => s.user);

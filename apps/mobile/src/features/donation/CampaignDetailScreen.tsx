@@ -3,7 +3,7 @@ import {StyleSheet, Text} from 'react-native';
 import {useQuery} from '@tanstack/react-query';
 import {api, userMessage} from '../../api/client';
 import {Button, Card, DetailHeader, Empty, ErrorState, Loading, Muted, ScrollScreen, SectionTitle} from '../../components/UI';
-import {colors, space, type} from '../../theme/tokens';
+import {colors, serviceColors, space, type} from '../../theme/tokens';
 import type {CampaignUpdate} from '../../types/domain';
 import type {RootStackScreenProps} from '../../navigation/types';
 
@@ -17,7 +17,7 @@ export default function CampaignDetailScreen({navigation, route}: RootStackScree
         <Text style={styles.label}>TERKUMPUL</Text>
         <Text style={styles.money}>Rp {Number(campaign.collected_amount || 0).toLocaleString('id-ID')}</Text>
         {campaign.target_amount ? <Muted>Target Rp {Number(campaign.target_amount).toLocaleString('id-ID')}</Muted> : null}
-        <Button title="Donasi sekarang" icon="donation" onPress={() => navigation.navigate('DonationCheckout', {campaign})} />
+        <Button color={serviceColors.donation.solid} softColor={serviceColors.donation.soft} title="Donasi sekarang" icon="donation" onPress={() => navigation.navigate('DonationCheckout', {campaign})} />
       </Card>
       <SectionTitle>Tentang campaign</SectionTitle>
       <Text style={styles.body}>{campaign.description || 'Deskripsi campaign belum tersedia.'}</Text>
@@ -33,7 +33,7 @@ export default function CampaignDetailScreen({navigation, route}: RootStackScree
 const styles = StyleSheet.create({
   summary: {marginTop: space.lg},
   label: {...type.caption, color: colors.muted, fontWeight: '900'},
-  money: {fontSize: 27, lineHeight: 34, fontWeight: '900', color: colors.primary, marginVertical: space.sm},
+  money: {fontSize: 27, lineHeight: 34, fontWeight: '900', color: serviceColors.donation.solid, marginVertical: space.sm},
   body: {...type.body, color: colors.text},
   updateTitle: {...type.bodyStrong, color: colors.text, marginBottom: space.sm},
 });

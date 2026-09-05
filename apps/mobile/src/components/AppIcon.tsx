@@ -20,14 +20,14 @@ const sources = {
 
 export type AppIconName = keyof typeof sources;
 
-type Props = {name: AppIconName; size?: number; color?: string; background?: boolean};
+type Props = {name: AppIconName; size?: number; color?: string; background?: boolean; backgroundColor?: string; borderColor?: string};
 
-export function AppIcon({name, size = 22, color = colors.primary, background = false}: Props) {
+export function AppIcon({name, size = 22, color = colors.primary, background = false, backgroundColor, borderColor}: Props) {
   const image = <Image source={sources[name]} resizeMode="contain" style={{width: size, height: size, tintColor: color}} />;
   if (!background) return image;
-  return <View style={styles.background}>{image}</View>;
+  return <View style={[styles.background, backgroundColor ? {backgroundColor} : null, borderColor ? {borderColor} : null]}>{image}</View>;
 }
 
 const styles = StyleSheet.create({
-  background: {width: 48, height: 48, borderRadius: 18, borderWidth: 1, borderColor: colors.lineStrong, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.primarySofter},
+  background: {width: 48, height: 48, borderRadius: 16, borderWidth: 1, borderColor: colors.lineStrong, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.primarySofter},
 });

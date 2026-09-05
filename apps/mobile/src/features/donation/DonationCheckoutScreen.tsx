@@ -3,7 +3,7 @@ import {StyleSheet, Text, View} from 'react-native';
 import {useMutation, useQuery} from '@tanstack/react-query';
 import {api, userMessage} from '../../api/client';
 import {Button, Card, DetailHeader, ErrorState, Loading, Muted, ScrollScreen, SectionTitle, TextField} from '../../components/UI';
-import {colors, space, type} from '../../theme/tokens';
+import {colors, serviceColors, space, type} from '../../theme/tokens';
 import type {DonationResult, PaymentMethod} from '../../types/domain';
 import type {RootStackScreenProps} from '../../navigation/types';
 import {nextDonationIdempotencyKey} from './idempotency';
@@ -46,7 +46,7 @@ export default function DonationCheckoutScreen({route}: RootStackScreenProps<'Do
       ) : (
         <>
           <SectionTitle>Nominal</SectionTitle>
-          <View style={styles.presets}>{presets.map(value => <View key={value} style={styles.preset}><Button secondary={Number(amount) !== value} title={`Rp ${value.toLocaleString('id-ID')}`} onPress={() => setAmount(String(value))} /></View>)}</View>
+          <View style={styles.presets}>{presets.map(value => <View key={value} style={styles.preset}><Button color={serviceColors.donation.solid} softColor={serviceColors.donation.soft} secondary={Number(amount) !== value} title={`Rp ${value.toLocaleString('id-ID')}`} onPress={() => setAmount(String(value))} /></View>)}</View>
           <TextField label="Nominal lainnya" keyboardType="numeric" value={amount} onChangeText={setAmount} placeholder="100000" />
           <SectionTitle>Data donor</SectionTitle>
           <TextField label="Nama" value={name} onChangeText={setName} placeholder="Opsional" />
@@ -55,9 +55,9 @@ export default function DonationCheckoutScreen({route}: RootStackScreenProps<'Do
           <SectionTitle>Metode pembayaran</SectionTitle>
           {methods.isLoading ? <Loading /> : null}
           {methods.isError ? <ErrorState message={userMessage(methods.error)} onRetry={() => methods.refetch()} /> : null}
-          {methods.data?.map(item => <Button key={item.method_code} secondary={method !== item.method_code} title={item.display_name} onPress={() => setMethod(item.method_code)} />)}
+          {methods.data?.map(item => <Button key={item.method_code} color={serviceColors.donation.solid} softColor={serviceColors.donation.soft} secondary={method !== item.method_code} title={item.display_name} onPress={() => setMethod(item.method_code)} />)}
           {mutation.error ? <ErrorState message={userMessage(mutation.error)} /> : null}
-          <Button disabled={!method || Number(amount) <= 0 || mutation.isPending} title={mutation.isPending ? 'Membuat transaksi...' : 'Buat transaksi'} onPress={() => mutation.mutate()} />
+          <Button color={serviceColors.donation.solid} softColor={serviceColors.donation.soft} disabled={!method || Number(amount) <= 0 || mutation.isPending} title={mutation.isPending ? 'Membuat transaksi...' : 'Tunaikan niat baik'} onPress={() => mutation.mutate()} />
         </>
       )}
     </ScrollScreen>
@@ -72,6 +72,6 @@ const styles = StyleSheet.create({
   id: {...type.caption, color: colors.text, marginVertical: space.xs},
   heading: {...type.bodyStrong, color: colors.text},
   body: {...type.body, color: colors.text},
-  account: {fontSize: 23, lineHeight: 29, fontWeight: '900', color: colors.primary, marginVertical: space.sm},
+  account: {fontSize: 23, lineHeight: 29, fontWeight: '900', color: serviceColors.donation.solid, marginVertical: space.sm},
   instructions: {...type.body, color: colors.text, marginTop: space.md},
 });

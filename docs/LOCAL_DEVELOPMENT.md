@@ -20,6 +20,26 @@ curl -fsS http://127.0.0.1:8088/health/live
 curl -fsS http://127.0.0.1:3001/login >/dev/null
 ```
 
+### Legacy local migration recovery
+
+If Backoffice returns 502 while `admin-web`, gateway and MySQL ports are bound,
+inspect the service logs. The exact message `legacy records without checksums`
+means an old **local demo** volume predates checksum-enforced migrations. This
+is not a port collision and unrelated homelab services must not be stopped.
+
+The controlled recovery backs up all local databases, validates the Compose
+volume label, stops only Zabisa, removes only its `mysql_data` volume, rebuilds
+the stack and runs the local vertical-slice proof:
+
+```bash
+ZABISA_LOCAL_RESET_CONFIRM=RESET-ZABISA-LOCAL-DEMO-DB \
+  ./scripts/reset-local-development-db.sh --run
+```
+
+Backups are written with owner-only permissions below
+`~/project-homelab/zabisa-local-db-backups/`. Never use this local recovery for
+DT MySQL, Kubernetes migration jobs or ArgoCD.
+
 ## Local endpoints
 
 - Backoffice: `http://localhost:3001`

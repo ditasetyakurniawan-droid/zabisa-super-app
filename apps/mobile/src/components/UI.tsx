@@ -147,7 +147,7 @@ export function Body({children, style}: {children: React.ReactNode; style?: obje
   return <Text style={[styles.body, style]}>{children}</Text>;
 }
 
-export function Button({title, onPress, disabled, secondary, icon}: {title: string; onPress: () => void; disabled?: boolean; secondary?: boolean; icon?: AppIconName}) {
+export function Button({title, onPress, disabled, secondary, icon, color = colors.primary, softColor = colors.primarySofter}: {title: string; onPress: () => void; disabled?: boolean; secondary?: boolean; icon?: AppIconName; color?: string; softColor?: string}) {
   return (
     <Pressable
       accessibilityRole="button"
@@ -155,10 +155,10 @@ export function Button({title, onPress, disabled, secondary, icon}: {title: stri
       accessibilityLabel={title}
       disabled={disabled}
       onPress={onPress}
-      android_ripple={{color: secondary ? colors.skySoft : colors.onPrimaryRipple}}
-      style={({pressed}) => [styles.button, secondary && styles.secondaryButton, disabled && styles.disabled, pressed && styles.pressed]}>
-      {icon ? <AppIcon name={icon} size={19} color={secondary ? colors.primary : colors.white} /> : null}
-      <Text style={[styles.buttonText, secondary && styles.secondaryButtonText]}>{title}</Text>
+      android_ripple={{color: secondary ? softColor : colors.onPrimaryRipple}}
+      style={({pressed}) => [styles.button, {backgroundColor: color, borderColor: color}, secondary && styles.secondaryButton, secondary && {backgroundColor: softColor, borderColor: color}, disabled && styles.disabled, pressed && styles.pressed]}>
+      {icon ? <AppIcon name={icon} size={19} color={secondary ? color : colors.white} /> : null}
+      <Text style={[styles.buttonText, secondary && styles.secondaryButtonText, secondary && {color}]}>{title}</Text>
     </Pressable>
   );
 }
@@ -198,11 +198,16 @@ export function TextField({label, error, secureToggle, style, ...props}: TextInp
   );
 }
 
-export function IconTile({icon, label, onPress}: {icon: AppIconName; label: string; onPress: () => void}) {
+export function IconTile({icon, label, subtitle, onPress, color = colors.primary, softColor = colors.primarySofter}: {icon: AppIconName; label: string; subtitle?: string; onPress: () => void; color?: string; softColor?: string}) {
   return (
-    <Pressable accessibilityRole="button" accessibilityLabel={label} onPress={onPress} android_ripple={{color: colors.primarySoft}} style={({pressed}) => [styles.iconTile, pressed && styles.pressed]}>
-      <AppIcon name={icon} size={23} background />
-      <Text numberOfLines={1} style={styles.iconTileText}>{label}</Text>
+    <Pressable accessibilityRole="button" accessibilityLabel={label} onPress={onPress} android_ripple={{color: softColor}} style={({pressed}) => [styles.iconTile, pressed && styles.pressed]}>
+      <View style={[styles.iconTileAccent, {backgroundColor: color}]} />
+      <AppIcon name={icon} size={22} color={color} background backgroundColor={softColor} borderColor={softColor} />
+      <View style={styles.iconTileCopy}>
+        <Text numberOfLines={1} style={styles.iconTileText}>{label}</Text>
+        {subtitle ? <Text numberOfLines={1} style={styles.iconTileSubtitle}>{subtitle}</Text> : null}
+      </View>
+      <Text style={[styles.iconTileArrow, {color}]}>›</Text>
     </Pressable>
   );
 }
@@ -225,9 +230,11 @@ export function ErrorState({message = 'Data belum dapat dimuat.', onRetry}: {mes
   return (
     <View style={styles.errorState}>
       <View style={styles.errorIcon}><Text style={styles.errorMark}>!</Text></View>
-      <Text style={styles.errorTitle}>Ada kendala</Text>
-      <Muted style={{textAlign: 'center'}}>{message}</Muted>
-      {onRetry ? <Button secondary title="Coba lagi" onPress={onRetry} /> : null}
+      <View style={styles.errorCopy}>
+        <Text style={styles.errorTitle}>Belum tersambung</Text>
+        <Muted>{message}</Muted>
+      </View>
+      {onRetry ? <Pressable accessibilityRole="button" accessibilityLabel="Coba lagi" onPress={onRetry} style={({pressed}) => [styles.errorRetry, pressed && styles.pressed]}><Text style={styles.errorRetryText}>Coba lagi</Text></Pressable> : null}
     </View>
   );
 }
@@ -245,20 +252,20 @@ export function StatCard({icon, value, label}: {icon: AppIconName; value: string
 const styles = StyleSheet.create({
   screen: {flex: 1, backgroundColor: colors.background, overflow: 'hidden'},
   screenContent: {flex: 1, zIndex: 1},
-  canvasGlow: {position: 'absolute', width: 260, height: 260, borderRadius: 130, backgroundColor: colors.primarySoft, opacity: 0.45, right: -150, top: -120},
+  canvasGlow: {position: 'absolute', width: 300, height: 300, borderRadius: 150, backgroundColor: colors.skySoft, opacity: 0.62, right: -178, top: -142},
   scrollContent: {paddingHorizontal: space.lg, paddingTop: space.lg, paddingBottom: space.jumbo, zIndex: 1},
-  appHeader: {paddingHorizontal: space.lg, paddingTop: space.xl, paddingBottom: space.lg, minHeight: 126, flexDirection: 'row', alignItems: 'flex-start', overflow: 'hidden'},
+  appHeader: {paddingHorizontal: space.lg, paddingTop: space.xl, paddingBottom: space.lg, minHeight: 122, flexDirection: 'row', alignItems: 'flex-start', overflow: 'hidden'},
   headerCopy: {flex: 1, zIndex: 2, paddingRight: space.md},
   eyebrowRow: {flexDirection: 'row', alignItems: 'center', marginBottom: space.xs},
-  eyebrowLine: {width: 22, height: 2, borderRadius: radius.pill, backgroundColor: colors.accent, marginRight: space.sm},
+  eyebrowLine: {width: 22, height: 3, borderRadius: radius.pill, backgroundColor: colors.sky, marginRight: space.sm},
   eyebrow: {...type.micro, color: colors.primary, textTransform: 'uppercase'},
   headerTitle: {...type.title, color: colors.text},
   headerSubtitle: {...type.body, color: colors.muted, marginTop: space.xs, maxWidth: 520},
   card: {backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.line, borderRadius: radius.lg, padding: space.lg, marginBottom: space.md, ...shadowSoft},
   pressableCard: {overflow: 'hidden'},
-  hero: {backgroundColor: colors.primaryDeep, borderRadius: radius.arch, minHeight: 220, overflow: 'hidden', position: 'relative', ...shadow},
+  hero: {backgroundColor: colors.primaryDeep, borderRadius: radius.xl, minHeight: 238, overflow: 'hidden', position: 'relative', ...shadow},
   heroContent: {padding: space.xl, zIndex: 3},
-  heroGlow: {position: 'absolute', width: 250, height: 250, borderRadius: 125, backgroundColor: colors.primary, opacity: 0.72, left: -116, bottom: -155},
+  heroGlow: {position: 'absolute', width: 290, height: 290, borderRadius: 145, backgroundColor: colors.primary, opacity: 0.82, left: -130, bottom: -178},
   ornament: {position: 'absolute', width: 172, height: 172, right: -18, top: 8, alignItems: 'center', justifyContent: 'center', opacity: 0.92},
   ornamentCompact: {width: 92, height: 92, right: -8, top: 8, opacity: 0.7},
   ornamentHalo: {position: 'absolute', width: 116, height: 116, borderRadius: 58, borderWidth: 1, borderColor: colors.ornament},
@@ -272,7 +279,7 @@ const styles = StyleSheet.create({
   ornamentArchLight: {borderColor: colors.ornamentSoft},
   title: {...type.title, color: colors.text},
   display: {...type.display, color: colors.text},
-  detailHeader: {position: 'relative', overflow: 'hidden', backgroundColor: colors.surfaceWarm, borderWidth: 1, borderColor: colors.line, borderRadius: radius.arch, padding: space.xl, minHeight: 150, justifyContent: 'center', marginBottom: space.lg},
+  detailHeader: {position: 'relative', overflow: 'hidden', backgroundColor: colors.surfaceWarm, borderWidth: 1, borderColor: colors.line, borderRadius: radius.xl, padding: space.xl, minHeight: 144, justifyContent: 'center', marginBottom: space.lg},
   detailHeaderRow: {flexDirection: 'row', alignItems: 'center', gap: space.lg, zIndex: 2},
   detailHeaderCopy: {flex: 1},
   detailEyebrow: {...type.micro, color: colors.accentDark, textTransform: 'uppercase', marginBottom: space.xs},
@@ -299,8 +306,12 @@ const styles = StyleSheet.create({
   inputAction: {minWidth: 76, minHeight: 48, alignItems: 'center', justifyContent: 'center', paddingHorizontal: space.sm},
   inputActionText: {...type.caption, color: colors.primary, fontWeight: '900'},
   fieldError: {...type.caption, color: colors.danger, marginTop: space.sm},
-  iconTile: {width: '23.5%', minHeight: 108, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.line, borderRadius: radius.lg, alignItems: 'center', justifyContent: 'center', paddingHorizontal: space.xs, paddingVertical: space.md, ...shadowSoft},
-  iconTileText: {...type.caption, color: colors.text, fontWeight: '900', marginTop: space.sm, textAlign: 'center'},
+  iconTile: {width: '48.5%', minHeight: 92, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.line, borderRadius: radius.lg, flexDirection: 'row', alignItems: 'center', padding: space.md, overflow: 'hidden', ...shadowSoft},
+  iconTileAccent: {position: 'absolute', left: 0, top: 18, bottom: 18, width: 4, borderTopRightRadius: 4, borderBottomRightRadius: 4},
+  iconTileCopy: {flex: 1, minWidth: 0, marginLeft: space.sm},
+  iconTileText: {...type.caption, color: colors.text, fontWeight: '900'},
+  iconTileSubtitle: {...type.micro, color: colors.muted, letterSpacing: 0, marginTop: 2},
+  iconTileArrow: {fontSize: 21, fontWeight: '700', marginLeft: 2},
   pill: {alignSelf: 'flex-start', borderRadius: radius.pill, paddingHorizontal: 11, paddingVertical: 6},
   pillNeutral: {backgroundColor: colors.surfaceMuted},
   pillPrimary: {backgroundColor: colors.primarySoft},
@@ -314,10 +325,13 @@ const styles = StyleSheet.create({
   pillTextDanger: {color: colors.danger},
   state: {paddingVertical: space.xxxl, paddingHorizontal: space.lg, alignItems: 'center', justifyContent: 'center'},
   stateText: {marginTop: space.md, textAlign: 'center', maxWidth: 300},
-  errorState: {marginVertical: space.md, padding: space.xl, borderWidth: 1, borderColor: colors.dangerLine, backgroundColor: colors.dangerSoft, borderRadius: radius.lg, alignItems: 'center'},
-  errorIcon: {width: 42, height: 42, borderRadius: 21, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.dangerIcon, marginBottom: space.sm},
+  errorState: {marginVertical: space.md, padding: space.md, borderWidth: 1, borderColor: colors.dangerLine, backgroundColor: colors.dangerSoft, borderRadius: radius.lg, flexDirection: 'row', alignItems: 'center'},
+  errorIcon: {width: 40, height: 40, borderRadius: 14, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.dangerIcon, marginRight: space.md},
+  errorCopy: {flex: 1, paddingRight: space.sm},
   errorMark: {fontSize: 20, fontWeight: '900', color: colors.danger},
   errorTitle: {...type.bodyStrong, color: colors.danger, marginBottom: space.xs},
+  errorRetry: {minHeight: control.minimumTapSize, justifyContent: 'center', paddingHorizontal: space.sm},
+  errorRetryText: {...type.caption, color: colors.danger, fontWeight: '900'},
   statCard: {flex: 1, minWidth: 0, minHeight: 136, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.line, borderRadius: radius.lg, padding: space.md, ...shadowSoft},
   statIcon: {width: 36, height: 36, borderRadius: 12, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.primarySoft},
   statValue: {fontSize: 27, lineHeight: 32, fontWeight: '900', color: colors.text, marginTop: space.md},

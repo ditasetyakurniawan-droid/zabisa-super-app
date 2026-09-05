@@ -496,3 +496,17 @@ ambient Islamic geometry. API, state, auth, validation, deep links, navigation
 destinations and business transactions remain unchanged. Automated mobile and
 Backoffice gates precede physical Android acceptance; migration remains blocked
 until both runtime surfaces pass.
+
+## Phase 3.9.1 — Mobile Nawasena redesign
+
+The first physical Android review rejected Sakinah's monochrome four-column
+shortcut grid, oversized error state and rigid visual rhythm. Nawasena replaces
+that presentation with an original cobalt/navy/cyan/gold enterprise identity,
+an original child-with-Quran mascot, compact two-column service cards and a
+stable unique colour per service. Islamic copy is grounded in Quran learning,
+adab, knowledge and life skills. Protected logic checksums, API/query behavior,
+auth/state, donation idempotency, deep links, five tabs and nine stack routes
+remain unchanged. Local Backoffice 502 diagnosis found no port collision; the
+old local MySQL volume contains pre-checksum migration records and requires an
+explicit backed-up local-only reinitialization. Migration and ArgoCD sync for
+DT remain prohibited during this phase.

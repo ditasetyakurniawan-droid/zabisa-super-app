@@ -4,7 +4,7 @@ import {useQuery} from '@tanstack/react-query';
 import {api, userMessage} from '../../api/client';
 import {AppIcon} from '../../components/AppIcon';
 import {AppHeader, Card, Empty, ErrorState, Loading, Muted, Screen} from '../../components/UI';
-import {colors, space, type} from '../../theme/tokens';
+import {colors, serviceColors, space, type} from '../../theme/tokens';
 import type {Kajian} from '../../types/domain';
 import {formatDateTimeID} from '../../utils/format';
 import type {MainTabScreenProps} from '../../navigation/types';
@@ -21,7 +21,7 @@ export default function KajianScreen({navigation}: MainTabScreenProps<'Kajian'>)
           renderItem={({item}) => (
             <Card onPress={() => navigation.navigate('KajianDetail', {kajian: item})}>
               <View style={styles.row}>
-                <AppIcon name="kajian" size={22} background />
+                <AppIcon name="kajian" size={22} color={serviceColors.kajian.solid} background backgroundColor={serviceColors.kajian.soft} borderColor={serviceColors.kajian.soft} />
                 <View style={styles.copy}>
                   <Text style={styles.title}>{item.title}</Text><Text style={styles.speaker}>{item.speaker || 'Pemateri akan diumumkan'}</Text>
                   <Muted>{formatDateTimeID(item.start_at)}</Muted><Muted>{item.location || 'Lokasi menyusul'}</Muted>
@@ -34,4 +34,4 @@ export default function KajianScreen({navigation}: MainTabScreenProps<'Kajian'>)
     </Screen>
   );
 }
-const styles = StyleSheet.create({body: {paddingHorizontal: space.lg}, list: {paddingHorizontal: space.lg, paddingTop: space.sm, paddingBottom: space.jumbo}, row: {flexDirection: 'row', alignItems: 'center', gap: space.md}, copy: {flex: 1}, title: {...type.bodyStrong, color: colors.text, marginBottom: space.xs}, speaker: {...type.caption, color: colors.primary, fontWeight: '800', marginBottom: space.sm}});
+const styles = StyleSheet.create({body: {paddingHorizontal: space.lg}, list: {paddingHorizontal: space.lg, paddingTop: space.sm, paddingBottom: space.jumbo}, row: {flexDirection: 'row', alignItems: 'center', gap: space.md}, copy: {flex: 1}, title: {...type.bodyStrong, color: colors.text, marginBottom: space.xs}, speaker: {...type.caption, color: serviceColors.kajian.solid, fontWeight: '800', marginBottom: space.sm}});

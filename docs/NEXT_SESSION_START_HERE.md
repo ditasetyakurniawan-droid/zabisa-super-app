@@ -13,14 +13,14 @@ git log --oneline -5
 ./scripts/preflight-offline.sh
 ```
 
-Expected repository state after DT4.5.7 completion and Phase 3.9 installation:
+Expected repository state after DT4.5.7 completion and Phase 3.9.1 installation:
 
 ```text
 main synchronized with origin/main
 clean worktree
 DT4.5.7 immutable delivery: COMPLETE
-Phase 3.9 automated mobile/Backoffice gates: PASS
-Physical Android acceptance: PENDING
+Phase 3.9.1 source/mobile/Backoffice gates: PASS
+Nawasena physical Android acceptance: PENDING
 ```
 
 ## 2. Read in this order
@@ -97,7 +97,7 @@ npm run mobile:quality
 
 Current source checkpoint:
 
-**Phase 3.9 — Mobile Sakinah UI/UX redesign acceptance**
+**Phase 3.9.1 — Mobile Nawasena UI/UX redesign acceptance**
 
 Jenkins build `#14` completed successfully for application revision
 `e1af81dc96d5dc59876f090614e68dc48a32c59f`. Harbor has nine verified images;
@@ -108,7 +108,9 @@ Next controlled execution:
 
 **Physical Android dev-mode and Backoffice acceptance**
 
-Run `ZABISA_REBUILD=1 npm run mobile:device`, follow
-`docs/mobile/PHASE3_9_UI_UX_REDESIGN.md`, then verify the local Backoffice.
+If the local stack reports legacy migration records without checksums, use the
+backed-up local-only reset documented in `docs/LOCAL_DEVELOPMENT.md`. Then run
+`ZABISA_REBUILD=1 npm run mobile:device`, follow
+`docs/mobile/PHASE3_9_1_NAWASENA_REDESIGN.md`, and verify Backoffice.
 Only after both are recorded PASS may DT5 backup/restore preparation begin.
 Migration, Kubernetes application and ArgoCD sync remain separate approvals.

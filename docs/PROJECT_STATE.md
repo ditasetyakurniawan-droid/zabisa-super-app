@@ -82,7 +82,7 @@ Not run:
 - database backup/isolated restore drill or migration;
 - application Deployment or ArgoCD sync.
 
-The active development phase is Phase 3.9 Mobile Sakinah UI/UX Redesign. Its
+The active development phase is Phase 3.9.1 Mobile Nawasena UI/UX Redesign. Its
 source scope is presentation-only. Physical Android and Backoffice acceptance
 must be recorded before the backup/migration track resumes. This does not
 authorize migration or sync.
@@ -139,13 +139,15 @@ Verified quality/runtime foundation:
 - populated development data across Tahfidz, grades, attendance, reports and
   notifications;
 - Android physical-device deployment workflow;
-- Phase 3.9 Sakinah emerald/ivory/gold UI source baseline;
+- Phase 3.9.1 Nawasena cobalt/navy/cyan/gold UI review candidate with an
+  original Quran learner mascot and colour-coded service actions;
 - standalone login outside bottom tabs;
 - secure session storage;
 - contextual deep-link parsing and native URL scheme configuration.
 
-Physical-device UI was iteratively reviewed during development, but the mobile
-screen-level automated coverage is still incomplete and is explicitly tracked
+The first Phase 3.9 Sakinah presentation was physically reviewed and rejected
+as too rigid and visually dated. Nawasena supersedes it without changing logic.
+Screen-level automated coverage is still incomplete and is explicitly tracked
 as future work.
 
 ## Lock principle
