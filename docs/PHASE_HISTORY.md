@@ -541,3 +541,22 @@ The runner now keeps Jenkins credentials in a mode-0600 temporary curl config,
 accepts only a constrained Jenkins username and alphanumeric API token, removes
 the credential file during cleanup and preserves the existing two-build,
 default-off, fail-closed delivery controls.
+
+## DT5–DT8 hotfix — Sonar New Code behavioural coverage
+
+The Jenkins readiness analysis for application revision `ab12b8e` authenticated
+successfully and imported both Mobile and Backoffice LCOV reports, then failed
+the unchanged 80% Sonar gate:
+15.1% coverage across 100 New Code lines. Reliability, security, hotspot,
+maintainability and duplication conditions passed. Delivery, Harbor, migration,
+Kubernetes and ArgoCD were not started, and the Jenkins parent returned to
+DISABLED.
+
+The remediation adds behavioural React Native tests for the Nawasena shared UI,
+Home data states and actions, donation/kajian screens, and protected root-tab
+navigation. Production Mobile logic, Sonar exclusions, New Code definition and
+the 80% gate remain unchanged.
+
+The first local test-harness revisions exposed Safe Area setup, unstable
+renderer-parent selection and unawaited asynchronous `act` scopes. Version 1.2
+corrects those tests without changing production Mobile code.
