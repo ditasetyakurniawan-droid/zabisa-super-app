@@ -21,7 +21,7 @@ Modes:
 
 Environment:
   HARBOR=harbor-dt.co.id
-  PROJECT=zabisa
+  PROJECT=devops-apps
   PULL_BASE_IMAGES=1
   TRIVY_BIN=trivy
   TRIVY_SEVERITY=CRITICAL,HIGH
@@ -52,7 +52,7 @@ case "$MODE" in
 esac
 
 HARBOR="${HARBOR:-harbor-dt.co.id}"
-PROJECT="${PROJECT:-zabisa}"
+PROJECT="${PROJECT:-devops-apps}"
 PULL_BASE_IMAGES="${PULL_BASE_IMAGES:-1}"
 TRIVY_BIN="${TRIVY_BIN:-trivy}"
 TRIVY_SEVERITY="${TRIVY_SEVERITY:-CRITICAL,HIGH}"

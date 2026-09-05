@@ -42,7 +42,7 @@ spec:
           type: RuntimeDefault
       containers:
       - name: academic
-        image: harbor-dt.co.id/zabisa/academic:REPLACE_SHA
+        image: harbor-dt.co.id/devops-apps/academic:REPLACE_SHA
         ports:
         - containerPort: 8085
         env:

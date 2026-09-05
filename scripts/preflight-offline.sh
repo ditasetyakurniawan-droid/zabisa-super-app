@@ -153,6 +153,9 @@ pass 'DT4.5.2 Sonar hotspot and TypeScript coverage invariants'
 ./scripts/verify-dt455-trivy-remediation.sh || fail 'DT4.5.5 Trivy remediation invariants failed'
 pass 'DT4.5.5 Go crypto and Admin runtime vulnerability remediation invariants'
 
+./scripts/verify-dt456-harbor-project.sh || fail 'DT4.5.6 Harbor project alignment invariants failed'
+pass 'DT4.5.6 authorized Harbor devops-apps project invariants'
+
 ./scripts/verify-quality-gate.sh || fail 'CI/Sonar quality gate invariants failed'
 pass 'CI/Sonar quality gate invariants'
 

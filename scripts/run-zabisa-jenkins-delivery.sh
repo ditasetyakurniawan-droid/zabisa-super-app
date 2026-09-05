@@ -511,7 +511,7 @@ assert {row["name"] for row in rows} == expected, "image target set mismatch"
 for row in rows:
     assert row["revision"] == commit, f"revision mismatch for {row['name']}"
     assert re.fullmatch(
-        rf"harbor-dt\.co\.id/zabisa/{re.escape(row['name'])}@sha256:[0-9a-f]{{64}}",
+        rf"harbor-dt\.co\.id/devops-apps/{re.escape(row['name'])}@sha256:[0-9a-f]{{64}}",
         row["digest_ref"],
     ), f"invalid digest reference for {row['name']}"
 

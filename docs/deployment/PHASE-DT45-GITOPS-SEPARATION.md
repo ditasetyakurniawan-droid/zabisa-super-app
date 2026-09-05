@@ -10,7 +10,7 @@ Zabisa follows the existing Tropical delivery pattern with two repositories:
   ArgoCD under `apps/zabisa/overlays/dt`.
 
 Jenkins builds and scans nine images, pushes immutable full-Git-SHA tags to
-`harbor-dt.co.id/zabisa`, verifies the Harbor digests, renders the Kubernetes
+`harbor-dt.co.id/devops-apps`, verifies the Harbor digests, renders the Kubernetes
 templates, then commits the rendered overlay to the GitOps repository. Jenkins
 never runs an imperative application deployment. ArgoCD remains the deployment
 authority and sync remains manual.

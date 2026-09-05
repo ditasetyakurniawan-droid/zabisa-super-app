@@ -14,7 +14,7 @@ if [[ ! "$SHA" =~ ^[0-9a-fA-F]{12,64}$ ]]; then
 fi
 SHA="${SHA,,}"
 HARBOR="${HARBOR:-harbor-dt.co.id}"; HARBOR="${HARBOR%/}"
-PROJECT="${PROJECT:-zabisa}"; PROJECT="${PROJECT#/}"; PROJECT="${PROJECT%/}"
+PROJECT="${PROJECT:-devops-apps}"; PROJECT="${PROJECT#/}"; PROJECT="${PROJECT%/}"
 
 if [[ "$DEST" != /* ]]; then DEST="$ROOT/$DEST"; fi
 rm -rf "$DEST"
@@ -23,7 +23,7 @@ cp -a deploy/kubernetes/base/. "$DEST/manifests/"
 
 replacements=0
 for name in "${ZABISA_IMAGE_NAMES[@]}"; do
-  old="harbor-dt.co.id/zabisa/${name}:REPLACE_SHA"
+  old="harbor-dt.co.id/devops-apps/${name}:REPLACE_SHA"
   new="${HARBOR}/${PROJECT}/${name}:${SHA}"
   expected="$(zabisa_expected_manifest_refs_for "$name")"
   count="$( (grep -RhF -o "$old" "$DEST/manifests" 2>/dev/null || true) | wc -l | tr -d ' ')"
@@ -46,7 +46,7 @@ expected_total=0
 for name in "${ZABISA_IMAGE_NAMES[@]}"; do
   expected_total=$((expected_total + $(zabisa_expected_manifest_refs_for "$name")))
 done
-actual="$(grep -Rh --include='*.yaml' --include='*.yml' -E '^[[:space:]]*image:[[:space:]]+harbor-dt\.co\.id/zabisa/' "$DEST/manifests" | wc -l | tr -d ' ')"
+actual="$(grep -Rh --include='*.yaml' --include='*.yml' -E '^[[:space:]]*image:[[:space:]]+harbor-dt\.co\.id/devops-apps/' "$DEST/manifests" | wc -l | tr -d ' ')"
 if [[ "$actual" != "$expected_total" ]]; then
   echo "ERROR: expected ${expected_total} rendered Zabisa workload image references, found $actual." >&2
   exit 1

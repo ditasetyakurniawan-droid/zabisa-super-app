@@ -42,7 +42,7 @@ spec:
           type: RuntimeDefault
       containers:
       - name: donation
-        image: harbor-dt.co.id/zabisa/donation:REPLACE_SHA
+        image: harbor-dt.co.id/devops-apps/donation:REPLACE_SHA
         ports:
         - containerPort: 8086
         env:

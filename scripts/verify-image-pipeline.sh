@@ -18,9 +18,9 @@ for name in "${ZABISA_IMAGE_NAMES[@]}"; do
   manifest="deploy/kubernetes/base/$(zabisa_manifest_for "$name")"
   [[ -f "$dockerfile" ]] || fail "missing Dockerfile: $dockerfile"
   [[ -f "$manifest" ]] || fail "missing manifest: $manifest"
-  grep -Fq "image: harbor-dt.co.id/zabisa/${name}:REPLACE_SHA" "$manifest" || fail "runtime manifest image placeholder mismatch for $name"
+  grep -Fq "image: harbor-dt.co.id/devops-apps/${name}:REPLACE_SHA" "$manifest" || fail "runtime manifest image placeholder mismatch for $name"
   expected="$(zabisa_expected_manifest_refs_for "$name")"
-  count="$( (grep -RhF -o "harbor-dt.co.id/zabisa/${name}:REPLACE_SHA" deploy/kubernetes/base || true) | wc -l | tr -d ' ')"
+  count="$( (grep -RhF -o "harbor-dt.co.id/devops-apps/${name}:REPLACE_SHA" deploy/kubernetes/base || true) | wc -l | tr -d ' ')"
   [[ "$count" == "$expected" ]] || fail "expected $expected manifest image refs for $name, found $count"
   expected_refs=$((expected_refs + expected))
 done
@@ -95,7 +95,7 @@ trap 'rm -rf "$tmp"' EXIT
 ./scripts/update-gitops.sh "$TEST_SHA" "$tmp/rendered" >/dev/null
 for name in "${ZABISA_IMAGE_NAMES[@]}"; do
   expected="$(zabisa_expected_manifest_refs_for "$name")"
-  count="$( (grep -RhF -o "harbor-dt.co.id/zabisa/${name}:${TEST_SHA}" "$tmp/rendered" || true) | wc -l | tr -d ' ')"
+  count="$( (grep -RhF -o "harbor-dt.co.id/devops-apps/${name}:${TEST_SHA}" "$tmp/rendered" || true) | wc -l | tr -d ' ')"
   [[ "$count" == "$expected" ]] || fail "rendered image count mismatch for $name: expected $expected got $count"
 done
 if grep -Rqs 'REPLACE_SHA' "$tmp/rendered"; then fail 'REPLACE_SHA remains in rendered manifests'; fi

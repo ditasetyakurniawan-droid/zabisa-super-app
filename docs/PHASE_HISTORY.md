@@ -463,3 +463,11 @@ They collapse to three shared sources: an old Go `x/crypto` version repeated in
 eight binaries, two Alpine OpenSSL packages, and package-manager tooling bundled
 in the Admin runtime base. DT4.5.5 upgrades the Go modules, requires the fixed
 OpenSSL packages and removes npm/Corepack tooling from the final runtime image.
+
+## DT4.5.6 — Harbor project alignment
+
+Build `#12` passed all source, Sonar, Trivy and nine-image build/scan gates.
+Harbor login succeeded, but the first blob HEAD request returned 401 because the
+pipeline targeted project `zabisa`; the robot is authorized for `devops-apps`.
+DT4.5.6 aligns build, push, digest verification, GitOps rendering and all sixteen
+manifest references with the authorized Harbor project.
