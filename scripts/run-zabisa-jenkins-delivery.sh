@@ -53,7 +53,7 @@ jenkins_post() {
   curl --silent --show-error \
     --output "$temp_dir/post-response.txt" \
     --write-out '%{http_code}' \
-    --netrc-file "$temp_dir/jenkins.netrc" \
+    --config "$temp_dir/jenkins-auth.conf" \
     --connect-timeout 5 --max-time 30 \
     "${post_headers[@]}" \
     "$@" \
@@ -63,7 +63,7 @@ jenkins_post() {
 disable_parent() {
   set +e
 
-  if [[ "$job_enabled" == true && -s "$temp_dir/jenkins.netrc" ]]; then
+  if [[ "$job_enabled" == true && -s "$temp_dir/jenkins-auth.conf" ]]; then
     status="$(jenkins_post "/job/$target_job/disable")"
     if [[ "$status" == "200" || "$status" == "302" ]]; then
       echo "[jenkins-delivery] parent job returned to DISABLED."
@@ -236,18 +236,24 @@ read -r -p 'Jenkins username: ' jenkins_username
 read -r -s -p 'Jenkins API token (hidden): ' jenkins_api_token
 echo
 
-[[ -n "$jenkins_username" && "$jenkins_username" != *[[:space:]]* ]] || exit 22
-[[ -n "$jenkins_api_token" && "$jenkins_api_token" != *[[:space:]]* ]] || exit 23
+[[ "$jenkins_username" =~ ^[[:alnum:]_.@-]+$ ]] || {
+  echo 'ERROR: Jenkins username contains unsupported characters.' >&2
+  exit 22
+}
+[[ "$jenkins_api_token" =~ ^[[:alnum:]]+$ ]] || {
+  echo 'ERROR: use the Jenkins API token, not an account password.' >&2
+  exit 23
+}
 
-printf 'machine 127.0.0.1\nlogin %s\npassword %s\n' \
-  "$jenkins_username" "$jenkins_api_token" >"$temp_dir/jenkins.netrc"
-chmod 600 "$temp_dir/jenkins.netrc"
+printf 'user = "%s:%s"\n' \
+  "$jenkins_username" "$jenkins_api_token" >"$temp_dir/jenkins-auth.conf"
+chmod 600 "$temp_dir/jenkins-auth.conf"
 unset jenkins_api_token
 
 curl_auth=(
   --globoff
   --silent --show-error --fail
-  --netrc-file "$temp_dir/jenkins.netrc"
+  --config "$temp_dir/jenkins-auth.conf"
   --connect-timeout 5 --max-time 30
 )
 

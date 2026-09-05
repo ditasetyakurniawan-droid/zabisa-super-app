@@ -47,6 +47,7 @@ Read `NEXT_SESSION_START_HERE.md` first when work resumes.
 | `deployment/PHASE-DT456-HARBOR-PROJECT-ALIGNMENT.md` | Build #12 evidence and authorized devops-apps registry path alignment |
 | `deployment/PHASE-DT457-HARBOR-REPOSITORY-HIERARCHY.md` | Build #13 evidence, nested Zabisa repositories and robust push-digest parsing |
 | `deployment/PHASE-DT5-DT8-CONTROLLED-ROLLOUT.md` | Encrypted recovery proof, canary migration, exact ArgoCD sync, secure admin and internal acceptance |
+| `deployment/HOTFIX-DT58-JENKINS-CURL-AUTH.md` | Pre-delivery netrc parser failure, credential-file correction and guarded resume |
 | `mobile/PHASE3_9_UI_UX_REDESIGN.md` | UI-only redesign scope, zero-logic invariant and device acceptance gate |
 | `architecture/ADR-011-MOBILE-SAKINAH-DESIGN-SYSTEM.md` | Amended Nawasena design-system decision and migration safety boundary |
 | `runbook/JENKINS_DELIVERY.md` | Existing Jenkins/Harbor workflow, controls and developer procedure |

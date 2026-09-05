@@ -528,3 +528,16 @@ ArgoCD sync, secure one-time SUPER_ADMIN bootstrap, full migration inventory,
 Vault/readiness checks and internal Backoffice/Android acceptance. Removed the
 development credentials from the production Backoffice login presentation.
 This entry records source readiness only; completion requires live evidence.
+
+## DT5–DT8 hotfix — Jenkins curl authentication
+
+The first controlled DT5–DT8 delivery attempt passed source verification and
+the GitHub Engineering Quality Gate, then stopped before Jenkins readiness or
+delivery started. `curl` returned exit code 26 while parsing the temporary
+unquoted netrc credential file. The parent job remained DISABLED; migration,
+Kubernetes apply and ArgoCD sync were not requested.
+
+The runner now keeps Jenkins credentials in a mode-0600 temporary curl config,
+accepts only a constrained Jenkins username and alphanumeric API token, removes
+the credential file during cleanup and preserves the existing two-build,
+default-off, fail-closed delivery controls.
