@@ -1,6 +1,6 @@
 # Zabisa Current State and Delivery Roadmap
 
-> Official checkpoint: **DT4.5 GITOPS SEPARATION SOURCE READY**
+> Official checkpoint: **DT4.5.1 CONTROLLED DELIVERY HOTFIX READY**
 >
 > Live job: `zabisa-super-app-v1` — `DISABLED`, no automatic trigger
 >
@@ -26,10 +26,10 @@ delivery.
 | Migration source controls | PASS | Sequential waves, zero retry, advisory lock and checksums committed |
 | Immutable deployment images | SOURCE READY | Base digests and Harbor digest evidence controls committed; images not built |
 | Existing Jenkins/Harbor path | PASS / LOCKED | Compose Jenkins uses Docker socket, `harbor-cred`, private Sonar and existing Harbor compatibility mode |
-| Zabisa Jenkins job | RECONCILE READY | Main-only, trigger-free, disabled configuration is defined; remote reconcile remains to run |
-| Private Sonar | PASS | Jenkins analysis and Quality Gate succeeded; Sonar-only TypeScript configs close the skipped-source warning |
-| Image scanning | FIX READY / LIVE RETRY | Digest-pinned Trivy 0.74.0 wrapper fixed after the unsupported flag blocked readiness |
-| GitOps repository | CREATED / SOURCE READY | Dedicated repository and `apps/zabisa/overlays/dt` publication contract defined; first publish not run |
+| Zabisa Jenkins job | PASS / DISABLED | Remote job was reconciled main-only and trigger-free; controlled runner returned it to disabled |
+| Private Sonar | PASS / TS HOTFIX READY | Quality Gate passed; standalone configs correct the 70-file legacy-analyzer skip exposed by build #7 |
+| Image scanning | READINESS PASS | Digest-pinned Trivy 0.74.0 and vulnerability DB succeeded in build #6 |
+| GitOps repository | SEEDED / JENKINS PUBLISH PENDING | Dedicated repository contains the DT overlay; first post-Harbor Jenkins publication has not run |
 | Cluster Harbor pull | UNPROVEN | No namespace Docker config Secret or ServiceAccount imagePullSecret found |
 | Backup and isolated restore proof | NOT PROVEN | Mandatory before any database mutation |
 | Database migration | NOT RUN | Blocked by image, backup/restore and operator approval gates |
@@ -96,19 +96,18 @@ read back and verified. No indexing, build or push ran.
 
 ### DT4.3 — Controlled Jenkins readiness
 
-Status: **PARTIAL LIVE / FIX READY / CONTROLLED RETRY NEXT**
+Status: **READINESS PASS / DELIVERY HOTFIX READY**
 
-Before enabling or scanning the Multibranch job, make image build, Harbor push
-and GitOps publication explicit opt-in parameters that default to off. The
-first approved run is limited to repository quality, private Sonar and the
-digest-pinned Dockerized Trivy version/database readiness. The job must return
-to disabled after evidence is captured.
+Readiness build `#6` passed repository quality, private Sonar, Quality Gate and
+the digest-pinned Dockerized Trivy version/database readiness with all
+publication controls off. The job returned to disabled after delivery build
+`#7` stopped before its first image build on the dirty-worktree safety gate.
 
-For development speed, the same operator session may continue with a second,
-explicitly parameterized DT4.4 build. `BUILD_IMAGES`, `PUSH_IMAGES` and
-`RENDER_GITOPS` all default to `false`; push requires build, and render requires
-push. The runner verifies nine remote Harbor digests and returns the parent job
-to disabled. Migration and ArgoCD remain separate phases.
+DT4.5.1 stores Jenkins control artifacts below ignored `build/` and provides a
+verified resume path. The next run reuses build `#6`, then performs one complete
+parameterized delivery. `BUILD_IMAGES`, `PUSH_IMAGES` and `RENDER_GITOPS` still
+default to `false`; push requires build, and render requires push. Migration
+and ArgoCD remain separate phases.
 
 ### DT4.5 — Dedicated GitOps publication
 
@@ -196,7 +195,9 @@ DT4.1 immutable image source hardening: PASS at df2d275
 DT4.2 existing Jenkins pattern: PASS
 DT4.2.1 Zabisa Multibranch bootstrap: PASS; job created disabled
 Jenkins Sonar and Quality Gate: PASS
-DT4.3 Dockerized Trivy readiness: FIX READY; controlled retry next
+DT4.3 Dockerized Trivy readiness: PASS in build #6
+DT4.4 delivery build #7: stopped before first image build; no Harbor mutation
+DT4.5.1 Jenkins artifact/Sonar compatibility hotfix: controlled resume next
 DT4.5 dedicated GitOps publication: SOURCE READY; live publish not run
 Dockerized Trivy / first Harbor publication / GitOps publication / cluster pull: NOT COMPLETE
 Migration: NOT RUN

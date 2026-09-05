@@ -28,15 +28,20 @@ Usage:
   ./scripts/run-zabisa-jenkins-delivery.sh --plan
   DT44_CONFIRM=RUN-JENKINS-BUILD-PUSH \
     ./scripts/run-zabisa-jenkins-delivery.sh --run
+  DT44_CONFIRM=RUN-JENKINS-BUILD-PUSH \
+  DT43_READINESS_BUILD=<successful-build-number> \
+    ./scripts/run-zabisa-jenkins-delivery.sh --resume-after-readiness
 
 The controlled run enables the existing disabled Multibranch job, performs a
 default-off readiness build, then runs build/scan/push/render with explicit
-parameters. It disables the parent job again before returning.
+parameters. Resume mode verifies and reuses an already successful default-off
+readiness build, then starts only build/scan/push/render. Both modes disable the
+parent job again before returning.
 USAGE
 }
 
 case "$mode" in
-  --plan|--run) ;;
+  --plan|--run|--resume-after-readiness) ;;
   -h|--help) usage; exit 0 ;;
   *) usage >&2; exit 64 ;;
 esac
@@ -173,6 +178,9 @@ echo "Final job state   : DISABLED"
 echo "Migration         : NOT RUN"
 echo "ArgoCD sync       : NOT RUN"
 echo "Credential values : NOT DISPLAYED"
+if [[ "$mode" == "--resume-after-readiness" ]]; then
+  echo "Resume proof       : Jenkins readiness build ${DT43_READINESS_BUILD:-NOT-SET}"
+fi
 
 if [[ "$mode" == "--plan" ]]; then
   echo "PLAN PASS: no Jenkins, Docker, Harbor, Kubernetes or database mutation performed."
@@ -330,48 +338,57 @@ fi
 echo
 echo "===== DEFAULT-OFF READINESS BUILD ====="
 
-for attempt in $(seq 1 6); do
-  branch_json="$(
-    curl "${curl_auth[@]}" \
-      "$jenkins_url/job/$target_job/job/$branch_job/api/json?tree=lastBuild[number]"
-  )"
-  readiness_build="$(
-    python3 -c '
+if [[ "$mode" == "--resume-after-readiness" ]]; then
+  readiness_build="${DT43_READINESS_BUILD:-}"
+  [[ "$readiness_build" =~ ^[1-9][0-9]*$ ]] || {
+    echo 'ERROR: resume mode requires numeric DT43_READINESS_BUILD.' >&2
+    exit 34
+  }
+  echo "[jenkins-delivery] verifying existing readiness build #$readiness_build."
+else
+  for attempt in $(seq 1 6); do
+    branch_json="$(
+      curl "${curl_auth[@]}" \
+        "$jenkins_url/job/$target_job/job/$branch_job/api/json?tree=lastBuild[number]"
+    )"
+    readiness_build="$(
+      python3 -c '
 import json
 import sys
 
 data = json.load(sys.stdin)
 print((data.get("lastBuild") or {}).get("number", 0))
 ' <<<"$branch_json"
-  )"
-
-  if (( readiness_build > before_build )); then
-    break
-  fi
-
-  if [[ "$attempt" == "3" ]]; then
-    status="$(
-      jenkins_post "/job/$target_job/job/$branch_job/buildWithParameters" \
-        --data-urlencode 'BUILD_IMAGES=false' \
-        --data-urlencode 'PUSH_IMAGES=false' \
-        --data-urlencode 'RENDER_GITOPS=false' \
-        --data-urlencode "HARBOR_CREDENTIALS_ID=$harbor_credentials_id" \
-        --data-urlencode "GITOPS_CREDENTIALS_ID=$gitops_credentials_id"
     )"
-    [[ "$status" == "200" || "$status" == "201" || "$status" == "302" ]] || {
-      echo "ERROR: readiness trigger returned HTTP $status" >&2
-      exit 33
-    }
-    echo "[jenkins-delivery] explicit readiness build requested."
-  fi
 
-  sleep 10
-done
+    if (( readiness_build > before_build )); then
+      break
+    fi
 
-(( readiness_build > before_build )) || {
-  echo "ERROR: readiness build was not created." >&2
-  exit 34
-}
+    if [[ "$attempt" == "3" ]]; then
+      status="$(
+        jenkins_post "/job/$target_job/job/$branch_job/buildWithParameters" \
+          --data-urlencode 'BUILD_IMAGES=false' \
+          --data-urlencode 'PUSH_IMAGES=false' \
+          --data-urlencode 'RENDER_GITOPS=false' \
+          --data-urlencode "HARBOR_CREDENTIALS_ID=$harbor_credentials_id" \
+          --data-urlencode "GITOPS_CREDENTIALS_ID=$gitops_credentials_id"
+      )"
+      [[ "$status" == "200" || "$status" == "201" || "$status" == "302" ]] || {
+        echo "ERROR: readiness trigger returned HTTP $status" >&2
+        exit 33
+      }
+      echo "[jenkins-delivery] explicit readiness build requested."
+    fi
+
+    sleep 10
+  done
+
+  (( readiness_build > before_build )) || {
+    echo "ERROR: readiness build was not created." >&2
+    exit 34
+  }
+fi
 
 wait_build "$readiness_build" readiness
 
@@ -395,7 +412,11 @@ if grep -Fq '[images] PUSH' "$readiness_log"; then
   exit 37
 fi
 
-echo "PASS: readiness build #$readiness_build completed without image publication."
+if [[ "$mode" == "--resume-after-readiness" ]]; then
+  echo "PASS: readiness build #$readiness_build was verified and reused without rerun."
+else
+  echo "PASS: readiness build #$readiness_build completed without image publication."
+fi
 
 echo
 echo "===== CONTROLLED BUILD, SCAN, PUSH AND RENDER ====="
@@ -443,6 +464,21 @@ for marker in \
     exit 41
   }
 done
+
+if grep -Fq "Argument for '--moduleResolution' option must be" "$delivery_log"; then
+  echo 'ERROR: legacy Sonar TypeScript module-resolution failure remains.' >&2
+  exit 42
+fi
+if grep -Eq 'Skipped [1-9][0-9]* file\(s\) because they were not part of any tsconfig\.json' \
+  "$delivery_log"; then
+  echo 'ERROR: Sonar still skipped TypeScript sources outside its standalone configs.' >&2
+  exit 43
+fi
+if grep -Fq 'refusing to build/push from a dirty worktree' "$delivery_log"; then
+  echo 'ERROR: Jenkins control artifacts still violate the clean-worktree gate.' >&2
+  exit 44
+fi
+echo 'PASS: Sonar TypeScript compatibility and Jenkins worktree cleanliness verified.'
 
 digest_name="harbor-digests-${commit}.tsv"
 digest_report="$HOME/Downloads/zabisa-${digest_name}"

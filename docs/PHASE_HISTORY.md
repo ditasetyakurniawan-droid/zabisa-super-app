@@ -416,3 +416,19 @@ deployment and ArgoCD sync remain outside this phase.
 
 Images, migrations, application workloads and ArgoCD sync remain not run at
 this source checkpoint.
+
+## DT4.5.1 — Jenkins artifact and Sonar compatibility hotfix
+
+Readiness build `#6` passed source quality, private Sonar Quality Gate and
+digest-pinned Trivy 0.74.0 database readiness with every publication control
+off. Delivery build `#7` stopped before the first Docker build because
+Jenkins-created `.gitsha` and `report-task.txt` files made the source worktree
+dirty. The immutable-image gate rejected the build as designed; Harbor and
+GitOps publication were not reached.
+
+The same log showed that both Sonar-only TypeScript configs still inherited
+application configs using `moduleResolution=bundler`; the legacy analyzer
+rejected the inherited value before applying the override and skipped all 70
+TypeScript files. DT4.5.1 moves Jenkins control metadata below ignored
+`build/`, makes the Sonar configs standalone and adds a verified resume path
+that reuses readiness evidence while running one new complete delivery build.

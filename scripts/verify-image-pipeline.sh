@@ -66,6 +66,11 @@ fi
 echo '[image-verify] OK: Jenkins Compose workspace and digest-pinned Dockerized Trivy contract are explicit'
 
 grep -Fq 'refusing to build/push from a dirty worktree' scripts/build-images.sh || fail 'dirty-worktree build rejection missing'
+grep -Fq 'build/jenkins/source-revision' Jenkinsfile || fail 'Jenkins source revision is not stored below ignored build/'
+grep -Fq 'build/sonar/report-task.txt' Jenkinsfile || fail 'Sonar metadata is not stored below ignored build/'
+if grep -Eq '(^|[/$"])\.gitsha|WORKSPACE/report-task\.txt' Jenkinsfile; then
+  fail 'repository-root Jenkins control artifact remains'
+fi
 grep -Fq 'VERIFY all scan attestations before first push' scripts/build-images.sh || fail 'pre-push scan attestation gate missing'
 grep -Fq 'docker push "$image" | tee "$push_log_tmp"' scripts/build-images.sh || fail 'registry push digest capture missing'
 grep -Fq 'awk '\''$1 == "digest:" {print $2; exit}'\'' "$push_log"' scripts/build-images.sh || fail 'registry-returned digest parsing missing'

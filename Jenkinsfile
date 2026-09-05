@@ -20,7 +20,10 @@ pipeline {
     stage('Checkout') {
       steps {
         checkout scm
-        sh 'git rev-parse HEAD > .gitsha'
+        sh '''set -eu
+          mkdir -p build/jenkins
+          git rev-parse HEAD > build/jenkins/source-revision
+        '''
       }
     }
     stage('Existing Executor Contract') {
@@ -123,7 +126,8 @@ pipeline {
           sh '''
             set -eu
 
-            rm -f "$WORKSPACE/report-task.txt"
+            mkdir -p "$WORKSPACE/build/sonar"
+            rm -f "$WORKSPACE/build/sonar/report-task.txt"
 
             docker run --rm \
               --add-host sonar-dt:192.168.100.59 \
@@ -131,12 +135,12 @@ pipeline {
               -w "$WORKSPACE" \
               -e SONAR_TOKEN="$SONAR_AUTH_TOKEN" \
               sonarsource/sonar-scanner-cli@sha256:23ca0f137965d9dff2198074043fd48d386280bc5d0ccac8c8349cea4cf096a9 \
-              -Dsonar.scanner.metadataFilePath="$WORKSPACE/report-task.txt" \
+              -Dsonar.scanner.metadataFilePath="$WORKSPACE/build/sonar/report-task.txt" \
               -Dsonar.host.url="$SONAR_HOST_URL" \
               -Dsonar.qualitygate.wait=true \
               -Dsonar.qualitygate.timeout=300
 
-            test -s "$WORKSPACE/report-task.txt"
+            test -s "$WORKSPACE/build/sonar/report-task.txt"
           '''
         }
       }
@@ -158,7 +162,7 @@ pipeline {
     stage('Build + Scan Images') {
       when { expression { return params.BUILD_IMAGES } }
       steps {
-        sh 'TRIVY_BIN=./scripts/trivy-docker.sh ./scripts/build-images.sh "$(cat .gitsha)" --build-scan'
+        sh 'TRIVY_BIN=./scripts/trivy-docker.sh ./scripts/build-images.sh "$(cat build/jenkins/source-revision)" --build-scan'
         archiveArtifacts artifacts: 'build/sbom/*.cdx.json,build/image-evidence/scans/*', fingerprint: true
       }
     }
@@ -178,7 +182,7 @@ pipeline {
             sh '''set -eu
               trap 'docker logout "$HARBOR" >/dev/null 2>&1 || true' EXIT
               printf '%s' "$HARBOR_PASSWORD" | docker login "$HARBOR" --username "$HARBOR_USERNAME" --password-stdin
-              ./scripts/build-images.sh "$(cat .gitsha)" --push-only
+              ./scripts/build-images.sh "$(cat build/jenkins/source-revision)" --push-only
             '''
             archiveArtifacts artifacts: 'build/image-evidence/harbor-digests-*.tsv', fingerprint: true
           }
@@ -199,8 +203,8 @@ pipeline {
           }
           withCredentials([usernamePassword(credentialsId: params.GITOPS_CREDENTIALS_ID, usernameVariable: 'GITOPS_USERNAME', passwordVariable: 'GITOPS_PASSWORD')]) {
             sh '''set -eu
-              ./scripts/update-gitops.sh "$(cat .gitsha)" build/gitops-rendered
-              ./scripts/publish-gitops.sh "$(cat .gitsha)" build/gitops-rendered
+              ./scripts/update-gitops.sh "$(cat build/jenkins/source-revision)" build/gitops-rendered
+              ./scripts/publish-gitops.sh "$(cat build/jenkins/source-revision)" build/gitops-rendered
             '''
           }
         }
@@ -211,8 +215,8 @@ pipeline {
   post {
     always {
       sh '''set +e
-        if test -s .gitsha; then
-          ./scripts/build-images.sh "$(cat .gitsha)" --cleanup-local
+        if test -s build/jenkins/source-revision; then
+          ./scripts/build-images.sh "$(cat build/jenkins/source-revision)" --cleanup-local
         fi
       '''
       deleteDir()

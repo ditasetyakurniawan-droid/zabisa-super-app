@@ -1,4 +1,4 @@
-# Project State — Application Baseline and DT4.5 Source Checkpoint
+# Project State — Application Baseline and DT4.5.1 Hotfix Checkpoint
 
 ## Executive status
 
@@ -36,26 +36,26 @@ Verified:
   and the job disabled;
 - support and regression tests for the actual Jenkins `GitHubSCMSource`
   configuration shape.
-- private Sonar analysis and Quality Gate passed in Jenkins for the latest
-  readiness attempt;
+- private Sonar analysis, Quality Gate and digest-pinned Trivy readiness passed
+  in Jenkins build `#6` with publication controls off;
 - dedicated `zabisa-super-app-gitops` ownership, deterministic Kustomize render
   and credential-safe Jenkins publication are defined in source;
-- the Trivy 0.74.0 readiness incompatibility and Sonar TypeScript analyzer
-  compatibility gap are corrected in source.
+- the Trivy 0.74.0 readiness incompatibility is proven corrected live;
+- Jenkins root-artifact handling and the legacy Sonar TypeScript analyzer
+  compatibility gap are corrected by the DT4.5.1 source hotfix.
 
 Not run:
 
-- successful Dockerized Trivy readiness rerun;
 - application image build, vulnerability scan or Harbor push;
 - worker/containerd image-pull proof;
 - database backup/isolated restore drill or migration;
 - application Deployment or ArgoCD sync.
 
-The active next execution is the combined DT4.3/DT4.4/DT4.5 development delivery:
-first prove Jenkins quality, private Sonar and digest-pinned Dockerized Trivy
-with publication defaulted off, then use a separate parameterized build to
-build, scan, push nine immutable images and publish GitOps manifests. The parent
-job returns to disabled afterward. This does not authorize migration or sync.
+The active next execution is the DT4.5.1 controlled resume. It verifies and
+reuses successful readiness build `#6`, then runs one new parameterized build
+containing source quality, private Sonar, Quality Gate, Trivy readiness, nine
+image builds/scans/SBOMs, Harbor push and GitOps publication. The parent job
+returns to disabled afterward. This does not authorize migration or sync.
 
 ## Verified at lock
 

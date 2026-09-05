@@ -2,7 +2,7 @@
 
 **Historical application lock:** Phase 3.7.6
 
-**Current deployment checkpoint:** DT4.5 — GitOps separation source ready
+**Current deployment checkpoint:** DT4.5.1 — Jenkins artifact/Sonar hotfix ready
 
 **Deployment lock tag:** `dt4.2.1-jenkins-integration-locked-2026-09-04`
 
@@ -35,6 +35,7 @@ Read `NEXT_SESSION_START_HERE.md` first when work resumes.
 | `deployment/CURRENT-STATE-AND-ROADMAP.md` | Authoritative DT rollout checkpoint and approval gates |
 | `deployment/PHASE-DT4-IMMUTABLE-IMAGES.md` | Active immutable-image phase and remaining live proofs |
 | `deployment/PHASE-DT45-GITOPS-SEPARATION.md` | Dedicated GitOps ownership, publication and execution boundary |
+| `deployment/PHASE-DT451-JENKINS-ARTIFACT-HOTFIX.md` | Build #6/#7 evidence, repository-cleanliness correction and controlled resume |
 | `runbook/JENKINS_DELIVERY.md` | Existing Jenkins/Harbor workflow, controls and developer procedure |
 
 ## Rule

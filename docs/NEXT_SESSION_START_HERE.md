@@ -13,12 +13,12 @@ git log --oneline -5
 ./scripts/preflight-offline.sh
 ```
 
-Expected repository state after DT4.5 source installation:
+Expected repository state after DT4.5.1 hotfix installation:
 
 ```text
 main synchronized with origin/main
 clean worktree
-DT4.5 Jenkins/Sonar/Harbor/GitOps source invariants: PASS
+DT4.5.1 Jenkins/Sonar/Harbor/GitOps source invariants: PASS
 ```
 
 ## 2. Read in this order
@@ -95,17 +95,20 @@ npm run mobile:quality
 
 Current source checkpoint:
 
-**DT4.5 — Dedicated GitOps publication ready**
+**DT4.5.1 — Controlled delivery resume ready**
 
 The Multibranch job `zabisa-super-app-v1` exists on the existing Docker Compose
-Jenkins and is disabled with no automatic trigger. Authentication and the
-actual `GitHubSCMSource` config were verified. No indexing, build or push ran.
+Jenkins and is disabled with no automatic trigger. Readiness build `#6` passed
+Sonar Quality Gate and Trivy with publication controls off. Delivery build
+`#7` stopped before its first image build because repository-root Jenkins
+metadata triggered the dirty-worktree safety gate. No image or manifest was
+published by that build.
 
 Next controlled execution:
 
-**DT4.3/DT4.4/DT4.5 — Trivy readiness, Harbor push and GitOps publish**
+**DT4.5.1 — Build, scan, Harbor push and GitOps publish**
 
-First reconcile the existing Multibranch job to disabled, trigger-free and
-main-only. Then use `scripts/run-zabisa-jenkins-delivery.sh`; it performs the
-readiness run followed by the explicitly enabled build/scan/push/publish run.
-Migration, Kubernetes application and ArgoCD sync remain separate approvals.
+Use `scripts/run-zabisa-jenkins-delivery.sh --resume-after-readiness` with
+`DT43_READINESS_BUILD=6`. The runner verifies build `#6` and performs only one
+new explicitly enabled build/scan/push/publish run. Migration, Kubernetes
+application and ArgoCD sync remain separate approvals.

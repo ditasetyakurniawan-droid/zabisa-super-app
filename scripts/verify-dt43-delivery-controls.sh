@@ -41,6 +41,12 @@ fi
 grep -Fq 'DT44_CONFIRM=RUN-JENKINS-BUILD-PUSH' \
   scripts/run-zabisa-jenkins-delivery.sh \
   || fail 'operator confirmation boundary is missing'
+grep -Fq -- '--resume-after-readiness' \
+  scripts/run-zabisa-jenkins-delivery.sh \
+  || fail 'verified readiness resume mode is missing'
+grep -Fq 'DT43_READINESS_BUILD' \
+  scripts/run-zabisa-jenkins-delivery.sh \
+  || fail 'resume mode does not require an explicit readiness evidence build'
 grep -Fq 'BUILD_IMAGES=true' scripts/run-zabisa-jenkins-delivery.sh \
   || fail 'controlled build parameter is missing'
 grep -Fq 'PUSH_IMAGES=true' scripts/run-zabisa-jenkins-delivery.sh \
@@ -51,6 +57,12 @@ grep -Fq 'GITOPS_CREDENTIALS_ID=' scripts/run-zabisa-jenkins-delivery.sh \
   || fail 'controlled GitOps credential parameter is missing'
 grep -Fq '[gitops] PASS: published source=' scripts/run-zabisa-jenkins-delivery.sh \
   || fail 'GitOps remote publication evidence gate is missing'
+grep -Fq "Argument for '--moduleResolution' option must be" \
+  scripts/run-zabisa-jenkins-delivery.sh \
+  || fail 'live legacy-Sonar compatibility evidence gate is missing'
+grep -Fq 'refusing to build/push from a dirty worktree' \
+  scripts/run-zabisa-jenkins-delivery.sh \
+  || fail 'live Jenkins worktree-cleanliness evidence gate is missing'
 grep -Fq 'disable_parent' scripts/run-zabisa-jenkins-delivery.sh \
   || fail 'Jenkins disable cleanup is missing'
 grep -Fq -- '--globoff' scripts/run-zabisa-jenkins-delivery.sh \

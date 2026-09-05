@@ -31,10 +31,26 @@ grep -Fq 'TRIVY_BIN=./scripts/trivy-docker.sh' Jenkinsfile \
   || fail 'Dockerized Trivy is not selected by Jenkins'
 grep -Fq 'sonar.typescript.tsconfigPaths=' sonar-project.properties \
   || fail 'Sonar-specific TypeScript configuration is missing'
-grep -Fq '"moduleResolution": "node"' apps/admin-web/tsconfig.sonar.json \
-  || fail 'Backoffice Sonar TypeScript compatibility config is missing'
-grep -Fq '"moduleResolution": "node"' apps/mobile/tsconfig.sonar.json \
-  || fail 'Mobile Sonar TypeScript compatibility config is missing'
+for sonar_tsconfig in \
+  apps/admin-web/tsconfig.sonar.json \
+  apps/mobile/tsconfig.sonar.json; do
+  grep -Fq '"moduleResolution": "node"' "$sonar_tsconfig" \
+    || fail "$sonar_tsconfig must use Sonar-compatible node module resolution"
+  if grep -Fq '"extends"' "$sonar_tsconfig"; then
+    fail "$sonar_tsconfig must be standalone; the legacy analyzer validates inherited bundler options before overrides"
+  fi
+  if grep -Fq '"moduleResolution": "bundler"' "$sonar_tsconfig"; then
+    fail "$sonar_tsconfig still contains unsupported bundler module resolution"
+  fi
+done
+
+grep -Fq 'build/jenkins/source-revision' Jenkinsfile \
+  || fail 'Jenkins source revision must be stored below ignored build/'
+grep -Fq 'build/sonar/report-task.txt' Jenkinsfile \
+  || fail 'Sonar task metadata must be stored below ignored build/'
+if grep -Eq '(^|[/$"])\.gitsha|WORKSPACE/report-task\.txt' Jenkinsfile; then
+  fail 'Jenkinsfile still creates repository-root control artifacts'
+fi
 
 grep -Fq 'name: Engineering Quality Gate' .github/workflows/ci.yml \
   || fail 'GitHub source quality gate is missing'
