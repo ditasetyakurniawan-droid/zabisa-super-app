@@ -10,7 +10,7 @@ pipeline {
   }
   environment {
     HARBOR = 'harbor-dt.co.id'
-    PROJECT = 'devops-apps'
+    PROJECT = 'devops-apps/zabisa'
     GITOPS_REPOSITORY = 'https://github.com/ditasetyakurniawan-droid/zabisa-super-app-gitops.git'
     GO_IMAGE = 'golang:1.26.7-alpine'
     NODE_IMAGE = 'node:22-alpine'

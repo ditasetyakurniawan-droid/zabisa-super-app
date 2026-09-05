@@ -471,3 +471,12 @@ Harbor login succeeded, but the first blob HEAD request returned 401 because the
 pipeline targeted project `zabisa`; the robot is authorized for `devops-apps`.
 DT4.5.6 aligns build, push, digest verification, GitOps rendering and all sixteen
 manifest references with the authorized Harbor project.
+
+## DT4.5.7 — Harbor repository hierarchy and digest parsing
+
+Build `#13` proved all source, Sonar, Trivy, build and scan gates green and
+authenticated successfully to Harbor. It then exposed two remaining publication
+contract defects: repositories must be nested below `devops-apps/zabisa`, and
+the Docker push digest may appear after the image tag rather than in output
+column one. DT4.5.7 corrects both contracts across Jenkins, image publication,
+GitOps rendering and all sixteen manifest references.

@@ -1,4 +1,4 @@
-# Project State — Application Baseline and DT4.5.6 Harbor Alignment
+# Project State — Application Baseline and DT4.5.7 Harbor Repository Alignment
 
 ## Executive status
 
@@ -62,15 +62,20 @@ Verified:
   Harbor authentication succeeds, while the old `zabisa` project path is denied;
 - DT4.5.6 aligns all registry producers and consumers to the robot-authorized
   Harbor project `devops-apps` without renaming unrelated Zabisa identities.
+- build `#13` confirms the entire build/scan chain and Harbor authentication are
+  green, then exposes the required nested repository namespace and a
+  first-column-only Docker digest parser;
+- DT4.5.7 uses `devops-apps/zabisa/<image>` consistently and parses the validated
+  digest at its actual position in Docker push output.
 
 Not run:
 
-- successful all-image vulnerability policy gate or Harbor push;
+- successful Harbor publication of all nine images and GitOps publication;
 - worker/containerd image-pull proof;
 - database backup/isolated restore drill or migration;
 - application Deployment or ArgoCD sync.
 
-The active next execution is the DT4.5.6 controlled resume. It verifies and
+The active next execution is the DT4.5.7 controlled resume. It verifies and
 reuses successful readiness build `#6`, then runs one new parameterized build
 containing source quality, private Sonar, Quality Gate, Trivy readiness, nine
 image builds/scans/SBOMs, Harbor push and GitOps publication. The parent job

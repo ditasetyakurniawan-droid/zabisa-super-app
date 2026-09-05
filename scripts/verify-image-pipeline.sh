@@ -18,9 +18,9 @@ for name in "${ZABISA_IMAGE_NAMES[@]}"; do
   manifest="deploy/kubernetes/base/$(zabisa_manifest_for "$name")"
   [[ -f "$dockerfile" ]] || fail "missing Dockerfile: $dockerfile"
   [[ -f "$manifest" ]] || fail "missing manifest: $manifest"
-  grep -Fq "image: harbor-dt.co.id/devops-apps/${name}:REPLACE_SHA" "$manifest" || fail "runtime manifest image placeholder mismatch for $name"
+  grep -Fq "image: harbor-dt.co.id/devops-apps/zabisa/${name}:REPLACE_SHA" "$manifest" || fail "runtime manifest image placeholder mismatch for $name"
   expected="$(zabisa_expected_manifest_refs_for "$name")"
-  count="$( (grep -RhF -o "harbor-dt.co.id/devops-apps/${name}:REPLACE_SHA" deploy/kubernetes/base || true) | wc -l | tr -d ' ')"
+  count="$( (grep -RhF -o "harbor-dt.co.id/devops-apps/zabisa/${name}:REPLACE_SHA" deploy/kubernetes/base || true) | wc -l | tr -d ' ')"
   [[ "$count" == "$expected" ]] || fail "expected $expected manifest image refs for $name, found $count"
   expected_refs=$((expected_refs + expected))
 done
@@ -81,7 +81,7 @@ grep -Fq 'complete HIGH/CRITICAL evidence' scripts/build-images.sh || fail 'comp
 grep -Fq 'scan_policy_failed=0' scripts/build-images.sh || fail 'all-image scan aggregation is missing'
 grep -Fq "allowEmptyArchive: true" Jenkinsfile || fail 'failure-path scan evidence archival is missing'
 grep -Fq 'docker push "$image" | tee "$push_log_tmp"' scripts/build-images.sh || fail 'registry push digest capture missing'
-grep -Fq 'awk '\''$1 == "digest:" {print $2; exit}'\'' "$push_log"' scripts/build-images.sh || fail 'registry-returned digest parsing missing'
+grep -Fq '$i == "digest:" && $(i + 1) ~ /^sha256:[0-9a-f]{64}$/' scripts/build-images.sh || fail 'position-independent registry digest parsing missing'
 grep -Fq 'harbor-digests-${SHA}.tsv' scripts/build-images.sh || fail 'Harbor digest evidence report missing'
 grep -Fq 'local/remote digest proof mismatch' scripts/build-images.sh || fail 'local/remote digest comparison missing'
 
@@ -95,7 +95,7 @@ trap 'rm -rf "$tmp"' EXIT
 ./scripts/update-gitops.sh "$TEST_SHA" "$tmp/rendered" >/dev/null
 for name in "${ZABISA_IMAGE_NAMES[@]}"; do
   expected="$(zabisa_expected_manifest_refs_for "$name")"
-  count="$( (grep -RhF -o "harbor-dt.co.id/devops-apps/${name}:${TEST_SHA}" "$tmp/rendered" || true) | wc -l | tr -d ' ')"
+  count="$( (grep -RhF -o "harbor-dt.co.id/devops-apps/zabisa/${name}:${TEST_SHA}" "$tmp/rendered" || true) | wc -l | tr -d ' ')"
   [[ "$count" == "$expected" ]] || fail "rendered image count mismatch for $name: expected $expected got $count"
 done
 if grep -Rqs 'REPLACE_SHA' "$tmp/rendered"; then fail 'REPLACE_SHA remains in rendered manifests'; fi

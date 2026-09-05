@@ -21,7 +21,7 @@ Modes:
 
 Environment:
   HARBOR=harbor-dt.co.id
-  PROJECT=devops-apps
+  PROJECT=devops-apps/zabisa
   PULL_BASE_IMAGES=1
   TRIVY_BIN=trivy
   TRIVY_SEVERITY=CRITICAL,HIGH
@@ -52,7 +52,7 @@ case "$MODE" in
 esac
 
 HARBOR="${HARBOR:-harbor-dt.co.id}"
-PROJECT="${PROJECT:-devops-apps}"
+PROJECT="${PROJECT:-devops-apps/zabisa}"
 PULL_BASE_IMAGES="${PULL_BASE_IMAGES:-1}"
 TRIVY_BIN="${TRIVY_BIN:-trivy}"
 TRIVY_SEVERITY="${TRIVY_SEVERITY:-CRITICAL,HIGH}"
@@ -307,7 +307,14 @@ if (( need_push )); then
     mv "$push_log_tmp" "$push_log"
 
     remote_digest="$(
-      awk '$1 == "digest:" {print $2; exit}' "$push_log"
+      awk '{
+        for (i = 1; i < NF; i++) {
+          if ($i == "digest:" && $(i + 1) ~ /^sha256:[0-9a-f]{64}$/) {
+            print $(i + 1)
+            exit
+          }
+        }
+      }' "$push_log"
     )"
     [[ "$remote_digest" =~ ^sha256:[0-9a-f]{64}$ ]] || {
       echo "ERROR: invalid remote Harbor digest for $name: $remote_digest" >&2

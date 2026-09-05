@@ -42,7 +42,7 @@ spec:
           type: RuntimeDefault
       containers:
       - name: content
-        image: harbor-dt.co.id/devops-apps/content:REPLACE_SHA
+        image: harbor-dt.co.id/devops-apps/zabisa/content:REPLACE_SHA
         ports:
         - containerPort: 8082
         env:

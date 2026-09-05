@@ -20,7 +20,7 @@ DT4.5.6 changes only the Harbor project segment and preserves the nine reviewed
 repository names:
 
 ```text
-harbor-dt.co.id/devops-apps/<image>:<full-source-sha>
+harbor-dt.co.id/devops-apps/zabisa/<image>:<full-source-sha>
 ```
 
 The project is aligned consistently across Jenkins environment defaults, the

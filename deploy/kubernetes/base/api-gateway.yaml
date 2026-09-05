@@ -35,7 +35,7 @@ spec:
           type: RuntimeDefault
       containers:
       - name: api-gateway
-        image: harbor-dt.co.id/devops-apps/api-gateway:REPLACE_SHA
+        image: harbor-dt.co.id/devops-apps/zabisa/api-gateway:REPLACE_SHA
         ports:
         - containerPort: 8080
         env:

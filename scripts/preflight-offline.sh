@@ -156,6 +156,9 @@ pass 'DT4.5.5 Go crypto and Admin runtime vulnerability remediation invariants'
 ./scripts/verify-dt456-harbor-project.sh || fail 'DT4.5.6 Harbor project alignment invariants failed'
 pass 'DT4.5.6 authorized Harbor devops-apps project invariants'
 
+./scripts/verify-dt457-harbor-repository.sh || fail 'DT4.5.7 Harbor repository hierarchy invariants failed'
+pass 'DT4.5.7 nested Harbor repository and digest parser invariants'
+
 ./scripts/verify-quality-gate.sh || fail 'CI/Sonar quality gate invariants failed'
 pass 'CI/Sonar quality gate invariants'
 

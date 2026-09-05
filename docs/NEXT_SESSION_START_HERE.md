@@ -13,12 +13,12 @@ git log --oneline -5
 ./scripts/preflight-offline.sh
 ```
 
-Expected repository state after DT4.5.6 Harbor alignment installation:
+Expected repository state after DT4.5.7 Harbor repository alignment installation:
 
 ```text
 main synchronized with origin/main
 clean worktree
-DT4.5.6 Jenkins/Sonar/Trivy/Harbor/GitOps source invariants: PASS
+DT4.5.7 nested Harbor repository and digest parser invariants: PASS
 ```
 
 ## 2. Read in this order
@@ -95,7 +95,7 @@ npm run mobile:quality
 
 Current source checkpoint:
 
-**DT4.5.6 — Authorized Harbor project and controlled delivery resume ready**
+**DT4.5.7 — Nested Harbor repositories and controlled delivery resume ready**
 
 The Multibranch job `zabisa-super-app-v1` exists on the existing Docker Compose
 Jenkins and is disabled with no automatic trigger. Readiness build `#6` passed
@@ -109,9 +109,13 @@ It stopped at the first Trivy image-policy result; Harbor push and GitOps publis
 were not reached. DT4.5.4 retains full evidence, evaluates all images and blocks
 only fixable HIGH/CRITICAL findings.
 
+Build `#13` passed build and scan for all nine images and authenticated to
+Harbor, but used the incomplete `devops-apps/<image>` path and then failed to
+parse Docker's `<tag>: digest: sha256:...` output. DT4.5.7 corrects both issues.
+
 Next controlled execution:
 
-**DT4.5.6 — Build, scan, Harbor push and GitOps publish**
+**DT4.5.7 — Build, scan, Harbor push and GitOps publish**
 
 Use `scripts/run-zabisa-jenkins-delivery.sh --resume-after-readiness` with
 `DT43_READINESS_BUILD=6`. The runner verifies build `#6` and performs only one
