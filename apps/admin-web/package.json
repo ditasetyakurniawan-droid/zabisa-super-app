@@ -17,7 +17,7 @@
     "react-dom": "19.2.0"
   },
   "devDependencies": {
-    "@jest/globals": "29.7.0",
+    "@jest/globals": "30.5.1",
     "@playwright/test": "1.62.1",
     "@types/node": "^22.0.0",
     "@types/react": "^19.0.0",
