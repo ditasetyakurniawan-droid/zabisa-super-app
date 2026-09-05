@@ -17,6 +17,7 @@ Modes:
   --build-scan       Build, scan and emit scan/SBOM attestations (default).
   --push-only        Verify prior attestations, push, then prove Harbor digests.
   --build-scan-push  Build and scan every image before any image is pushed.
+  --cleanup-local    Remove only the nine exact Zabisa images for this Git SHA.
 
 Environment:
   HARBOR=harbor-dt.co.id
@@ -43,7 +44,7 @@ fi
 SHA="${SHA,,}"
 
 case "$MODE" in
-  --plan|--build-only|--build-scan|--push-only|--build-scan-push) ;;
+  --plan|--build-only|--build-scan|--push-only|--build-scan-push|--cleanup-local) ;;
   *) echo "ERROR: unsupported mode: $MODE" >&2; usage >&2; exit 64 ;;
 esac
 
@@ -120,6 +121,20 @@ done
 
 if [[ "$MODE" == "--plan" ]]; then
   echo '[images] PLAN PASS: 9 linux/amd64 immutable targets resolved; no registry access performed.'
+  exit 0
+fi
+
+if [[ "$MODE" == "--cleanup-local" ]]; then
+  command -v docker >/dev/null 2>&1 || { echo 'ERROR: docker is required.' >&2; exit 127; }
+  for name in "${ZABISA_IMAGE_NAMES[@]}"; do
+    image="$(image_ref "$name")"
+    if docker image inspect "$image" >/dev/null 2>&1; then
+      docker image rm "$image" >/dev/null || {
+        echo "[images] WARNING: local image remains in use: $image" >&2
+      }
+    fi
+  done
+  echo "[images] PASS: exact local Zabisa images cleaned for $SHA."
   exit 0
 fi
 

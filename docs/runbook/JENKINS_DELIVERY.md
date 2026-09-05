@@ -29,6 +29,8 @@ Only Jenkins credential identifiers belong in source:
 
 - `github-credentials-id` for SCM access;
 - `harbor-cred` for an approved Harbor login/push;
+- `github-credentials-id` for SCM and write access to the dedicated Zabisa
+  GitOps repository during this development phase;
 - the configured `sonar-dt` installation for private Sonar.
 
 Credential values, Jenkins API tokens, Harbor robot passwords, CA private
@@ -85,12 +87,26 @@ path.
 3. An operator approves one Jenkins readiness run for quality, private Sonar
    and Dockerized Trivy only.
 4. For the development delivery cycle, a second explicitly parameterized build
-   performs the DT4.4 build, scan, SBOM, Harbor push and GitOps render.
-5. The runner verifies all nine Harbor digest references and returns the parent
+   performs the DT4.4 build, scan, SBOM and Harbor push.
+5. Jenkins commits the rendered DT overlay to
+   `zabisa-super-app-gitops/main` using credential-safe `GIT_ASKPASS`.
+6. The runner verifies all nine Harbor digest references and GitOps publication,
+   then returns the parent
    job to disabled.
 7. Remote Harbor digests and worker/containerd pull are verified.
 8. Backup/restore and migration phases remain separate.
-9. ArgoCD sync occurs only after reviewed GitOps render and explicit approval.
+9. ArgoCD sync occurs only after reviewed GitOps commit and explicit approval.
+
+Before the next controlled run, reconcile the existing job once:
+
+```bash
+DT42_CONFIRM=RECONCILE-DISABLED-ZABISA-JOB \
+JENKINS_SSH_TARGET=ubuntu@192.168.100.57 \
+  ./scripts/bootstrap-zabisa-jenkins-job.sh --reconcile
+```
+
+This keeps only `main` discovery, removes PR discovery traits, clears automatic
+triggers and leaves the job disabled. It does not index or start a build.
 
 ## Current prohibitions
 

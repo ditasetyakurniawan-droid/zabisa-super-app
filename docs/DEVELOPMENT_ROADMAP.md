@@ -8,8 +8,9 @@
 | DT3 | PASS / migration not run | Empty-schema inventory and controlled migration engine ready |
 | DT4.1 | PASS / source only | Immutable image, SBOM, scan and digest-proof source controls ready |
 | DT4.2.1 | PASS / locked | Existing Jenkins Multibranch job created disabled; no indexing/build |
-| DT4.3 | SOURCE READY / LIVE NEXT | Default-off quality, private Sonar and Dockerized Trivy readiness |
-| DT4.4 | SOURCE READY / LIVE NEXT | Explicit build, scan, SBOM, Harbor push and GitOps render in the same controlled session |
+| DT4.3 | PARTIAL LIVE / FIX READY | GitHub and private Sonar passed; Dockerized Trivy flag compatibility fixed for controlled rerun |
+| DT4.4 | SOURCE READY / LIVE NEXT | Explicit build, scan, SBOM and Harbor push in one controlled session |
+| DT4.5 | SOURCE READY / LIVE NEXT | Publish immutable DT overlay to the dedicated Zabisa GitOps repository |
 | DT5 | BLOCKED | Backup and isolated restore evidence |
 | DT6 | BLOCKED | Sequential database migration with explicit approval |
 | DT7 | BLOCKED | Reviewed GitOps render and controlled ArgoCD sync |
@@ -167,7 +168,6 @@ On macOS/Xcode:
 
 ## Recommended next-session first task
 
-Start with **DT4.3 controlled Jenkins readiness**. Keep
-`zabisa-super-app-v1` disabled until the Jenkinsfile defaults image build,
-Harbor push and GitOps publication to off. The first approved run proves only
-quality, private Sonar and Dockerized Trivy readiness.
+Resume **DT4.3/DT4.4/DT4.5 controlled Jenkins delivery**. Reconcile the parent
+job to disabled, trigger-free and `main`-only, then run readiness followed by
+the explicitly parameterized build/scan/push/GitOps publication.

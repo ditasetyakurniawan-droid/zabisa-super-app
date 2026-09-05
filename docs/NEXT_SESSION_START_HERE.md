@@ -13,12 +13,12 @@ git log --oneline -5
 ./scripts/preflight-offline.sh
 ```
 
-Expected repository state:
+Expected repository state after DT4.5 source installation:
 
 ```text
 main synchronized with origin/main
 clean worktree
-DT4.2 existing Jenkins/Sonar/Harbor delivery alignment invariants: PASS
+DT4.5 Jenkins/Sonar/Harbor/GitOps source invariants: PASS
 ```
 
 ## 2. Read in this order
@@ -93,19 +93,19 @@ npm run mobile:quality
 
 ## 6. Current phase
 
-Closed checkpoint:
+Current source checkpoint:
 
-**DT4.2.1 — Existing Jenkins integration**
+**DT4.5 — Dedicated GitOps publication ready**
 
 The Multibranch job `zabisa-super-app-v1` exists on the existing Docker Compose
 Jenkins and is disabled with no automatic trigger. Authentication and the
 actual `GitHubSCMSource` config were verified. No indexing, build or push ran.
 
-Next phase:
+Next controlled execution:
 
-**DT4.3 — Controlled Jenkins quality/Sonar/Trivy readiness**
+**DT4.3/DT4.4/DT4.5 — Trivy readiness, Harbor push and GitOps publish**
 
-Do not enable or scan the Multibranch job until the Jenkinsfile has an explicit
-default-deny switch for image build and Harbor push. The first approved run may
-prove quality, private Sonar and Dockerized Trivy only. It must not publish an
-image, mutate GitOps, deploy Kubernetes, migrate MySQL or sync ArgoCD.
+First reconcile the existing Multibranch job to disabled, trigger-free and
+main-only. Then use `scripts/run-zabisa-jenkins-delivery.sh`; it performs the
+readiness run followed by the explicitly enabled build/scan/push/publish run.
+Migration, Kubernetes application and ArgoCD sync remain separate approvals.

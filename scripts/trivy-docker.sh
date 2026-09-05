@@ -56,5 +56,4 @@ echo "[trivy-docker] image=$TRIVY_IMAGE" >&2
 exec docker run "${run_args[@]}" \
   "$TRIVY_IMAGE" \
   --cache-dir "$cache_dir" \
-  --disable-telemetry \
   "$@"

@@ -18,22 +18,22 @@ PROJECT="${PROJECT:-zabisa}"; PROJECT="${PROJECT#/}"; PROJECT="${PROJECT%/}"
 
 if [[ "$DEST" != /* ]]; then DEST="$ROOT/$DEST"; fi
 rm -rf "$DEST"
-mkdir -p "$DEST"
-cp -a deploy/kubernetes/base/. "$DEST/"
+mkdir -p "$DEST/manifests"
+cp -a deploy/kubernetes/base/. "$DEST/manifests/"
 
 replacements=0
 for name in "${ZABISA_IMAGE_NAMES[@]}"; do
   old="harbor-dt.co.id/zabisa/${name}:REPLACE_SHA"
   new="${HARBOR}/${PROJECT}/${name}:${SHA}"
   expected="$(zabisa_expected_manifest_refs_for "$name")"
-  count="$( (grep -RhF -o "$old" "$DEST" 2>/dev/null || true) | wc -l | tr -d ' ')"
+  count="$( (grep -RhF -o "$old" "$DEST/manifests" 2>/dev/null || true) | wc -l | tr -d ' ')"
   if [[ "$count" != "$expected" ]]; then
     echo "ERROR: expected ${expected} placeholder image reference(s) for $name; found $count." >&2
     exit 1
   fi
   while IFS= read -r -d '' file; do
     sed -i "s#${old}#${new}#g" "$file"
-  done < <(grep -RlZF "$old" "$DEST" 2>/dev/null || true)
+  done < <(grep -RlZF "$old" "$DEST/manifests" 2>/dev/null || true)
   replacements=$((replacements + count))
 done
 
@@ -46,11 +46,30 @@ expected_total=0
 for name in "${ZABISA_IMAGE_NAMES[@]}"; do
   expected_total=$((expected_total + $(zabisa_expected_manifest_refs_for "$name")))
 done
-actual="$(grep -Rh --include='*.yaml' --include='*.yml' -E '^[[:space:]]*image:[[:space:]]+harbor-dt\.co\.id/zabisa/' "$DEST" | wc -l | tr -d ' ')"
+actual="$(grep -Rh --include='*.yaml' --include='*.yml' -E '^[[:space:]]*image:[[:space:]]+harbor-dt\.co\.id/zabisa/' "$DEST/manifests" | wc -l | tr -d ' ')"
 if [[ "$actual" != "$expected_total" ]]; then
   echo "ERROR: expected ${expected_total} rendered Zabisa workload image references, found $actual." >&2
   exit 1
 fi
 
+{
+  echo 'apiVersion: kustomize.config.k8s.io/v1beta1'
+  echo 'kind: Kustomization'
+  echo 'resources:'
+  find "$DEST/manifests" -maxdepth 1 -type f \
+    \( -name '*.yaml' -o -name '*.yml' \) \
+    -printf '%f\n' | LC_ALL=C sort | sed 's#^#  - manifests/#'
+} >"$DEST/kustomization.yaml"
+
+cat >"$DEST/README.md" <<EOF
+# Zabisa DT desired state
+
+Generated from \`ditasetyakurniawan-droid/zabisa-super-app\` commit
+\`${SHA}\`. Do not edit files in \`manifests/\` manually; publish a new
+immutable application revision through Jenkins.
+EOF
+
+printf '%s\n' "$SHA" >"$DEST/SOURCE_REVISION"
+
 printf '[gitops] PASS: rendered %d immutable image references across %d image targets into %s\n' "$replacements" "${#ZABISA_IMAGE_NAMES[@]}" "$DEST"
-echo '[gitops] NOTE: this renders deployable manifests only; it does not commit/push a GitOps repository.'
+echo '[gitops] PASS: Kustomize overlay and source provenance were generated.'

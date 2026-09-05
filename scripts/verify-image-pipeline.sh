@@ -8,6 +8,7 @@ source scripts/image-inventory.sh
 fail() { echo "[image-verify] ERROR: $*" >&2; exit 1; }
 
 [[ -x scripts/trivy-docker.sh ]] || fail 'Dockerized Trivy wrapper is missing or not executable'
+[[ -x scripts/publish-gitops.sh ]] || fail 'GitOps publisher is missing or not executable'
 
 [[ "${#ZABISA_IMAGE_NAMES[@]}" == "9" ]] || fail "expected 9 image targets, found ${#ZABISA_IMAGE_NAMES[@]}"
 
@@ -45,6 +46,9 @@ trivy_digest='sha256:62b1e65e8869bc4b4c6aa4fa2b21595256c7c2f6018a9d9ad61caf87187
 [[ "$(grep -RhF "$distroless_digest" services/*/Dockerfile | wc -l | tr -d ' ')" == '8' ]] || fail 'distroless runtime digest mismatch'
 [[ "$(grep -F "$node_digest" apps/admin-web/Dockerfile | wc -l | tr -d ' ')" == '2' ]] || fail 'admin-web build/runtime digest mismatch'
 grep -Fq "aquasec/trivy:0.74.0@$trivy_digest" scripts/trivy-docker.sh || fail 'Trivy image/version digest mismatch'
+if grep -Fq -- '--disable-telemetry' scripts/trivy-docker.sh; then
+  fail 'unsupported Trivy 0.74.0 --disable-telemetry flag remains'
+fi
 
 if awk '$1 == "FROM" && $2 !~ /@sha256:[0-9a-f]{64}$/ {print FILENAME ":" FNR ":" $0}' services/*/Dockerfile apps/admin-web/Dockerfile | grep -q .; then
   fail 'an application base image is not digest-pinned'
@@ -82,8 +86,13 @@ for name in "${ZABISA_IMAGE_NAMES[@]}"; do
   [[ "$count" == "$expected" ]] || fail "rendered image count mismatch for $name: expected $expected got $count"
 done
 if grep -Rqs 'REPLACE_SHA' "$tmp/rendered"; then fail 'REPLACE_SHA remains in rendered manifests'; fi
+[[ -s "$tmp/rendered/kustomization.yaml" ]] || fail 'rendered Kustomize entry point missing'
+[[ "$(<"$tmp/rendered/SOURCE_REVISION")" == "$TEST_SHA" ]] || fail 'rendered source provenance mismatch'
+grep -Fq 'apps/zabisa/overlays/dt' scripts/publish-gitops.sh || fail 'GitOps DT destination path mismatch'
+grep -Fq 'GIT_ASKPASS' scripts/publish-gitops.sh || fail 'credential-safe GitOps authentication missing'
+grep -Fq 'ArgoCD sync was not requested.' scripts/publish-gitops.sh || fail 'GitOps publication/sync boundary missing'
 
-echo "[image-verify] OK: GitOps render replaces all ${expected_refs} runtime + migration placeholders with immutable SHA tags"
+echo "[image-verify] OK: GitOps render replaces all ${expected_refs} placeholders and emits a publishable DT overlay"
 
 grep -q 'name: allow-admin-egress-to-api-gateway' deploy/kubernetes/base/platform.yaml || fail 'admin -> api-gateway egress policy missing'
 grep -q 'name: allow-admin-ingress-to-api-gateway' deploy/kubernetes/base/platform.yaml || fail 'api-gateway ingress from admin policy missing'

@@ -1,4 +1,4 @@
-# Project State — Application Baseline and DT4.2.1 Checkpoint
+# Project State — Application Baseline and DT4.5 Source Checkpoint
 
 ## Executive status
 
@@ -36,19 +36,25 @@ Verified:
   and the job disabled;
 - support and regression tests for the actual Jenkins `GitHubSCMSource`
   configuration shape.
+- private Sonar analysis and Quality Gate passed in Jenkins for the latest
+  readiness attempt;
+- dedicated `zabisa-super-app-gitops` ownership, deterministic Kustomize render
+  and credential-safe Jenkins publication are defined in source;
+- the Trivy 0.74.0 readiness incompatibility and Sonar TypeScript analyzer
+  compatibility gap are corrected in source.
 
 Not run:
 
-- Jenkins branch indexing or pipeline build;
+- successful Dockerized Trivy readiness rerun;
 - application image build, vulnerability scan or Harbor push;
 - worker/containerd image-pull proof;
 - database backup/isolated restore drill or migration;
 - application Deployment or ArgoCD sync.
 
-The active next execution is the combined DT4.3/DT4.4 development delivery:
+The active next execution is the combined DT4.3/DT4.4/DT4.5 development delivery:
 first prove Jenkins quality, private Sonar and digest-pinned Dockerized Trivy
 with publication defaulted off, then use a separate parameterized build to
-build, scan, push nine immutable images and render GitOps manifests. The parent
+build, scan, push nine immutable images and publish GitOps manifests. The parent
 job returns to disabled afterward. This does not authorize migration or sync.
 
 ## Verified at lock

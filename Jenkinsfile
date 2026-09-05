@@ -3,13 +3,15 @@ pipeline {
   options { timestamps(); disableConcurrentBuilds(); skipDefaultCheckout(true) }
   parameters {
     string(name: 'HARBOR_CREDENTIALS_ID', defaultValue: 'harbor-cred', description: 'Existing Jenkins username/password credential ID for Harbor push on main')
+    string(name: 'GITOPS_CREDENTIALS_ID', defaultValue: 'github-credentials-id', description: 'Existing Jenkins username/password GitHub credential with write access to the Zabisa GitOps repository')
     booleanParam(name: 'BUILD_IMAGES', defaultValue: false, description: 'Build and scan all nine immutable images')
     booleanParam(name: 'PUSH_IMAGES', defaultValue: false, description: 'Push previously scanned immutable images to Harbor; requires BUILD_IMAGES')
-    booleanParam(name: 'RENDER_GITOPS', defaultValue: false, description: 'Render GitOps manifests after a successful Harbor push')
+    booleanParam(name: 'RENDER_GITOPS', defaultValue: false, description: 'Render and publish GitOps manifests after a successful Harbor push')
   }
   environment {
     HARBOR = 'harbor-dt.co.id'
     PROJECT = 'zabisa'
+    GITOPS_REPOSITORY = 'https://github.com/ditasetyakurniawan-droid/zabisa-super-app-gitops.git'
     GO_IMAGE = 'golang:1.26.7-alpine'
     NODE_IMAGE = 'node:22-alpine'
     PYTHON_IMAGE = 'python:3.13-alpine'
@@ -183,7 +185,7 @@ pipeline {
         }
       }
     }
-    stage('Render GitOps Manifests') {
+    stage('Publish GitOps Manifests') {
       when {
         allOf {
           branch 'main'
@@ -191,9 +193,29 @@ pipeline {
         }
       }
       steps {
-        sh './scripts/update-gitops.sh "$(cat .gitsha)" build/gitops-rendered'
+        script {
+          if (!params.GITOPS_CREDENTIALS_ID?.trim()) {
+            error('GITOPS_CREDENTIALS_ID must be configured for GitOps publication.')
+          }
+          withCredentials([usernamePassword(credentialsId: params.GITOPS_CREDENTIALS_ID, usernameVariable: 'GITOPS_USERNAME', passwordVariable: 'GITOPS_PASSWORD')]) {
+            sh '''set -eu
+              ./scripts/update-gitops.sh "$(cat .gitsha)" build/gitops-rendered
+              ./scripts/publish-gitops.sh "$(cat .gitsha)" build/gitops-rendered
+            '''
+          }
+        }
         archiveArtifacts artifacts: 'build/gitops-rendered/**', fingerprint: true
       }
+    }
+  }
+  post {
+    always {
+      sh '''set +e
+        if test -s .gitsha; then
+          ./scripts/build-images.sh "$(cat .gitsha)" --cleanup-local
+        fi
+      '''
+      deleteDir()
     }
   }
 }

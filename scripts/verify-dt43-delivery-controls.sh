@@ -15,6 +15,11 @@ for parameter in BUILD_IMAGES PUSH_IMAGES RENDER_GITOPS; do
     || fail "$parameter must default to false"
 done
 
+grep -Fq "defaultValue: 'github-credentials-id'" Jenkinsfile \
+  || fail 'existing GitHub credential must be the default GitOps credential reference'
+grep -Fq 'zabisa-super-app-gitops.git' Jenkinsfile \
+  || fail 'Zabisa GitOps repository is not configured'
+
 grep -Fq "PUSH_IMAGES requires BUILD_IMAGES" Jenkinsfile \
   || fail 'push dependency guard is missing'
 grep -Fq "RENDER_GITOPS requires PUSH_IMAGES" Jenkinsfile \
@@ -42,6 +47,10 @@ grep -Fq 'PUSH_IMAGES=true' scripts/run-zabisa-jenkins-delivery.sh \
   || fail 'controlled push parameter is missing'
 grep -Fq 'RENDER_GITOPS=true' scripts/run-zabisa-jenkins-delivery.sh \
   || fail 'controlled render parameter is missing'
+grep -Fq 'GITOPS_CREDENTIALS_ID=' scripts/run-zabisa-jenkins-delivery.sh \
+  || fail 'controlled GitOps credential parameter is missing'
+grep -Fq '[gitops] PASS: published source=' scripts/run-zabisa-jenkins-delivery.sh \
+  || fail 'GitOps remote publication evidence gate is missing'
 grep -Fq 'disable_parent' scripts/run-zabisa-jenkins-delivery.sh \
   || fail 'Jenkins disable cleanup is missing'
 grep -Fq -- '--globoff' scripts/run-zabisa-jenkins-delivery.sh \

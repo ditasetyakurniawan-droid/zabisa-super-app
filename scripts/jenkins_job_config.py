@@ -82,7 +82,36 @@ def configure_scm(
     source_ids = direct_children(source, "id")
     if source_ids:
         one(source_ids, "SCM source id").text = "zabisa-super-app-v1-source"
+    enforce_main_only(source)
     return source_type
+
+
+def enforce_main_only(source: ET.Element) -> None:
+    traits_nodes = direct_children(source, "traits")
+    traits = one(traits_nodes, "SCM traits") if traits_nodes else ET.SubElement(source, "traits")
+
+    for trait in list(traits):
+        name = local(trait.tag)
+        if name.endswith("OriginPullRequestDiscoveryTrait") or name.endswith(
+            "ForkPullRequestDiscoveryTrait"
+        ):
+            traits.remove(trait)
+
+    regex_traits = [
+        trait
+        for trait in list(traits)
+        if local(trait.tag).endswith("RegexSCMHeadFilterTrait")
+    ]
+    if not regex_traits:
+        regex_trait = ET.SubElement(
+            traits, "jenkins.scm.impl.trait.RegexSCMHeadFilterTrait"
+        )
+    else:
+        regex_trait = one(regex_traits, "RegexSCMHeadFilterTrait")
+
+    regex_nodes = direct_children(regex_trait, "regex")
+    regex = one(regex_nodes, "SCM head regex") if regex_nodes else ET.SubElement(regex_trait, "regex")
+    regex.text = "^main$"
 
 
 def enforce_disabled(root: ET.Element) -> None:
@@ -151,6 +180,24 @@ def verify(
         if actual_remote != repository_url:
             raise ValueError("Git remote mismatch")
 
+    traits = one(direct_children(source, "traits"), "SCM traits")
+    regex_traits = [
+        trait
+        for trait in list(traits)
+        if local(trait.tag).endswith("RegexSCMHeadFilterTrait")
+    ]
+    regex_nodes = direct_children(
+        one(regex_traits, "RegexSCMHeadFilterTrait"), "regex"
+    )
+    if (one(regex_nodes, "SCM head regex").text or "").strip() != "^main$":
+        raise ValueError("SCM discovery is not restricted to main")
+    if any(
+        local(node.tag).endswith("PullRequestDiscoveryTrait")
+        for node in descendants(source, "traits")
+        for node in node.iter()
+    ):
+        raise ValueError("pull-request discovery trait remains")
+
     actual_script = (one(descendants(root, "scriptPath"), "scriptPath").text or "").strip()
     if actual_script != script_path:
         raise ValueError("scriptPath mismatch")
@@ -193,7 +240,7 @@ def main() -> int:
                 args.script_path,
             )
             print(f"[jenkins-job] rendered scm_type={source_type}")
-            print("[jenkins-job] disabled=true automatic_triggers=none")
+            print("[jenkins-job] disabled=true automatic_triggers=none scm_heads=main-only")
         else:
             source_type = verify(
                 args.config,
@@ -202,7 +249,7 @@ def main() -> int:
                 args.script_path,
             )
             print(f"[jenkins-job] verified scm_type={source_type}")
-            print("[jenkins-job] disabled=true automatic_triggers=none")
+            print("[jenkins-job] disabled=true automatic_triggers=none scm_heads=main-only")
     except (ET.ParseError, OSError, ValueError) as exc:
         print(f"[jenkins-job] ERROR: {exc}", file=sys.stderr)
         return 1

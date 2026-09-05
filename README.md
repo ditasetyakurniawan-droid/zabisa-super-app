@@ -9,7 +9,9 @@ DT4.2.1 is closed: the existing Docker Compose Jenkins at
 `192.168.100.57` now contains `zabisa-super-app-v1` as a disabled
 Multibranch Pipeline, cloned from the proven `tropical-management-v1`
 pattern. No application image, database migration, Kubernetes workload or
-ArgoCD sync has run.
+ArgoCD sync has run. DT4.5 source now separates the application repository
+from the dedicated `zabisa-super-app-gitops` desired-state repository. The
+live build/push/publish rerun is still required.
 
 Start or resume development from:
 
@@ -17,8 +19,8 @@ Start or resume development from:
 2. `docs/deployment/CURRENT-STATE-AND-ROADMAP.md`;
 3. `docs/runbook/JENKINS_DELIVERY.md` for the controlled delivery path.
 
-The active delivery package combines the DT4.3 default-off readiness run with
-an explicitly approved DT4.4 build, scan, SBOM, Harbor push and GitOps render.
+The active delivery combines the DT4.3 default-off readiness run with an
+explicitly approved DT4.4 build, scan, SBOM, Harbor push and GitOps publication.
 The Jenkins parent job is returned to disabled before the operator proceeds to
 backup/restore and database migration.
 
@@ -138,6 +140,9 @@ HIGH/CRITICAL Trivy scanning, CycloneDX SBOMs and verified Harbor digest
 evidence. The Jenkins job currently remains disabled, so no image has been
 built or pushed. A later explicitly approved gate may publish from `main`
 through the existing `harbor-cred`; the pipeline never creates `:latest`.
+Rendered manifests are committed to
+`ditasetyakurniawan-droid/zabisa-super-app-gitops` and are not deployed
+directly by Jenkins.
 
 ## DT Vault integration
 

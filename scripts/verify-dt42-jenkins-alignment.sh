@@ -29,6 +29,12 @@ grep -Fq -- '--volumes-from "$HOSTNAME"' Jenkinsfile \
   || fail 'Jenkins Compose workspace sharing is missing'
 grep -Fq 'TRIVY_BIN=./scripts/trivy-docker.sh' Jenkinsfile \
   || fail 'Dockerized Trivy is not selected by Jenkins'
+grep -Fq 'sonar.typescript.tsconfigPaths=' sonar-project.properties \
+  || fail 'Sonar-specific TypeScript configuration is missing'
+grep -Fq '"moduleResolution": "node"' apps/admin-web/tsconfig.sonar.json \
+  || fail 'Backoffice Sonar TypeScript compatibility config is missing'
+grep -Fq '"moduleResolution": "node"' apps/mobile/tsconfig.sonar.json \
+  || fail 'Mobile Sonar TypeScript compatibility config is missing'
 
 grep -Fq 'name: Engineering Quality Gate' .github/workflows/ci.yml \
   || fail 'GitHub source quality gate is missing'
@@ -58,6 +64,10 @@ grep -Fq 'GitSCMSource' scripts/jenkins_job_config.py \
   || fail 'GitSCMSource compatibility is unsupported'
 grep -Fq 'CREATE-DISABLED-ZABISA-JOB' scripts/bootstrap-zabisa-jenkins-job.sh \
   || fail 'explicit disabled-job creation confirmation is missing'
+grep -Fq 'RECONCILE-DISABLED-ZABISA-JOB' scripts/bootstrap-zabisa-jenkins-job.sh \
+  || fail 'explicit existing-job reconciliation confirmation is missing'
+grep -Fq 'regex.text = "^main$"' scripts/jenkins_job_config.py \
+  || fail 'Jenkins SCM discovery is not restricted to main'
 
 if grep -Eqi 'buildWithParameters|/build\?|/build$|/enable$' \
   scripts/bootstrap-zabisa-jenkins-job.sh; then

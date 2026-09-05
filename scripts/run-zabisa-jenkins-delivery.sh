@@ -12,6 +12,7 @@ jenkins_ssh_target="${JENKINS_SSH_TARGET:-ubuntu@192.168.100.57}"
 jenkins_local_port="${JENKINS_LOCAL_PORT:-18080}"
 jenkins_url="http://127.0.0.1:${jenkins_local_port}"
 harbor_credentials_id="${HARBOR_CREDENTIALS_ID:-harbor-cred}"
+gitops_credentials_id="${GITOPS_CREDENTIALS_ID:-github-credentials-id}"
 
 temp_dir=""
 tunnel_pid=""
@@ -167,6 +168,7 @@ echo "Parent job        : $target_job"
 echo "Readiness build   : quality + private Sonar + Dockerized Trivy"
 echo "Delivery build    : 9 images + scan + SBOM + Harbor push + GitOps render"
 echo "Harbor credential : $harbor_credentials_id"
+echo "GitOps credential : $gitops_credentials_id"
 echo "Final job state   : DISABLED"
 echo "Migration         : NOT RUN"
 echo "ArgoCD sync       : NOT RUN"
@@ -353,7 +355,8 @@ print((data.get("lastBuild") or {}).get("number", 0))
         --data-urlencode 'BUILD_IMAGES=false' \
         --data-urlencode 'PUSH_IMAGES=false' \
         --data-urlencode 'RENDER_GITOPS=false' \
-        --data-urlencode "HARBOR_CREDENTIALS_ID=$harbor_credentials_id"
+        --data-urlencode "HARBOR_CREDENTIALS_ID=$harbor_credentials_id" \
+        --data-urlencode "GITOPS_CREDENTIALS_ID=$gitops_credentials_id"
     )"
     [[ "$status" == "200" || "$status" == "201" || "$status" == "302" ]] || {
       echo "ERROR: readiness trigger returned HTTP $status" >&2
@@ -414,7 +417,8 @@ status="$(
     --data-urlencode 'BUILD_IMAGES=true' \
     --data-urlencode 'PUSH_IMAGES=true' \
     --data-urlencode 'RENDER_GITOPS=true' \
-    --data-urlencode "HARBOR_CREDENTIALS_ID=$harbor_credentials_id"
+    --data-urlencode "HARBOR_CREDENTIALS_ID=$harbor_credentials_id" \
+    --data-urlencode "GITOPS_CREDENTIALS_ID=$gitops_credentials_id"
 )"
 [[ "$status" == "200" || "$status" == "201" || "$status" == "302" ]] || {
   echo "ERROR: delivery trigger returned HTTP $status" >&2
@@ -432,7 +436,8 @@ for marker in \
   'Delivery controls: BUILD_IMAGES=true, PUSH_IMAGES=true, RENDER_GITOPS=true' \
   '[images] PASS: mode --build-scan completed for 9 immutable images.' \
   '[images] PASS: mode --push-only completed for 9 immutable images.' \
-  '[gitops] PASS: rendered 16 immutable image references across 9 image targets'; do
+  '[gitops] PASS: rendered 16 immutable image references across 9 image targets' \
+  "[gitops] PASS: published source=$commit"; do
   grep -Fq "$marker" "$delivery_log" || {
     echo "ERROR: delivery evidence marker missing: $marker" >&2
     exit 41
@@ -479,7 +484,7 @@ echo "Source commit     : $commit"
 echo "Readiness build   : #$readiness_build SUCCESS"
 echo "Delivery build    : #$delivery_build SUCCESS"
 echo "Harbor images     : 9 immutable SHA tags verified"
-echo "GitOps render     : 16 image references verified"
+echo "GitOps publish    : 16 image references committed to zabisa-super-app-gitops/main"
 echo "Digest report     : $digest_report"
 sha256sum "$digest_report"
 echo "Jenkins parent    : DISABLED"

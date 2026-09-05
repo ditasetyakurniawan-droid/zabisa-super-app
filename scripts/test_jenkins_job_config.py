@@ -14,6 +14,10 @@ GITHUB_XML = """<?xml version='1.0' encoding='UTF-8'?>
       <credentialsId>github-credentials-id</credentialsId>
       <repoOwner>old-owner</repoOwner>
       <repository>old-repository</repository>
+      <traits>
+        <jenkins.scm.impl.trait.RegexSCMHeadFilterTrait><regex>^(main|PR-[0-9]+)$</regex></jenkins.scm.impl.trait.RegexSCMHeadFilterTrait>
+        <org.jenkinsci.plugins.github_branch_source.OriginPullRequestDiscoveryTrait><strategyId>1</strategyId></org.jenkinsci.plugins.github_branch_source.OriginPullRequestDiscoveryTrait>
+      </traits>
     </source>
   </jenkins.branch.BranchSource></data></sources>
   <factory><org.jenkinsci.plugins.workflow.multibranch.WorkflowBranchProjectFactory>
@@ -66,6 +70,8 @@ class JenkinsJobConfigTest(unittest.TestCase):
             self.assertIn("<repository>zabisa-super-app</repository>", content)
             self.assertIn("<triggers />", content)
             self.assertIn("<disabled>true</disabled>", content)
+            self.assertIn("<regex>^main$</regex>", content)
+            self.assertNotIn("PullRequestDiscoveryTrait", content)
         finally:
             temporary.cleanup()
 
@@ -77,6 +83,7 @@ class JenkinsJobConfigTest(unittest.TestCase):
                 "git",
             )
             self.assertIn(self.repository, output.read_text(encoding="utf-8"))
+            self.assertIn("<regex>^main$</regex>", output.read_text(encoding="utf-8"))
         finally:
             temporary.cleanup()
 

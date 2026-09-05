@@ -6,11 +6,16 @@ metadata:
 spec:
   project: default
   source:
-    repoURL: https://REPLACE_WITH_GITOPS_REPO
+    repoURL: https://github.com/ditasetyakurniawan-droid/zabisa-super-app-gitops.git
     targetRevision: main
-    path: deploy/kubernetes/base
+    path: apps/zabisa/overlays/dt
   destination:
     server: https://kubernetes.default.svc
     namespace: zabisa-app
   # DT rollout is intentionally manual. An operator must review the rendered
   # immutable manifests and explicitly approve each delivery gate before sync.
+  syncPolicy:
+    syncOptions:
+      - CreateNamespace=false
+      - PrunePropagationPolicy=foreground
+      - PruneLast=true

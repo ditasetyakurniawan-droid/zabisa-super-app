@@ -38,7 +38,7 @@ local image ID and verifies the resulting remote Harbor digest.
 
 GitHub Actions owns source quality and Browser E2E. The existing Docker Compose
 Jenkins at `192.168.100.57` owns private Sonar and, after separate approvals,
-Dockerized Trivy, SBOM generation, Harbor publication and GitOps rendering.
+Dockerized Trivy, SBOM generation, Harbor publication and GitOps publication.
 Zabisa reuses `github-credentials-id`, `harbor-cred`, `sonar-dt` and the
 established Docker socket/Harbor compatibility contract.
 
@@ -47,10 +47,11 @@ The Multibranch job `zabisa-super-app-v1` was cloned from the proven
 trigger and has never indexed or built a branch. See
 `../runbook/JENKINS_DELIVERY.md` before changing that state.
 
-The repository can render immutable GitOps manifests with
-`scripts/update-gitops.sh`. Publishing or applying a rendered result remains a
-separate gate; ArgoCD remains deployment authority.
+The repository renders immutable manifests with `scripts/update-gitops.sh` and
+publishes them with `scripts/publish-gitops.sh` to the dedicated
+`zabisa-super-app-gitops` repository. ArgoCD reads
+`apps/zabisa/overlays/dt`; Jenkins does not apply workloads or start a sync.
 
-The first Dockerized Trivy execution, Harbor publication, cluster image-pull
-authentication and real GitOps publication remain explicit live gates. TLS
+The controlled Trivy retry, first Harbor publication, cluster image-pull
+authentication and first GitOps publication remain explicit live gates. TLS
 bypass flags must not be added to Zabisa pipeline source.

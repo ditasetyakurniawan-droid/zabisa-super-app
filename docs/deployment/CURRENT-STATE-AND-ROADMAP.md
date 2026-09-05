@@ -1,12 +1,12 @@
 # Zabisa Current State and Delivery Roadmap
 
-> Official checkpoint: **DT4.2.1 EXISTING JENKINS INTEGRATION PASS**
+> Official checkpoint: **DT4.5 GITOPS SEPARATION SOURCE READY**
 >
 > Live job: `zabisa-super-app-v1` — `DISABLED`, no automatic trigger
 >
 > Lock tag: `dt4.2.1-jenkins-integration-locked-2026-09-04`
 >
-> Verified on: `2026-09-04`
+> Updated on: `2026-09-05`
 
 This is the operational starting point for developers and operators. It records
 what is proven, what has not run, and which approval gate currently controls
@@ -26,8 +26,10 @@ delivery.
 | Migration source controls | PASS | Sequential waves, zero retry, advisory lock and checksums committed |
 | Immutable deployment images | SOURCE READY | Base digests and Harbor digest evidence controls committed; images not built |
 | Existing Jenkins/Harbor path | PASS / LOCKED | Compose Jenkins uses Docker socket, `harbor-cred`, private Sonar and existing Harbor compatibility mode |
-| Zabisa Jenkins job | CREATED / DISABLED | `zabisa-super-app-v1`; `GitHubSCMSource` verified; automatic triggers empty; no indexing/build requested |
-| Image scanning | SOURCE READY / LIVE UNPROVEN | Digest-pinned Dockerized Trivy runs through the existing Jenkins Docker socket; first live scan not run |
+| Zabisa Jenkins job | RECONCILE READY | Main-only, trigger-free, disabled configuration is defined; remote reconcile remains to run |
+| Private Sonar | PASS | Jenkins analysis and Quality Gate succeeded; Sonar-only TypeScript configs close the skipped-source warning |
+| Image scanning | FIX READY / LIVE RETRY | Digest-pinned Trivy 0.74.0 wrapper fixed after the unsupported flag blocked readiness |
+| GitOps repository | CREATED / SOURCE READY | Dedicated repository and `apps/zabisa/overlays/dt` publication contract defined; first publish not run |
 | Cluster Harbor pull | UNPROVEN | No namespace Docker config Secret or ServiceAccount imagePullSecret found |
 | Backup and isolated restore proof | NOT PROVEN | Mandatory before any database mutation |
 | Database migration | NOT RUN | Blocked by image, backup/restore and operator approval gates |
@@ -94,7 +96,7 @@ read back and verified. No indexing, build or push ran.
 
 ### DT4.3 — Controlled Jenkins readiness
 
-Status: **SOURCE READY / CONTROLLED LIVE EXECUTION NEXT**
+Status: **PARTIAL LIVE / FIX READY / CONTROLLED RETRY NEXT**
 
 Before enabling or scanning the Multibranch job, make image build, Harbor push
 and GitOps publication explicit opt-in parameters that default to off. The
@@ -107,6 +109,15 @@ explicitly parameterized DT4.4 build. `BUILD_IMAGES`, `PUSH_IMAGES` and
 `RENDER_GITOPS` all default to `false`; push requires build, and render requires
 push. The runner verifies nine remote Harbor digests and returns the parent job
 to disabled. Migration and ArgoCD remain separate phases.
+
+### DT4.5 — Dedicated GitOps publication
+
+Status: **SOURCE READY / LIVE EXECUTION NEXT**
+
+The application monorepo retains code and Kubernetes templates. Jenkins renders
+and commits the immutable DT overlay to `zabisa-super-app-gitops/main` at
+`apps/zabisa/overlays/dt`. ArgoCD points only at this desired-state path and
+remains manual. See `PHASE-DT45-GITOPS-SEPARATION.md`.
 
 ### DT5 — Backup and isolated restore readiness
 
@@ -184,9 +195,10 @@ DT3.3 migration engine hardening: PASS at 4783fa6
 DT4.1 immutable image source hardening: PASS at df2d275
 DT4.2 existing Jenkins pattern: PASS
 DT4.2.1 Zabisa Multibranch bootstrap: PASS; job created disabled
-Jenkins job: zabisa-super-app-v1; automatic triggers empty; build not run
-DT4.3 controlled quality/Sonar/Trivy readiness: NEXT
-Dockerized Trivy / first Harbor publication / cluster pull: NOT RUN
+Jenkins Sonar and Quality Gate: PASS
+DT4.3 Dockerized Trivy readiness: FIX READY; controlled retry next
+DT4.5 dedicated GitOps publication: SOURCE READY; live publish not run
+Dockerized Trivy / first Harbor publication / GitOps publication / cluster pull: NOT COMPLETE
 Migration: NOT RUN
 Application: NOT DEPLOYED
 ArgoCD sync: NOT RUN

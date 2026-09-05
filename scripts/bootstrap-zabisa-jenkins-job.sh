@@ -25,16 +25,19 @@ Usage:
   ./scripts/bootstrap-zabisa-jenkins-job.sh --plan
   DT42_CONFIRM=CREATE-DISABLED-ZABISA-JOB \
     ./scripts/bootstrap-zabisa-jenkins-job.sh --apply
+  DT42_CONFIRM=RECONCILE-DISABLED-ZABISA-JOB \
+    ./scripts/bootstrap-zabisa-jenkins-job.sh --reconcile
   ./scripts/bootstrap-zabisa-jenkins-job.sh --verify
 
 This clones the proven tropical-management-v1 Multibranch job structure,
 replaces only the repository/source identity, and creates Zabisa disabled.
-It never enables, indexes, or starts a build.
+Reconcile updates the existing job to disabled, trigger-free, main-only SCM
+discovery. No mode enables, indexes, or starts a build.
 USAGE
 }
 
 case "$mode" in
-  --plan|--apply|--verify) ;;
+  --plan|--apply|--reconcile|--verify) ;;
   -h|--help) usage; exit 0 ;;
   *) usage >&2; exit 64 ;;
 esac
@@ -202,6 +205,47 @@ if [[ "$mode" == "--verify" ]]; then
     --credentials "$scm_credentials" \
     --script-path "$script_path"
   echo "[jenkins-job] PASS: Zabisa Multibranch job exists and remains disabled."
+  exit 0
+fi
+
+if [[ "$mode" == "--reconcile" ]]; then
+  [[ "$target_status" == "200" ]] || {
+    echo "ERROR: target job does not exist or is unreadable (HTTP $target_status)." >&2
+    exit 32
+  }
+  [[ "${DT42_CONFIRM:-}" == "RECONCILE-DISABLED-ZABISA-JOB" ]] || {
+    echo 'ERROR: set DT42_CONFIRM=RECONCILE-DISABLED-ZABISA-JOB for --reconcile.' >&2
+    exit 42
+  }
+
+  curl "${curl_auth[@]}" "$jenkins_url/job/$target_job/config.xml" >"$source_xml"
+  python3 "$config_tool" render "$source_xml" "$rendered_xml" \
+    --repository "$repository_url" \
+    --credentials "$scm_credentials" \
+    --script-path "$script_path"
+
+  update_status="$(
+    curl --silent --show-error \
+      --output "$temp_dir/update-response.txt" \
+      --write-out '%{http_code}' \
+      --netrc-file "$netrc_file" \
+      --connect-timeout 5 --max-time 30 \
+      "${post_headers[@]}" \
+      --data-binary "@$rendered_xml" \
+      -X POST "$jenkins_url/job/$target_job/config.xml" || true
+  )"
+  [[ "$update_status" == "200" || "$update_status" == "302" ]] || {
+    echo "ERROR: Jenkins config update returned HTTP $update_status." >&2
+    exit 43
+  }
+
+  curl "${curl_auth[@]}" "$jenkins_url/job/$target_job/config.xml" >"$verified_xml"
+  python3 "$config_tool" verify "$verified_xml" \
+    --repository "$repository_url" \
+    --credentials "$scm_credentials" \
+    --script-path "$script_path"
+  echo '[jenkins-job] PASS: existing job is disabled, trigger-free and main-only.'
+  echo 'Index/build: NOT REQUESTED'
   exit 0
 fi
 

@@ -399,3 +399,20 @@ three controls explicitly enabled. It builds and scans nine immutable
 existing `harbor-cred`, verifies remote digests, renders sixteen GitOps image
 references and returns the Jenkins parent job to disabled. Migration, workload
 deployment and ArgoCD sync remain outside this phase.
+
+## DT4.5 — Dedicated GitOps publication source ready
+
+- Confirmed the existing Docker Compose Jenkins and Harbor delivery ownership.
+- Recorded the successful private Sonar analysis and Quality Gate.
+- Fixed the Trivy 0.74.0 CLI incompatibility that blocked readiness.
+- Added Sonar-only TypeScript configs so the private analyzer does not skip the
+  Backoffice and mobile sources that intentionally use bundler resolution.
+- Restricted Jenkins discovery to `main` and added safe reconciliation for the
+  existing disabled job.
+- Added deterministic Kustomize render, source provenance, GitOps commit/push,
+  remote verification and exact post-build image/workspace cleanup.
+- Pointed the manual ArgoCD Application at
+  `zabisa-super-app-gitops/apps/zabisa/overlays/dt`.
+
+Images, migrations, application workloads and ArgoCD sync remain not run at
+this source checkpoint.
