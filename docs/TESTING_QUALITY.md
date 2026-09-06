@@ -1,5 +1,19 @@
 # Testing and Quality Gates
 
+## Dua gate lokal wajib
+
+Developer menjalankan dua tingkat pemeriksaan sebelum push:
+
+```bash
+./scripts/developer-check.sh quick
+./scripts/developer-check.sh full
+```
+
+`quick` menjalankan invariant/preflight, lockfile, lint, typecheck dan unit test
+Admin/Mobile. `full` menjalankan `scripts/quality-gate.sh`, sama dengan langkah
+repository quality gate di GitHub. Panduan dan padanan manual tersedia di
+`DEVELOPER_GUIDE_ID.md`.
+
 ## Backoffice
 
 Required gates:
@@ -62,28 +76,31 @@ authenticated session.
 npm run mobile:quality
 ```
 
-At the lock, mobile quality passes with six Jest suites and Guardian API E2E.
+At the DT58 lock, the reviewed local run passed 11 Mobile suites / 37 tests and
+the Admin run passed 1 suite / 11 tests. GitHub and Jenkins remain the
+authoritative remote evidence.
 
 ### Coverage warning
 
-Overall mobile statement coverage at the latest lock remained around the low
-20% range, with many screen files at zero unit coverage.
-
-This is accepted only as the current development baseline. It is **not** a
-target quality level for production release.
+Sonar New Code coverage reached 77.4% in the remediation evidence and the final
+Jenkins delivery passed the dedicated 75% project gate. Overall coverage and
+New Code coverage are different metrics; developers must not use one as a
+substitute for the other.
 
 ## SonarQube
 
-Sonar configuration exists and should remain aligned with mobile LCOV. The
-final CI quality gate is future work.
+Sonar configuration imports Admin and Mobile LCOV and the final private Quality
+Gate passed in Jenkins delivery `#19`.
 
-Desired policy:
+Locked policy:
 
+- New Code coverage minimum 75% on the dedicated Zabisa gate;
+- no changes to other gate conditions without an explicit review;
 - no blocker/critical vulnerabilities;
-- meaningful coverage improvement;
+- meaningful behavioural coverage improvement;
 - controlled duplication;
 - reviewed security hotspots;
-- do not chase artificial 100% coverage.
+- do not chase artificial 100% coverage or exclude business logic.
 
 The Phase 3.8 report paths are:
 

@@ -4,14 +4,15 @@ Production-oriented monorepo for Zabisa Mobile, guardian services, internal Back
 
 ## Current engineering checkpoint
 
-DT2 runtime foundations, DT3 migration-readiness controls and DT4.5.7 immutable
-delivery are verified. Jenkins build `#14` passed source, SonarQube, Quality
-Gate, Trivy, build, scan, SBOM, Harbor push and GitOps publication for source
-revision `e1af81dc96d5dc59876f090614e68dc48a32c59f`. Nine images are stored
+DT2 runtime foundations, DT3 migration-readiness controls and the DT58 Sonar
+75% immutable delivery are verified. Jenkins readiness `#18` and delivery
+`#19` passed source, SonarQube, Quality Gate, Trivy, build, scan, SBOM, Harbor
+push and GitOps publication for source revision
+`eee3284a6989857b6d4332f01d453763ccaf71b2`. Nine images are stored
 below `harbor-dt.co.id/devops-apps/zabisa`, and the dedicated GitOps repository
-contains 16 matching image references across 12 manifests. The Jenkins parent
-job is disabled. Database migration, Kubernetes workload deployment and ArgoCD
-sync have not run.
+at `4fbc8b5db597cbdf73199f8f927eb0ac2cc544c9` contains 16 matching image
+references across 12 manifests. The Jenkins parent job is disabled. Database
+migration, Kubernetes workload deployment and ArgoCD sync have not run.
 
 The active development checkpoint is Phase 3.9.1 Nawasena, a mobile UI/UX-only
 redesign that supersedes the rejected Sakinah visual direction.
@@ -20,9 +21,11 @@ is considered.
 
 Start or resume development from:
 
-1. `docs/NEXT_SESSION_START_HERE.md`;
-2. `docs/deployment/CURRENT-STATE-AND-ROADMAP.md`;
-3. `docs/runbook/JENKINS_DELIVERY.md` for the controlled delivery path.
+1. `docs/DEVELOPER_GUIDE_ID.md` for the Indonesian local workflow;
+2. `docs/NEXT_SESSION_START_HERE.md`;
+3. `docs/deployment/DT58-SONAR75-DELIVERY-LOCK.md`;
+4. `docs/deployment/CURRENT-STATE-AND-ROADMAP.md`;
+5. `docs/runbook/JENKINS_DELIVERY.md` for the controlled delivery path.
 
 The completed delivery evidence and the remaining backup/migration gates are
 recorded in `docs/deployment/CURRENT-STATE-AND-ROADMAP.md`.
@@ -46,12 +49,13 @@ The verification script exercises real vertical slices through API, MySQL, trans
 
 ## Engineering quality gate
 
-Install the locked Node dependency graph, use Go 1.26.7, and run the same gate
-used by CI:
+Install the locked Node dependency graph and use the Go version declared in
+`go.mod`. During development, run the two local gates:
 
 ```bash
 npm ci --workspaces --include-workspace-root --no-audit --no-fund
-make quality
+./scripts/developer-check.sh quick
+./scripts/developer-check.sh full
 ```
 
 The gate produces Sonar-compatible Go and mobile coverage reports. GitHub
@@ -140,8 +144,8 @@ make images-plan
 
 The source defines nine SHA-tagged images (eight Go services plus `admin-web`),
 HIGH/CRITICAL Trivy scanning, CycloneDX SBOMs and verified Harbor digest
-evidence. Build `#14` published the complete immutable set for source revision
-`e1af81dc96d5dc59876f090614e68dc48a32c59f` to the nested repository path
+evidence. Build `#19` published the complete immutable set for source revision
+`eee3284a6989857b6d4332f01d453763ccaf71b2` to the nested repository path
 `harbor-dt.co.id/devops-apps/zabisa/<image>`. The pipeline never creates
 `:latest`. Rendered manifests are committed to
 `ditasetyakurniawan-droid/zabisa-super-app-gitops` and are not deployed

@@ -1,4 +1,4 @@
-# Project State — Phase 3.9.1 Complete / DT5–DT8 Ready
+# Project State — DT58 Delivery Locked / DT5 Next
 
 ## Executive status
 
@@ -18,6 +18,15 @@ Phase 3.7.6 remains the historical application restore point where the
 Backoffice critical functional matrix was first verified through a real Chrome
 browser. DT4.5.7 immutable delivery is complete, but application deployment is
 not declared because migration and ArgoCD sync have not run.
+
+The current immutable delivery lock supersedes the earlier DT4.5.7 image
+checkpoint: application/image revision
+`eee3284a6989857b6d4332f01d453763ccaf71b2`, Jenkins readiness `#18`, delivery
+`#19`, and GitOps revision `4fbc8b5db597cbdf73199f8f927eb0ac2cc544c9`
+all passed. The dedicated Zabisa Sonar gate requires 75% New Code coverage and
+keeps the remaining quality conditions unchanged. Nine Harbor image digests
+and 16 GitOps references are verified. Jenkins is DISABLED; Kubernetes,
+migration and ArgoCD remain not run.
 
 ## Current DT deployment status
 
@@ -74,7 +83,11 @@ Verified:
   `9d5e3ef9c5f5fa3a58a9d565de1913a1d0fb21ed3df468658cfafc31b0d83d87`;
 - GitOps commit `96cef84` validates 16 immutable references across 12 manifests,
   all bound to the same application revision;
-- the Jenkins parent job returned to DISABLED.
+- the Jenkins parent job returned to DISABLED;
+- DT58 later passed GitHub, readiness `#18`, the dedicated 75% Sonar gate and
+  delivery `#19` for `eee3284a6989857b6d4332f01d453763ccaf71b2`;
+- GitOps `4fbc8b5db597cbdf73199f8f927eb0ac2cc544c9` supersedes the older render
+  with 16 references across 12 manifests, and Jenkins is again DISABLED.
 
 Not run:
 
@@ -159,9 +172,9 @@ as future work.
 
 ## Lock principle
 
-Phase 3.7.6 is a **development baseline lock**, and DT4.2.1 is an
-**operational integration checkpoint**. Neither is a production launch
-declaration.
+Phase 3.7.6 is a **historical development baseline**, DT4.2.1 is an
+**operational integration checkpoint**, and the DT58 revision is the current
+**immutable delivery lock**. None is a production launch declaration.
 
 Production push notification providers, production payment providers, iOS
 release signing, final Sonar/CI/CD policy and production deployment remain

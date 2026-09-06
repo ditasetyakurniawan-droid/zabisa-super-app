@@ -13,24 +13,26 @@ git log --oneline -5
 ./scripts/preflight-offline.sh
 ```
 
-Expected repository state after DT4.5.7 and Phase 3.9.1 acceptance:
+Expected repository state after the DT58 delivery lock:
 
 ```text
-main synchronized with origin/main
-clean worktree
-DT4.5.7 immutable delivery: COMPLETE
-Phase 3.9.1 source/mobile/Backoffice gates: PASS
-Nawasena physical Android acceptance: PASS at f1ba188
+main synchronized with origin/main; clean worktree
+Application/image lock: eee3284a6989857b6d4332f01d453763ccaf71b2
+GitOps lock: 4fbc8b5db597cbdf73199f8f927eb0ac2cc544c9
+Jenkins #18 readiness and #19 delivery: SUCCESS
+Jenkins parent: DISABLED
+Migration / Kubernetes / ArgoCD: NOT RUN
 ```
 
 ## 2. Read in this order
 
-1. `docs/deployment/CURRENT-STATE-AND-ROADMAP.md`
-2. `docs/PROJECT_STATE.md`
-3. `docs/runbook/JENKINS_DELIVERY.md`
-4. `docs/deployment/PHASE-DT4-IMMUTABLE-IMAGES.md`
-5. `docs/KNOWN_LIMITATIONS.md`
-6. the domain document relevant to the next task.
+1. `docs/DEVELOPER_GUIDE_ID.md`
+2. `docs/deployment/DT58-SONAR75-DELIVERY-LOCK.md`
+3. `docs/deployment/CURRENT-STATE-AND-ROADMAP.md`
+4. `docs/PROJECT_STATE.md`
+5. `docs/runbook/JENKINS_DELIVERY.md`
+6. `docs/KNOWN_LIMITATIONS.md`
+7. the domain document relevant to the next task.
 
 ## 3. Runtime check
 
@@ -40,6 +42,13 @@ docker compose ps
 ```
 
 ## 4. Minimum engineering baseline
+
+For ordinary development, use the canonical two-stage check:
+
+```bash
+./scripts/developer-check.sh quick
+./scripts/developer-check.sh full
+```
 
 Before modifying critical behavior:
 
@@ -95,14 +104,16 @@ npm run mobile:quality
 
 ## 6. Current phase
 
-Current source checkpoint:
+Current immutable delivery checkpoint:
 
-**DT5–DT8 — controlled migration and internal rollout**
+**DT58 Sonar 75% delivery LOCKED; DT5 is next**
 
-Jenkins build `#14` completed successfully for application revision
-`e1af81dc96d5dc59876f090614e68dc48a32c59f`. Harbor has nine verified images;
-GitOps commit `96cef84` has 16 immutable references across 12 manifests. The
-Jenkins parent job is disabled. Migration and ArgoCD sync have not run.
+Jenkins readiness `#18` and delivery `#19` completed successfully for
+application revision `eee3284a6989857b6d4332f01d453763ccaf71b2`. Harbor has
+nine verified images; GitOps commit
+`4fbc8b5db597cbdf73199f8f927eb0ac2cc544c9` has 16 immutable references across
+12 manifests. The Jenkins parent job is disabled. Migration, Kubernetes apply
+and ArgoCD sync have not run.
 
 Phase 3.9.1 passed 25 mobile tests, Guardian API E2E, Backoffice source/runtime,
 GitHub Engineering Quality Gate and physical Android installation/opening at

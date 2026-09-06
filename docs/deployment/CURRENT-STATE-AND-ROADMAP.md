@@ -1,12 +1,12 @@
 # Zabisa Current State and Delivery Roadmap
 
-> Official checkpoint: **PHASE 3.9.1 COMPLETE / DT5-DT8 READY FOR CONTROLLED EXECUTION**
+> Official checkpoint: **DT58 SONAR 75% DELIVERY LOCKED / DT5 NEXT**
 >
 > Live job: `zabisa-super-app-v1` — `DISABLED`, no automatic trigger
 >
 > Lock tag: `dt4.2.1-jenkins-integration-locked-2026-09-04`
 >
-> Updated on: `2026-09-05`
+> Updated on: `2026-09-06`
 
 This is the operational starting point for developers and operators. It records
 what is proven, what has not run, and which approval gate currently controls
@@ -24,12 +24,12 @@ delivery.
 | Seven target schemas | EMPTY / VERIFIED | DT3.2 read-only inventory: 0 tables and 0 migration rows in every database |
 | Temporary canaries | PASS | Removed after DT2 and DT3.2 verification |
 | Migration source controls | PASS | Sequential waves, zero retry, advisory lock and checksums committed |
-| Immutable deployment images | PASS / PUBLISHED | Jenkins #14 built, scanned and pushed nine source-SHA images; nine Harbor digests verified |
+| Immutable deployment images | PASS / LOCKED | Jenkins #19 built, scanned and pushed nine images for `eee3284...`; nine Harbor digests verified |
 | Existing Jenkins/Harbor path | PASS / LOCKED | Compose Jenkins uses Docker socket, `harbor-cred`, private Sonar and existing Harbor compatibility mode |
 | Zabisa Jenkins job | PASS / DISABLED | Remote job was reconciled main-only and trigger-free; controlled runner returned it to disabled |
-| Private Sonar | PASS | Build #14 analysis and blocking Quality Gate passed with complete TypeScript scope |
+| Private Sonar | PASS | Build #19 passed the dedicated 75% New Code gate; all other conditions preserved |
 | Image scanning | PASS | All nine images passed the fixable HIGH/CRITICAL policy and produced SBOM/scan evidence |
-| GitOps repository | PASS / PUBLISHED | Commit `96cef84` validates source `e1af81dc...`, 16 image references and 12 manifests |
+| GitOps repository | PASS / PUBLISHED | Commit `4fbc8b5` validates source `eee3284...`, 16 image references and 12 manifests |
 | Phase 3.9.1 acceptance | PASS | 25 mobile tests, Guardian E2E, Backoffice runtime and physical Android open at `f1ba188` |
 | Cluster Harbor pull | UNPROVEN | First content canary and ArgoCD rollout will prove public-project pull from each rendered image |
 | Backup and isolated restore proof | NOT PROVEN | Mandatory before any database mutation |
@@ -106,6 +106,22 @@ digest verification and GitOps publication stages for source
 `harbor-dt.co.id/devops-apps/zabisa/<image>:<source-sha>`. GitOps commit
 `96cef84` validates 16 immutable references across 12 manifests. The parent
 Jenkins job is disabled and automatic triggers remain absent.
+
+### DT58 — Sonar 75%, code-smell cleanup and final delivery lock
+
+Status: **COMPLETE / LOCKED**
+
+The approved project-specific Quality Gate requires 75% New Code coverage and
+preserves every non-coverage condition. Narrow exclusions omit only tests,
+mocks, generated/type-only source and bootstrap/runtime configuration; business
+APIs, screens and services remain analyzed. Behaviour-preserving smell cleanup,
+the Phase 3.9 checksum refresh and GitHub gate passed before Jenkins.
+
+Readiness `#18` and delivery `#19` published nine immutable images for
+`eee3284a6989857b6d4332f01d453763ccaf71b2`. GitOps revision
+`4fbc8b5db597cbdf73199f8f927eb0ac2cc544c9` contains 16 references across 12
+manifests. Jenkins returned to DISABLED. See
+`DT58-SONAR75-DELIVERY-LOCK.md`.
 
 ### Phase 3.9–3.9.1 — Mobile UI/UX redesign and runtime acceptance
 
@@ -194,12 +210,12 @@ DT3.3 migration engine hardening: PASS at 4783fa6
 DT4.1 immutable image source hardening: PASS at df2d275
 DT4.2 existing Jenkins pattern: PASS
 DT4.2.1 Zabisa Multibranch bootstrap: PASS; job created disabled
-Jenkins Sonar and Quality Gate: PASS
-DT4.3 Dockerized Trivy readiness: PASS in build #6
-DT4.4-DT4.5.7 immutable delivery: PASS in Jenkins build #14
-Application image revision: e1af81dc96d5dc59876f090614e68dc48a32c59f
+Jenkins Sonar and dedicated 75% Quality Gate: PASS
+DT58 readiness: PASS in Jenkins build #18
+DT58 immutable delivery: PASS in Jenkins build #19
+Application image revision: eee3284a6989857b6d4332f01d453763ccaf71b2
 Harbor: 9 image tags and digests verified at devops-apps/zabisa
-GitOps: PASS at 96cef84; 16 image references / 12 manifests
+GitOps: PASS at 4fbc8b5db597cbdf73199f8f927eb0ac2cc544c9; 16 image references / 12 manifests
 Jenkins parent: DISABLED
 Physical Android redesign acceptance: PASS at f1ba188
 Backoffice post-redesign acceptance: PASS at f1ba188

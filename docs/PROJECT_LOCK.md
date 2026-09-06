@@ -1,19 +1,34 @@
 # Project Lock — 2026-08-31
 
 > Historical application restore point. The active deployment checkpoint is
-> DT4.5.7 COMPLETE and is recorded in
+> DT58 Sonar 75% immutable delivery COMPLETE and is recorded in
 > `deployment/CURRENT-STATE-AND-ROADMAP.md`. Do not interpret this older tag as
 > the current `main` deployment state.
+
+## Current immutable delivery lock
+
+The current runtime lock is:
+
+- application/image revision:
+  `eee3284a6989857b6d4332f01d453763ccaf71b2`;
+- GitOps revision: `4fbc8b5db597cbdf73199f8f927eb0ac2cc544c9`;
+- Jenkins readiness `#18` and delivery `#19`: SUCCESS;
+- recommended immutable tag:
+  `dt58-sonar75-delivery-locked-2026-09-06`.
+
+See `deployment/DT58-SONAR75-DELIVERY-LOCK.md`. This lock covers image delivery
+and GitOps publication only. Migration, Kubernetes apply and ArgoCD sync remain
+not run.
 
 Historical DT4.2.1 checkpoint tag:
 
 `dt4.2.1-jenkins-integration-locked-2026-09-04`
 
 This tag locks the earlier source/documentation state after the existing
-Jenkins job was created disabled. Current immutable delivery evidence belongs
-to application revision `e1af81dc96d5dc59876f090614e68dc48a32c59f` and
-GitOps commit `96cef84`. Neither checkpoint authorizes migration or ArgoCD
-sync.
+Jenkins job was created disabled. The later DT4.5.7 delivery used application
+revision `e1af81dc96d5dc59876f090614e68dc48a32c59f` and GitOps commit `96cef84`;
+both are historical because the DT58 lock above now supersedes them. No
+checkpoint authorizes migration or ArgoCD sync.
 
 ## Lock point
 

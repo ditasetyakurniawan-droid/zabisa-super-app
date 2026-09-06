@@ -2,15 +2,17 @@
 
 **Historical application lock:** Phase 3.7.6
 
-**Current deployment checkpoint:** DT4.5.7 COMPLETE — immutable Harbor/GitOps delivery
+**Current deployment checkpoint:** DT58 LOCKED — Sonar 75% + immutable Harbor/GitOps delivery
 
 **Current development checkpoint:** Phase 3.9.1 COMPLETE — internal runtime acceptance passed
 
-**Next deployment checkpoint:** DT5–DT8 — controlled migration and internal rollout
+**Next deployment checkpoint:** DT5 — backup and isolated restore proof
 
-**Deployment lock tag:** `dt4.2.1-jenkins-integration-locked-2026-09-04`
+**Current delivery lock tag:** `dt58-sonar75-delivery-locked-2026-09-06`
 
-**Updated date:** 2026-09-05 (Asia/Jakarta)
+**Historical Jenkins lock tag:** `dt4.2.1-jenkins-integration-locked-2026-09-04`
+
+**Updated date:** 2026-09-06 (Asia/Jakarta)
 
 This directory is the handoff source of truth for continuing Zabisa development.
 Read `NEXT_SESSION_START_HERE.md` first when work resumes.
@@ -19,6 +21,8 @@ Read `NEXT_SESSION_START_HERE.md` first when work resumes.
 
 | Document | Purpose |
 |---|---|
+| `ANNOUNCEMENT_DEVELOPER_DT58_ID.md` | Announcement ringkas tentang lock, Quality Gate dan larangan rollout |
+| `DEVELOPER_GUIDE_ID.md` | Panduan developer Indonesia, local runtime, dan dua gate sebelum push |
 | `PROJECT_STATE.md` | Current verified application and deployment state |
 | `ARCHITECTURE.md` | Platform topology, service boundaries, data ownership |
 | `BACKEND_SERVICES.md` | Backend services, responsibilities, key patterns |
@@ -30,7 +34,7 @@ Read `NEXT_SESSION_START_HERE.md` first when work resumes.
 | `LOCAL_DEVELOPMENT.md` | Ports, Docker, Android/ADB, Metro and local runtime |
 | `TESTING_QUALITY.md` | Quality gates, current coverage and regression commands |
 | `DEMO_DATA.md` | Development data policy and seeded functional scenarios |
-| `PHASE_HISTORY.md` | Reconstructed engineering history through Phase 3.7.6 |
+| `PHASE_HISTORY.md` | Engineering and delivery history through the DT58 lock |
 | `REQUIREMENTS_TRACEABILITY.md` | Requirement-to-implementation status matrix |
 | `KNOWN_LIMITATIONS.md` | Items deliberately not claimed complete |
 | `DEVELOPMENT_ROADMAP.md` | Structured next work plan |
@@ -50,6 +54,7 @@ Read `NEXT_SESSION_START_HERE.md` first when work resumes.
 | `deployment/HOTFIX-DT58-JENKINS-CURL-AUTH.md` | Pre-delivery netrc parser failure, credential-file correction and guarded resume |
 | `deployment/HOTFIX-DT58-SONAR-NEW-CODE-COVERAGE.md` | 15.1% New Code coverage failure and behavioural-test remediation |
 | `deployment/HOTFIX-DT58-SONAR-75-CODE-SMELLS.md` | 75% project gate, narrow exclusions and New Code smell cleanup |
+| `deployment/DT58-SONAR75-DELIVERY-LOCK.md` | Final build #18/#19, Harbor/GitOps evidence and immutable lock boundary |
 | `mobile/PHASE3_9_UI_UX_REDESIGN.md` | UI-only redesign scope, zero-logic invariant and device acceptance gate |
 | `architecture/ADR-011-MOBILE-SAKINAH-DESIGN-SYSTEM.md` | Amended Nawasena design-system decision and migration safety boundary |
 | `runbook/JENKINS_DELIVERY.md` | Existing Jenkins/Harbor workflow, controls and developer procedure |

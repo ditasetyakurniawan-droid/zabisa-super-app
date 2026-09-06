@@ -574,3 +574,19 @@ The same hotfix removes the behaviour-preserving New Code smells that can be
 closed without hiding application logic from analysis. Coverage exclusions are
 limited to tests, mocks, generated/type-only sources and Mobile bootstrap or
 runtime configuration. Business APIs, screens and services remain in scope.
+
+## DT58 final lock — Phase 3.9 checksum and immutable delivery
+
+The first GitHub run after the Sonar/code-smell hotfix failed before tests at
+the Phase 3.9 protected Mobile checksum. The only mismatch was
+`apps/mobile/src/api/client.ts`; its reviewed change removed an unnecessary
+TypeScript cast without changing returned data. Lint, typecheck, 11 Admin
+tests, 37 Mobile tests and the complete offline preflight passed before the
+checksum baseline was refreshed. The checksum verifier itself remains active.
+
+GitHub then passed and the controlled delivery completed: readiness `#18` and
+delivery `#19` succeeded for
+`eee3284a6989857b6d4332f01d453763ccaf71b2`; nine Harbor image digest references
+were verified; GitOps revision `4fbc8b5db597cbdf73199f8f927eb0ac2cc544c9`
+contains 16 immutable references across 12 manifests; and the Jenkins parent
+returned to DISABLED. Migration, Kubernetes apply and ArgoCD sync did not run.

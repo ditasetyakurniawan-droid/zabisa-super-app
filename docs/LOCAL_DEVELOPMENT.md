@@ -1,5 +1,8 @@
 # Local Development
 
+Panduan langkah demi langkah berbahasa Indonesia tersedia di
+`DEVELOPER_GUIDE_ID.md`.
+
 ## Repository
 
 Expected local repository:
@@ -15,10 +18,22 @@ Use Docker Compose from repository root.
 Useful checks:
 
 ```bash
+./scripts/run-local.sh
 docker compose ps
 curl -fsS http://127.0.0.1:8088/health/live
 curl -fsS http://127.0.0.1:3001/login >/dev/null
 ```
+
+## Pemeriksaan sebelum push
+
+```bash
+./scripts/developer-check.sh quick
+./scripts/developer-check.sh full
+```
+
+Mode `quick` dipakai selama development. Mode `full` wajib dijalankan setelah
+perubahan selesai dan sebelum push. Keduanya tidak melakukan Jenkins delivery,
+migration, Kubernetes apply, atau ArgoCD sync.
 
 ### Legacy local migration recovery
 

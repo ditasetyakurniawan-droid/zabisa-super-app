@@ -1,8 +1,8 @@
 # Jenkins Delivery Runbook
 
-Status: **DT4.5.7 immutable delivery complete; Jenkins disabled**
+Status: **DT58 immutable delivery locked; Jenkins disabled**
 
-Verified date: `2026-09-05`
+Verified date: `2026-09-06`
 
 ## Purpose
 
@@ -72,7 +72,8 @@ quality gate. A source change does not authorize a Jenkins delivery action.
 
 ```bash
 npm ci --workspaces --include-workspace-root --no-audit --no-fund
-make quality
+./scripts/developer-check.sh quick
+./scripts/developer-check.sh full
 ```
 
 Production image references must remain full-Git-SHA tags. Never introduce
@@ -117,6 +118,22 @@ Do not collapse it to `devops-apps/<image>` or `zabisa/<image>`.
 Do not rerun build `#14` merely to validate GitOps. The image set is immutable;
 future application source changes require a new full-SHA delivery only after
 their source and runtime acceptance gates pass.
+
+## DT58 final lock evidence
+
+- Jenkins readiness `#18`: SUCCESS without image publication.
+- Jenkins delivery `#19`: SUCCESS.
+- Application/image revision:
+  `eee3284a6989857b6d4332f01d453763ccaf71b2`.
+- Dedicated Sonar New Code coverage threshold: 75%; other conditions unchanged.
+- Harbor: nine immutable tags and digest references verified.
+- GitOps: `4fbc8b5db597cbdf73199f8f927eb0ac2cc544c9`, 16 references / 12 manifests.
+- Jenkins parent: DISABLED.
+- Migration, Kubernetes apply and ArgoCD sync: NOT RUN.
+
+Documentation-only commits after this lock do not authorize or require an
+image rebuild. Any runtime/application source change requires a new GitHub PASS
+and a newly approved full-SHA delivery.
 
 Before the next controlled run, reconcile the existing job once:
 

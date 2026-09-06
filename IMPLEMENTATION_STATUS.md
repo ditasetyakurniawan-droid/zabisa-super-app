@@ -1,5 +1,19 @@
 # Implementation status
 
+## Current locked delivery checkpoint — 2026-09-06
+
+- Application/image revision:
+  `eee3284a6989857b6d4332f01d453763ccaf71b2`.
+- GitHub quality gate, Jenkins readiness `#18`, private Sonar 75% gate and
+  Jenkins delivery `#19`: PASS.
+- Nine immutable Harbor images and digest references: VERIFIED.
+- GitOps `4fbc8b5db597cbdf73199f8f927eb0ac2cc544c9`: 16 image references across
+  12 manifests.
+- Jenkins parent: DISABLED.
+- Kubernetes deployment, MySQL migration and ArgoCD sync: NOT RUN.
+- Developer handoff and two-stage local testing:
+  `docs/DEVELOPER_GUIDE_ID.md`.
+
 ## Implemented in this repository
 - Go microservice monorepo: API gateway, identity, content, student, tahfidz, academic, donation, notification.
 - MySQL 8.4 LTS strategy with one logical database per bounded context.
