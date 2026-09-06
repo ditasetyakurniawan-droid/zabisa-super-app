@@ -12,10 +12,10 @@ export default function GuardianOverviewScreen({navigation}: RootStackScreenProp
   const students = useQuery({queryKey: ['guardian-students'], queryFn: () => api<Student[]>('/api/v1/guardian/students')});
   return (
     <ScrollScreen safeTop={false} contentStyle={styles.noTopPadding}>
-      <AppHeader eyebrow="PORTAL WALI" title="Data ananda" subtitle="Hanya santri dengan relasi wali yang telah disetujui backend yang dapat diakses." />
-      {students.isLoading ? <Loading label="Memuat data ananda..." /> : null}
+      <AppHeader mascot="profile" eyebrow="PORTAL WALI" title="Data ananda" subtitle="Hanya santri dengan relasi wali yang telah disetujui backend yang dapat diakses." />
+      {students.isLoading ? <Loading label="Memuat data ananda..." mascot="profile" /> : null}
       {students.isError ? <ErrorState message={userMessage(students.error)} onRetry={() => students.refetch()} /> : null}
-      {!students.isLoading && !students.isError && !students.data?.length ? <Empty icon="account" text="Belum ada santri yang terhubung dengan akun wali ini." /> : null}
+      {!students.isLoading && !students.isError && !students.data?.length ? <Empty icon="account" mascot="profile" text="Belum ada santri yang terhubung dengan akun wali ini." /> : null}
       {students.data?.map(student => (
         <Card key={student.id} onPress={() => navigation.navigate('GuardianStudent', {student})}>
           <View style={styles.row}>

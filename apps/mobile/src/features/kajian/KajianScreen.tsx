@@ -13,11 +13,11 @@ export default function KajianScreen({navigation}: MainTabScreenProps<'Kajian'>)
   const query = useQuery({queryKey: ['kajian'], queryFn: () => api<Kajian[]>('/api/v1/kajian')});
   return (
     <Screen>
-      <AppHeader eyebrow="KAJIAN & EVENT" title="Temukan majelis ilmu" subtitle="Jadwal, lokasi, pemateri, dan live stream yang dipublikasikan resmi oleh Zabisa." />
-      {query.isLoading ? <Loading label="Memuat kajian..." /> : null}
+      <AppHeader mascot="learning" eyebrow="KAJIAN & EVENT" title="Temukan majelis ilmu" subtitle="Jadwal, lokasi, pemateri, dan live stream yang dipublikasikan resmi oleh Zabisa." />
+      {query.isLoading ? <Loading label="Memuat kajian..." mascot="learning" /> : null}
       {query.isError ? <View style={styles.body}><ErrorState message={userMessage(query.error)} onRetry={() => query.refetch()} /></View> : null}
       {!query.isLoading && !query.isError ? (
-        <FlatList contentContainerStyle={styles.list} data={query.data ?? []} keyExtractor={item => item.id} ListEmptyComponent={<Empty icon="kajian" text="Belum ada kajian yang dipublikasikan." />}
+        <FlatList contentContainerStyle={styles.list} data={query.data ?? []} keyExtractor={item => item.id} ListEmptyComponent={<Empty icon="kajian" mascot="learning" text="Belum ada kajian yang dipublikasikan." />}
           renderItem={({item}) => (
             <Card onPress={() => navigation.navigate('KajianDetail', {kajian: item})}>
               <View style={styles.row}>

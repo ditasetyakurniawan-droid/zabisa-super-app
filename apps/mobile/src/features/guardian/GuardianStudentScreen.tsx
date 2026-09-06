@@ -27,7 +27,7 @@ export default function GuardianStudentScreen({route}: RootStackScreenProps<'Gua
 
   return (
     <ScrollScreen safeTop={false} contentStyle={styles.noTopPadding}>
-      <AppHeader eyebrow="TAHFIDZ & AKADEMIK" title={student.full_name} subtitle={`${student.student_no} · ${student.class_name || '-'} · ${student.academic_year || '-'}`} />
+      <AppHeader mascot="tahfidz" eyebrow="TAHFIDZ & AKADEMIK" title={student.full_name} subtitle={`${student.student_no} · ${student.class_name || '-'} · ${student.academic_year || '-'}`} />
       <View style={styles.stats}>
         <StatCard icon="tahfidz" value={tahfidz.data?.length ?? '–'} label="Setoran" />
         <StatCard icon="grade" value={grades.data?.length ?? '–'} label="Nilai" />
@@ -35,9 +35,9 @@ export default function GuardianStudentScreen({route}: RootStackScreenProps<'Gua
       </View>
 
       <SectionTitle>Tahfidz terbaru</SectionTitle>
-      {tahfidz.isLoading ? <Loading label="Memuat tahfidz..." /> : null}
+      {tahfidz.isLoading ? <Loading label="Memuat tahfidz..." mascot="tahfidz" /> : null}
       {tahfidz.isError ? <ErrorState message={userMessage(tahfidz.error)} onRetry={() => tahfidz.refetch()} /> : null}
-      {!tahfidz.isLoading && !tahfidz.isError && !tahfidz.data?.length ? <Empty icon="tahfidz" text="Belum ada setoran tahfidz." /> : null}
+      {!tahfidz.isLoading && !tahfidz.isError && !tahfidz.data?.length ? <Empty icon="tahfidz" mascot="tahfidz" text="Belum ada setoran tahfidz." /> : null}
       {tahfidz.data?.slice(0, 8).map(entry => (
         <Card key={entry.id}>
           <View style={styles.rowBetween}><Text style={styles.itemTitle}>{entry.surah}</Text><Pill tone="primary" text={formatActivityType(entry.activity_type)} /></View>
@@ -48,9 +48,9 @@ export default function GuardianStudentScreen({route}: RootStackScreenProps<'Gua
       ))}
 
       <SectionTitle>Nilai terbaru</SectionTitle>
-      {grades.isLoading ? <Loading label="Memuat nilai..." /> : null}
+      {grades.isLoading ? <Loading label="Memuat nilai..." mascot="academic" /> : null}
       {grades.isError ? <ErrorState message={userMessage(grades.error)} onRetry={() => grades.refetch()} /> : null}
-      {!grades.isLoading && !grades.isError && !grades.data?.length ? <Empty icon="grade" text="Belum ada nilai yang dipublikasikan." /> : null}
+      {!grades.isLoading && !grades.isError && !grades.data?.length ? <Empty icon="grade" mascot="academic" text="Belum ada nilai yang dipublikasikan." /> : null}
       {grades.data?.slice(0, 8).map(grade => (
         <Card key={grade.id}>
           <View style={styles.rowBetween}><Text style={styles.itemTitle}>{grade.subject_name}</Text><Text style={styles.score}>{grade.score ?? grade.grade ?? '-'}</Text></View>
@@ -60,9 +60,9 @@ export default function GuardianStudentScreen({route}: RootStackScreenProps<'Gua
       ))}
 
       <SectionTitle>Kehadiran</SectionTitle>
-      {attendance.isLoading ? <Loading label="Memuat kehadiran..." /> : null}
+      {attendance.isLoading ? <Loading label="Memuat kehadiran..." mascot="attendance" /> : null}
       {attendance.isError ? <ErrorState message={userMessage(attendance.error)} onRetry={() => attendance.refetch()} /> : null}
-      {!attendance.isLoading && !attendance.isError && !attendance.data?.length ? <Empty icon="attendance" text="Belum ada data kehadiran." /> : null}
+      {!attendance.isLoading && !attendance.isError && !attendance.data?.length ? <Empty icon="attendance" mascot="attendance" text="Belum ada data kehadiran." /> : null}
       {attendance.data?.slice(0, 10).map(item => (
         <Card key={`${item.date}-${item.status}-${item.note ?? ''}`}>
           <View style={styles.rowBetween}>
@@ -74,9 +74,9 @@ export default function GuardianStudentScreen({route}: RootStackScreenProps<'Gua
       ))}
 
       <SectionTitle>Report perkembangan</SectionTitle>
-      {reports.isLoading ? <Loading label="Memuat report..." /> : null}
+      {reports.isLoading ? <Loading label="Memuat report..." mascot="academic" /> : null}
       {reports.isError ? <ErrorState message={userMessage(reports.error)} onRetry={() => reports.refetch()} /> : null}
-      {!reports.isLoading && !reports.isError && !reports.data?.length ? <Empty icon="info" text="Belum ada report yang dipublikasikan." /> : null}
+      {!reports.isLoading && !reports.isError && !reports.data?.length ? <Empty icon="info" mascot="academic" text="Belum ada report yang dipublikasikan." /> : null}
       {reports.data?.map(report => (
         <Card key={report.id}>
           <View style={styles.rowBetween}><Text style={styles.itemTitle}>{formatReportType(report.report_type)}</Text><Pill tone="primary" text={formatReportStatus(report.status)} /></View>

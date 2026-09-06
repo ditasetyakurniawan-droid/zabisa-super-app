@@ -25,12 +25,55 @@ grep -Fq 'Animated.loop' apps/mobile/src/components/UI.tsx \
   || fail 'ambient Islamic motion missing'
 grep -Fq 'export function IslamicOrnament' apps/mobile/src/components/UI.tsx \
   || fail 'shared Islamic ornament missing'
-grep -Fq "require('../../assets/zabisa-quran-mascot.png')" apps/mobile/src/features/home/HomeScreen.tsx \
-  || fail 'original Quran learner mascot missing from Home'
+grep -Fq '<Mascot variant="learning"' apps/mobile/src/features/home/HomeScreen.tsx \
+  || fail 'reusable Quran learner mascot missing from Home'
+grep -Fq "require('../assets/zabisa-quran-mascot.png')" apps/mobile/src/components/Mascot.tsx \
+  || fail 'original Quran learner mascot is not wired through shared Mascot component'
 [[ -s apps/mobile/src/assets/zabisa-quran-mascot.png ]] \
   || fail 'mascot asset missing'
 grep -Fq 'backgroundColor: colors.primary' apps/mobile/src/components/UI.tsx \
   || fail 'shared primary button styling missing'
+
+grep -Fq 'export function MascotDuo' apps/mobile/src/components/Mascot.tsx \
+  || fail 'shared male/female mascot duo missing'
+grep -Fq "require('../assets/zabisa-premium-hero-seamless.png')" apps/mobile/src/components/StartupLoading.tsx \
+  || fail 'startup loading seamless premium hero image missing'
+[[ -s apps/mobile/src/assets/zabisa-premium-hero-seamless.png ]] \
+  || fail 'seamless premium startup hero asset missing'
+grep -Fq 'resizeMode="contain"' apps/mobile/src/components/StartupLoading.tsx \
+  || fail 'startup hero must use contain mode to prevent clipping'
+grep -Fq "require('../assets/zabisa-premium-soft-bg.jpg')" apps/mobile/src/components/StartupLoading.tsx \
+  || fail 'startup loading soft premium background missing'
+[[ -s apps/mobile/src/assets/zabisa-premium-soft-bg.jpg ]] \
+  || fail 'soft premium background asset missing'
+grep -Fq 'Belajar Al-Qur’an, tumbuh dalam adab.' apps/mobile/src/components/StartupLoading.tsx \
+  || fail 'premium startup tagline missing'
+grep -Fq 'Sebaik-baik kalian adalah yang belajar Al-Qur’an dan mengajarkannya.' apps/mobile/src/components/StartupLoading.tsx \
+  || fail 'startup hadith copy missing'
+! grep -Eq 'Kajian publik|Donasi amanah|Portal wali|Kajian, donasi, dan ruang belajar Islami' apps/mobile/src/components/StartupLoading.tsx \
+  || fail 'legacy public pills/copy returned to startup loading'
+[[ -s apps/mobile/src/assets/zabisa-female-mascot.png ]] \
+  || fail 'female mascot asset missing'
+
+mascot_screens=(
+  apps/mobile/src/features/account/AccountScreen.tsx
+  apps/mobile/src/features/auth/LoginScreen.tsx
+  apps/mobile/src/features/content/ContentDetailScreen.tsx
+  apps/mobile/src/features/content/ContentListScreen.tsx
+  apps/mobile/src/features/donation/CampaignDetailScreen.tsx
+  apps/mobile/src/features/donation/DonationCheckoutScreen.tsx
+  apps/mobile/src/features/donation/DonationScreen.tsx
+  apps/mobile/src/features/guardian/GuardianOverviewScreen.tsx
+  apps/mobile/src/features/guardian/GuardianStudentScreen.tsx
+  apps/mobile/src/features/home/HomeScreen.tsx
+  apps/mobile/src/features/kajian/KajianDetailScreen.tsx
+  apps/mobile/src/features/kajian/KajianScreen.tsx
+  apps/mobile/src/features/notifications/NotificationsScreen.tsx
+)
+for screen in "${mascot_screens[@]}"; do
+  grep -Eq '<(AppHeader|DetailHeader|Mascot)([[:space:]>])' "$screen" \
+    || fail "contextual mascot presentation missing from $screen"
+done
 
 tab_count="$(grep -c '<Tab.Screen' apps/mobile/src/navigation/RootNavigator.tsx)"
 stack_count="$(grep -c '<Stack.Screen' apps/mobile/src/navigation/RootNavigator.tsx)"

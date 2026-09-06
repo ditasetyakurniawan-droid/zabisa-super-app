@@ -53,7 +53,7 @@ export default function DonationCheckoutScreen({route}: RootStackScreenProps<'Do
           <TextField label="Email" value={email} onChangeText={setEmail} autoCapitalize="none" keyboardType="email-address" placeholder="Opsional" />
           <TextField label="Doa / pesan" value={message} onChangeText={setMessage} multiline style={{minHeight: 88, textAlignVertical: 'top'}} placeholder="Opsional" />
           <SectionTitle>Metode pembayaran</SectionTitle>
-          {methods.isLoading ? <Loading /> : null}
+          {methods.isLoading ? <Loading mascot="donation" /> : null}
           {methods.isError ? <ErrorState message={userMessage(methods.error)} onRetry={() => methods.refetch()} /> : null}
           {methods.data?.map(item => <Button key={item.method_code} color={serviceColors.donation.solid} softColor={serviceColors.donation.soft} secondary={method !== item.method_code} title={item.display_name} onPress={() => setMethod(item.method_code)} />)}
           {mutation.error ? <ErrorState message={userMessage(mutation.error)} /> : null}

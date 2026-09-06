@@ -1,7 +1,7 @@
 import React from 'react';
 import {afterEach, beforeEach, describe, expect, it, jest} from '@jest/globals';
 import {act, create} from 'react-test-renderer';
-import {Linking} from 'react-native';
+import {AccessibilityInfo, Linking} from 'react-native';
 import type {User} from '../types/domain';
 
 let mockUser: User | null = null;
@@ -80,6 +80,7 @@ describe('Nawasena root navigation presentation', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     mockUser = null;
+    jest.spyOn(AccessibilityInfo, 'isReduceMotionEnabled').mockResolvedValue(false);
     jest.spyOn(Linking, 'getInitialURL').mockResolvedValue(null);
     jest.spyOn(Linking, 'addEventListener').mockReturnValue({remove: jest.fn()} as never);
   });

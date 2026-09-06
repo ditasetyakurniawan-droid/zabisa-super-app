@@ -13,7 +13,7 @@ export default function AccountScreen({navigation}: MainTabScreenProps<'Akun'>) 
   if (!user) {
     return (
       <ScrollScreen contentStyle={styles.noTopPadding}>
-        <AppHeader eyebrow="AKUN" title="Masuk ke Zabisa" subtitle="Gunakan akun wali santri untuk membuka layanan privat." />
+        <AppHeader mascot="profile" eyebrow="AKUN" title="Masuk ke Zabisa" subtitle="Gunakan akun wali santri untuk membuka layanan privat." />
         <Card>
           <Text style={styles.cardTitle}>Akses wali santri</Text>
           <Muted>Login diperlukan untuk melihat tahfidz, nilai, kehadiran, report, dan notifikasi pribadi.</Muted>
@@ -26,7 +26,7 @@ export default function AccountScreen({navigation}: MainTabScreenProps<'Akun'>) 
   const guardian = ['GUARDIAN', 'WALI_SANTRI'].includes(user.role);
   return (
     <ScrollScreen contentStyle={styles.noTopPadding}>
-      <AppHeader eyebrow="AKUN SAYA" title="Profil & keamanan" subtitle="Kelola akses pribadi Anda ke layanan Zabisa." />
+      <AppHeader mascot="profile" eyebrow="AKUN SAYA" title="Profil & keamanan" subtitle="Kelola akses pribadi Anda ke layanan Zabisa." />
       <Card style={styles.profileCard}>
         <View style={styles.avatar}><Text style={styles.avatarText}>{(user.name || user.email).slice(0, 1).toUpperCase()}</Text></View>
         <View style={styles.profileCopy}>

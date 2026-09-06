@@ -1,5 +1,5 @@
 import React from 'react';
-import {afterEach, describe, expect, it, jest} from '@jest/globals';
+import {afterEach, beforeEach, describe, expect, it, jest} from '@jest/globals';
 import {act, create, type ReactTestRenderer} from 'react-test-renderer';
 import {AccessibilityInfo, Text, TextInput, View} from 'react-native';
 import {
@@ -31,13 +31,16 @@ jest.mock('react-native-safe-area-context', () => ({
   useSafeAreaInsets: () => ({top: 0, right: 0, bottom: 0, left: 0}),
 }));
 
+beforeEach(() => {
+  jest.spyOn(AccessibilityInfo, 'isReduceMotionEnabled').mockResolvedValue(true);
+});
+
 afterEach(() => {
   jest.restoreAllMocks();
 });
 
 describe('Nawasena shared UI', () => {
   it('renders layout, headings, ornament and semantic copy variants', async () => {
-    jest.spyOn(AccessibilityInfo, 'isReduceMotionEnabled').mockResolvedValue(true);
     let component: ReactTestRenderer | undefined;
 
     await act(async () => {
@@ -49,7 +52,7 @@ describe('Nawasena shared UI', () => {
             <HeroCard><Text>Hero Zabisa</Text></HeroCard>
             <Title>Judul</Title>
             <DisplayTitle>Judul utama</DisplayTitle>
-            <DetailHeader eyebrow="Majelis" title="Kajian" subtitle="Ustaz Demo" icon="kajian" />
+            <DetailHeader eyebrow="Majelis" title="Kajian" subtitle="Ustaz Demo" icon="kajian" mascot="learning" />
             <SectionTitle action={<Text>Aksi</Text>}>Bagian</SectionTitle>
             <Muted>Penjelasan</Muted>
             <Body>Isi utama</Body>
@@ -66,7 +69,7 @@ describe('Nawasena shared UI', () => {
     act(() => component!.unmount());
   });
 
-  it('executes card, primary/secondary button, text action and service tile controls', () => {
+  it('executes card, primary/secondary button, text action and service tile controls', async () => {
     const onCard = jest.fn();
     const onPrimary = jest.fn();
     const onSecondary = jest.fn();
@@ -74,7 +77,7 @@ describe('Nawasena shared UI', () => {
     const onTile = jest.fn();
     let component: ReactTestRenderer | undefined;
 
-    act(() => {
+    await act(async () => {
       component = create(
         <View>
           <Card onPress={onCard}><Text>Card action</Text></Card>
@@ -86,6 +89,7 @@ describe('Nawasena shared UI', () => {
           <IconTile icon="donation" label="Berbagi" subtitle="Donasi" color="#654321" softColor="#fafafa" onPress={onTile} />
         </View>,
       );
+      await Promise.resolve();
     });
 
     const buttons = component!.root.findAllByProps({accessibilityRole: 'button'});
@@ -102,14 +106,15 @@ describe('Nawasena shared UI', () => {
     expect(onText).toHaveBeenCalledTimes(1);
     expect(onTile).toHaveBeenCalledTimes(1);
     expect(component!.root.findByProps({accessibilityLabel: 'Tidak aktif'}).props.accessibilityState).toEqual({disabled: true});
+    act(() => component!.unmount());
   });
 
-  it('renders field, status, loading, empty and retry branches', () => {
+  it('renders field, status, loading, empty and retry branches', async () => {
     const onChange = jest.fn();
     const onRetry = jest.fn();
     let component: ReactTestRenderer | undefined;
 
-    act(() => {
+    await act(async () => {
       component = create(
         <View>
           <TextField label="Email" error="Email wajib" value="wali@example.test" onChangeText={onChange} />
@@ -124,6 +129,7 @@ describe('Nawasena shared UI', () => {
           <ErrorState />
         </View>,
       );
+      await Promise.resolve();
     });
 
     act(() => component!.root.findByType(TextInput).props.onChangeText('baru@example.test'));
@@ -132,5 +138,6 @@ describe('Nawasena shared UI', () => {
     expect(onChange).toHaveBeenCalledWith('baru@example.test');
     expect(onRetry).toHaveBeenCalledTimes(1);
     expect(component!.root.findAllByType(Text).some(node => node.props.children === 'Email wajib')).toBe(true);
+    act(() => component!.unmount());
   });
 });
