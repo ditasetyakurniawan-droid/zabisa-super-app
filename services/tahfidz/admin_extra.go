@@ -11,6 +11,11 @@ import (
 	"github.com/zabisa/platform/packages/go/platform/httpx"
 )
 
+const (
+	dateLayout               = "2006-01-02"
+	saveTahfidzTargetFailure = "Could not save tahfidz target"
+)
+
 type targetIn struct {
 	StudentID  string  `json:"student_id"`
 	TargetJuz  float64 `json:"target_juz"`
@@ -34,7 +39,7 @@ func (a *app) listEntriesAdmin(w http.ResponseWriter, r *http.Request, _ map[str
 		var score sql.NullFloat64
 		var flu, taj, mak, note sql.NullString
 		if rows.Scan(&id, &sid, &d, &surah, &a1, &a2, &juz, &page, &typ, &score, &flu, &taj, &mak, &note, &teacher, &status, &created) == nil {
-			out = append(out, map[string]any{"id": id, "student_id": sid, "date": d.Format("2006-01-02"), "surah": surah, "ayah_start": a1, "ayah_end": a2, "juz": database.NullableInt(juz), "page": database.NullableInt(page), "activity_type": typ, "score": database.NullableFloat(score), "fluency": flu.String, "tajwid": taj.String, "makhraj": mak.String, "teacher_note": note.String, "teacher_user_id": teacher, "verification_status": status, "created_at": created})
+			out = append(out, map[string]any{"id": id, "student_id": sid, "date": d.Format(dateLayout), "surah": surah, "ayah_start": a1, "ayah_end": a2, "juz": database.NullableInt(juz), "page": database.NullableInt(page), "activity_type": typ, "score": database.NullableFloat(score), "fluency": flu.String, "tajwid": taj.String, "makhraj": mak.String, "teacher_note": note.String, "teacher_user_id": teacher, "verification_status": status, "created_at": created})
 		}
 	}
 	httpx.JSON(w, 200, out)
@@ -53,7 +58,7 @@ func (a *app) createTarget(w http.ResponseWriter, r *http.Request, _ map[string]
 	}
 	var targetDate any
 	if strings.TrimSpace(in.TargetDate) != "" {
-		d, err := time.Parse("2006-01-02", in.TargetDate)
+		d, err := time.Parse(dateLayout, in.TargetDate)
 		if err != nil {
 			httpx.Fail(w, r, 400, "VALIDATION", "target_date must be YYYY-MM-DD")
 			return
@@ -63,12 +68,12 @@ func (a *app) createTarget(w http.ResponseWriter, r *http.Request, _ map[string]
 	id := httpx.NewID()
 	tx, err := a.db.BeginTx(r.Context(), nil)
 	if err != nil {
-		httpx.Fail(w, r, 500, "TX_FAILED", "Could not save tahfidz target")
+		httpx.Fail(w, r, 500, "TX_FAILED", saveTahfidzTargetFailure)
 		return
 	}
 	defer tx.Rollback()
 	if _, err = tx.ExecContext(r.Context(), `INSERT INTO tahfidz_targets(id,student_id,target_juz,target_date) VALUES(?,?,?,?)`, id, in.StudentID, in.TargetJuz, targetDate); err != nil {
-		httpx.Fail(w, r, 500, "SAVE_FAILED", "Could not save tahfidz target")
+		httpx.Fail(w, r, 500, "SAVE_FAILED", saveTahfidzTargetFailure)
 		return
 	}
 	after := map[string]any{"student_id": in.StudentID, "target_juz": in.TargetJuz, "target_date": strings.TrimSpace(in.TargetDate)}
@@ -77,7 +82,7 @@ func (a *app) createTarget(w http.ResponseWriter, r *http.Request, _ map[string]
 		return
 	}
 	if err = tx.Commit(); err != nil {
-		httpx.Fail(w, r, 500, "COMMIT_FAILED", "Could not save tahfidz target")
+		httpx.Fail(w, r, 500, "COMMIT_FAILED", saveTahfidzTargetFailure)
 		return
 	}
 	httpx.JSON(w, 201, map[string]string{"id": id})
@@ -107,5 +112,5 @@ func nullableTime2(v sql.NullTime) any {
 	if !v.Valid {
 		return nil
 	}
-	return v.Time.Format("2006-01-02")
+	return v.Time.Format(dateLayout)
 }

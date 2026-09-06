@@ -15,6 +15,12 @@ function localDateTime(value?: string | null) {
   return local.toISOString().slice(0, 16);
 }
 
+function donationStatusTone(status: string) {
+  if (status === "PAID") return "ok" as const;
+  if (status === "FAILED") return "danger" as const;
+  return "warn" as const;
+}
+
 export default function DonationPage() {
   const campaignsQuery = useApiQuery<DonationCampaign[]>("/v1/admin/donation/campaigns");
   const donationsQuery = useApiQuery<DonationTransaction[]>("/v1/admin/donations");
@@ -207,7 +213,7 @@ export default function DonationPage() {
           {key: "donor_name", label: "Donor", render: row => row.anonymous ? "Anonim" : row.donor_name || "-"},
           {key: "amount", label: "Nominal", render: row => money(row.amount)},
           {key: "payment_method", label: "Metode"},
-          {key: "status", label: "Status", render: row => <Pill tone={row.status === "PAID" ? "ok" : row.status === "FAILED" ? "danger" : "warn"}>{row.status}</Pill>},
+          {key: "status", label: "Status", render: row => <Pill tone={donationStatusTone(row.status)}>{row.status}</Pill>},
           {key: "action", label: "Aksi", render: row => ["WAITING_PAYMENT", "PENDING"].includes(row.status) ? <button className="small primary" onClick={() => verifyDonation(row.id)}>Verifikasi</button> : "-"},
         ]} />
       </Card>

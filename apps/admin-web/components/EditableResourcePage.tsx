@@ -34,6 +34,29 @@ function formValue(field: Field, form: FormData): unknown {
   return raw;
 }
 
+function editableInput(field: Field, editing: RowRecord | null) {
+  if (field.type === "textarea") {
+    return <textarea name={field.name} required={field.required} placeholder={field.placeholder} defaultValue={initialValue(editing, field)} />;
+  }
+  if (field.type === "select") {
+    return (
+      <select name={field.name} required={field.required} defaultValue={initialValue(editing, field)}>
+        <option value="">Pilih...</option>
+        {field.options?.map(option => <option key={option.value} value={option.value}>{option.label}</option>)}
+      </select>
+    );
+  }
+  if (field.type === "checkbox") {
+    return <input name={field.name} type="checkbox" defaultChecked={editing ? Boolean(editing[field.name]) : false} />;
+  }
+  return <input name={field.name} type={field.type || "text"} required={field.required} placeholder={field.placeholder} defaultValue={initialValue(editing, field)} />;
+}
+
+function editorTitle(canWrite: boolean, editing: boolean) {
+  if (!canWrite) return "Akses baca";
+  return editing ? "Edit data" : "Tambah baru";
+}
+
 export default function EditableResourcePage<T extends RowRecord>({
   title,
   description,
@@ -136,7 +159,7 @@ export default function EditableResourcePage<T extends RowRecord>({
       )}
 
       <div className="split">
-        <Card title={canWrite ? (editing ? "Edit data" : "Tambah baru") : "Akses baca"}>
+        <Card title={editorTitle(canWrite, Boolean(editing))}>
           {canWrite ? (
           <form
             key={String(editing?.id ?? "new")}
@@ -146,41 +169,7 @@ export default function EditableResourcePage<T extends RowRecord>({
             {fields.map(field => (
               <label key={field.name}>
                 {field.label}
-                {field.type === "textarea" ? (
-                  <textarea
-                    name={field.name}
-                    required={field.required}
-                    placeholder={field.placeholder}
-                    defaultValue={initialValue(editing, field)}
-                  />
-                ) : field.type === "select" ? (
-                  <select
-                    name={field.name}
-                    required={field.required}
-                    defaultValue={initialValue(editing, field)}
-                  >
-                    <option value="">Pilih...</option>
-                    {field.options?.map(option => (
-                      <option key={option.value} value={option.value}>
-                        {option.label}
-                      </option>
-                    ))}
-                  </select>
-                ) : field.type === "checkbox" ? (
-                  <input
-                    name={field.name}
-                    type="checkbox"
-                    defaultChecked={editing ? Boolean(editing[field.name]) : false}
-                  />
-                ) : (
-                  <input
-                    name={field.name}
-                    type={field.type || "text"}
-                    required={field.required}
-                    placeholder={field.placeholder}
-                    defaultValue={initialValue(editing, field)}
-                  />
-                )}
+                {editableInput(field, editing)}
               </label>
             ))}
             <div className="formActions">

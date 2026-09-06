@@ -3,7 +3,7 @@ import {afterEach, describe, expect, it, jest} from '@jest/globals';
 import {act, create, type ReactTestRenderer} from 'react-test-renderer';
 import {AccessibilityInfo, Image, Text} from 'react-native';
 import {Loading, PremiumServiceCard} from './UI';
-import {Mascot} from './Mascot';
+import {Mascot, MascotDuo, type MascotVariant} from './Mascot';
 import {StartupLoading} from './StartupLoading';
 
 jest.mock('react-native-safe-area-context', () => ({
@@ -50,6 +50,24 @@ describe('premium mobile presentation', () => {
     expect(component!.root.findByProps({accessibilityLabel: 'Mascot santri tahfidz'})).toBeDefined();
     expect(component!.root.findByProps({accessibilityLabel: 'Mascot santri akademik'})).toBeDefined();
     expect(component!.root.findAllByType(Image)).toHaveLength(4);
+    act(() => component!.unmount());
+  });
+
+  it('renders every mascot state plus accessible unframed and duo variants', () => {
+    const variants: MascotVariant[] = ['welcome', 'learning', 'tahfidz', 'academic', 'attendance', 'donation', 'notification', 'profile', 'news', 'program', 'gallery', 'about', 'loading', 'empty', 'error'];
+    let component: ReactTestRenderer | undefined;
+    act(() => {
+      component = create(
+        <>
+          {variants.map(variant => <Mascot key={variant} variant={variant} decorative />)}
+          <Mascot variant="welcome" unframed decorative={false} />
+          <MascotDuo decorative={false} />
+        </>,
+      );
+    });
+    // Framed mascots also render their badge icon as an image on native.
+    expect(component!.root.findAllByType(Image).length).toBeGreaterThanOrEqual(variants.length + 2);
+    expect(component!.root.findByProps({accessibilityLabel: 'Mascot santri putra dan putri Zabisa'})).toBeDefined();
     act(() => component!.unmount());
   });
 

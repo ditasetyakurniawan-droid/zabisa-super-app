@@ -9,6 +9,12 @@ import {can, permissions} from "../../../lib/rbac";
 import {useSessionUser} from "../../../lib/session";
 import type {AcademicReport, Grade, Student, Subject} from "../../../lib/types";
 
+function gradeSaveMessage(publishNow: boolean, editing: boolean) {
+  if (publishNow) return "Nilai tersimpan dan dipublikasikan.";
+  if (editing) return "Draft nilai diperbarui.";
+  return "Nilai tersimpan sebagai draft.";
+}
+
 export default function AcademicsPage() {
   const studentsQuery = useApiQuery<Student[]>("/v1/admin/students");
   const subjectsQuery = useApiQuery<Subject[]>("/v1/admin/subjects");
@@ -101,7 +107,7 @@ export default function AcademicsPage() {
       }
       formEl.reset();
       setEditingGrade(null);
-      setMessage(publishNow ? "Nilai tersimpan dan dipublikasikan." : editingGrade ? "Draft nilai diperbarui." : "Nilai tersimpan sebagai draft.");
+      setMessage(gradeSaveMessage(publishNow, Boolean(editingGrade)));
       await refresh("/v1/admin/grades");
     } catch (error) {
       setMessage((error as Error).message);
@@ -149,6 +155,12 @@ export default function AcademicsPage() {
     } catch (error) {
       setMessage((error as Error).message);
     }
+  }
+
+  function gradeAction(row: Grade) {
+    if (row.published) return <span className="muted">Immutable</span>;
+    if (!canWrite) return <span className="muted">Read only</span>;
+    return <div className="formActions"><button className="ghost small dark" onClick={() => setEditingGrade(row)}>Edit</button>{canPublish && <button className="small primary" onClick={() => publishGrade(row.id)}>Publish</button>}</div>;
   }
 
   return (
@@ -303,7 +315,7 @@ export default function AcademicsPage() {
             {key: "score", label: "Score"},
             {key: "grade", label: "Grade"},
             {key: "published", label: "Status", render: row => <Pill tone={row.published ? "ok" : "warn"}>{row.published ? "Published" : "Draft"}</Pill>},
-            {key: "action", label: "Aksi", render: row => row.published ? <span className="muted">Immutable</span> : canWrite ? <div className="formActions"><button className="ghost small dark" onClick={() => setEditingGrade(row)}>Edit</button>{canPublish && <button className="small primary" onClick={() => publishGrade(row.id)}>Publish</button>}</div> : <span className="muted">Read only</span>},
+            {key: "action", label: "Aksi", render: gradeAction},
           ]}
         />
       </Card>

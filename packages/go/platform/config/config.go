@@ -94,50 +94,64 @@ func (c Config) MigrateOnly() bool { return c.Mode == ModeMigrate }
 func (c Config) ValidateRuntime(requireDB bool) error {
 	var errs []error
 	errs = append(errs, c.loadErrors...)
-
-	switch c.Mode {
-	case ModeServe, ModeMigrate, ModeServeWithMigrations:
-	default:
-		errs = append(errs, fmt.Errorf("APP_MODE must be one of %q, %q, %q", ModeServe, ModeMigrate, ModeServeWithMigrations))
-	}
-
+	errs = append(errs, c.validateMode()...)
 	if c.Mode != ModeMigrate {
-		if len(c.JWTKey) < 24 {
-			errs = append(errs, fmt.Errorf("JWT_SIGNING_KEY must be at least 24 characters"))
-		}
-		if len(c.InternalServiceKey) < 24 {
-			errs = append(errs, fmt.Errorf("INTERNAL_SERVICE_KEY must be at least 24 characters"))
-		}
+		errs = append(errs, c.validateAuthSecrets()...)
 	}
-
 	if requireDB {
-		if strings.TrimSpace(c.MySQLUser) == "" {
-			errs = append(errs, fmt.Errorf("MYSQL_USER must not be empty"))
-		}
-		if c.MySQLPassword == "" {
-			errs = append(errs, fmt.Errorf("MYSQL_PASSWORD must not be empty"))
-		}
-		if c.Environment != "local" && c.MySQLTLSMode == MySQLTLSDisabled {
-			errs = append(errs, fmt.Errorf("MYSQL_TLS_MODE=disabled is not allowed outside local development"))
-		}
-		switch c.MySQLTLSMode {
-		case MySQLTLSDisabled:
-		case MySQLTLSVerifyCA, MySQLTLSVerifyIdentity:
-			if c.MySQLTLSCAFile == "" {
-				errs = append(errs, fmt.Errorf("MYSQL_TLS_CA_FILE is required for MYSQL_TLS_MODE=%s", c.MySQLTLSMode))
-			} else if st, err := os.Stat(c.MySQLTLSCAFile); err != nil {
-				errs = append(errs, fmt.Errorf("MYSQL_TLS_CA_FILE %q: %w", c.MySQLTLSCAFile, err))
-			} else if !st.Mode().IsRegular() {
-				errs = append(errs, fmt.Errorf("MYSQL_TLS_CA_FILE %q is not a regular file", c.MySQLTLSCAFile))
-			}
-			if c.MySQLTLSMode == MySQLTLSVerifyIdentity && strings.TrimSpace(c.MySQLTLSServerName) == "" {
-				errs = append(errs, fmt.Errorf("MYSQL_TLS_SERVER_NAME is required for verify-identity"))
-			}
-		default:
-			errs = append(errs, fmt.Errorf("MYSQL_TLS_MODE must be one of %q, %q, %q", MySQLTLSDisabled, MySQLTLSVerifyCA, MySQLTLSVerifyIdentity))
-		}
+		errs = append(errs, c.validateDatabase()...)
 	}
 	return errors.Join(errs...)
+}
+
+func (c Config) validateMode() []error {
+	switch c.Mode {
+	case ModeServe, ModeMigrate, ModeServeWithMigrations:
+		return nil
+	default:
+		return []error{fmt.Errorf("APP_MODE must be one of %q, %q, %q", ModeServe, ModeMigrate, ModeServeWithMigrations)}
+	}
+}
+
+func (c Config) validateAuthSecrets() []error {
+	var errs []error
+	if len(c.JWTKey) < 24 {
+		errs = append(errs, fmt.Errorf("JWT_SIGNING_KEY must be at least 24 characters"))
+	}
+	if len(c.InternalServiceKey) < 24 {
+		errs = append(errs, fmt.Errorf("INTERNAL_SERVICE_KEY must be at least 24 characters"))
+	}
+	return errs
+}
+
+func (c Config) validateDatabase() []error {
+	var errs []error
+	if strings.TrimSpace(c.MySQLUser) == "" {
+		errs = append(errs, fmt.Errorf("MYSQL_USER must not be empty"))
+	}
+	if c.MySQLPassword == "" {
+		errs = append(errs, fmt.Errorf("MYSQL_PASSWORD must not be empty"))
+	}
+	if c.Environment != "local" && c.MySQLTLSMode == MySQLTLSDisabled {
+		errs = append(errs, fmt.Errorf("MYSQL_TLS_MODE=disabled is not allowed outside local development"))
+	}
+	switch c.MySQLTLSMode {
+	case MySQLTLSDisabled:
+	case MySQLTLSVerifyCA, MySQLTLSVerifyIdentity:
+		if c.MySQLTLSCAFile == "" {
+			errs = append(errs, fmt.Errorf("MYSQL_TLS_CA_FILE is required for MYSQL_TLS_MODE=%s", c.MySQLTLSMode))
+		} else if st, err := os.Stat(c.MySQLTLSCAFile); err != nil {
+			errs = append(errs, fmt.Errorf("MYSQL_TLS_CA_FILE %q: %w", c.MySQLTLSCAFile, err))
+		} else if !st.Mode().IsRegular() {
+			errs = append(errs, fmt.Errorf("MYSQL_TLS_CA_FILE %q is not a regular file", c.MySQLTLSCAFile))
+		}
+		if c.MySQLTLSMode == MySQLTLSVerifyIdentity && strings.TrimSpace(c.MySQLTLSServerName) == "" {
+			errs = append(errs, fmt.Errorf("MYSQL_TLS_SERVER_NAME is required for verify-identity"))
+		}
+	default:
+		errs = append(errs, fmt.Errorf("MYSQL_TLS_MODE must be one of %q, %q, %q", MySQLTLSDisabled, MySQLTLSVerifyCA, MySQLTLSVerifyIdentity))
+	}
+	return errs
 }
 
 func (c Config) ValidateAuth() error { return c.ValidateRuntime(false) }

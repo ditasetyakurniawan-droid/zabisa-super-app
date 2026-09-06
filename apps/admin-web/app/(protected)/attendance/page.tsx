@@ -7,6 +7,24 @@ import {api} from "../../../lib/client";
 import {queryErrorMessage, useApiQuery, useRefreshApi} from "../../../lib/query";
 import type {AttendanceRow, Student} from "../../../lib/types";
 
+function studentOptionLabel(isPending: boolean, count: number) {
+  if (isPending) return "Memuat santri...";
+  if (count === 0) return "Belum ada santri tersedia";
+  return "Pilih...";
+}
+
+function studentHelp(isPending: boolean, count: number) {
+  if (isPending) return "Daftar santri sedang dimuat.";
+  if (count === 0) return "Belum ada santri yang dapat dipilih. Tambahkan data santri terlebih dahulu.";
+  return `${count} santri tersedia.`;
+}
+
+function attendanceTone(status: string) {
+  if (status === "PRESENT") return "ok" as const;
+  if (status === "ABSENT") return "danger" as const;
+  return "warn" as const;
+}
+
 export default function AttendancePage() {
   const studentsQuery = useApiQuery<Student[]>("/v1/admin/students");
   const attendanceQuery = useApiQuery<AttendanceRow[]>("/v1/admin/attendance");
@@ -70,11 +88,7 @@ export default function AttendancePage() {
                 aria-describedby="attendance-student-help"
               >
                 <option value="">
-                  {studentsQuery.isPending
-                    ? "Memuat santri..."
-                    : students.length === 0
-                      ? "Belum ada santri tersedia"
-                      : "Pilih..."}
+                  {studentOptionLabel(studentsQuery.isPending, students.length)}
                 </option>
                 {students.map(student => (
                   <option key={student.id} value={student.id}>
@@ -83,11 +97,7 @@ export default function AttendancePage() {
                 ))}
               </select>
               <p id="attendance-student-help" className="hint">
-                {studentsQuery.isPending
-                  ? "Daftar santri sedang dimuat."
-                  : students.length === 0
-                    ? "Belum ada santri yang dapat dipilih. Tambahkan data santri terlebih dahulu."
-                    : `${students.length} santri tersedia.`}
+                {studentHelp(studentsQuery.isPending, students.length)}
               </p>
             </div>
             <div>
@@ -151,13 +161,7 @@ export default function AttendancePage() {
               label: "Status",
               render: row => (
                 <Pill
-                  tone={
-                    row.status === "PRESENT"
-                      ? "ok"
-                      : row.status === "ABSENT"
-                        ? "danger"
-                        : "warn"
-                  }
+                  tone={attendanceTone(row.status)}
                 >
                   {row.status}
                 </Pill>

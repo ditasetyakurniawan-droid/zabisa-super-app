@@ -10,6 +10,33 @@ import {nextDonationIdempotencyKey} from './idempotency';
 
 const presets = [50000, 100000, 250000, 500000];
 
+function PaymentInstructions({method}: {method?: PaymentMethod}) {
+  if (!method) return null;
+  return (
+    <Card>
+      <Text style={styles.heading}>{method.display_name}</Text>
+      {method.bank_name ? <Text style={styles.body}>{method.bank_name}</Text> : null}
+      {method.account_number ? <Text selectable style={styles.account}>{method.account_number}</Text> : null}
+      {method.account_holder ? <Muted>a.n. {method.account_holder}</Muted> : null}
+      {method.instructions ? <Text style={styles.instructions}>{method.instructions}</Text> : null}
+    </Card>
+  );
+}
+
+function DonationSuccess({result, method}: {result: DonationResult; method?: PaymentMethod}) {
+  return (
+    <>
+      <Card style={styles.successCard}>
+        <Text style={styles.success}>Transaksi berhasil dibuat</Text>
+        <Muted>ID transaksi</Muted><Text selectable style={styles.id}>{result.id}</Text>
+        <Muted>Status: {result.status || 'WAITING_PAYMENT'}</Muted>
+      </Card>
+      <PaymentInstructions method={method} />
+      <Muted>Status pembayaran tetap divalidasi backend. Simpan bukti transaksi sampai proses verifikasi selesai.</Muted>
+    </>
+  );
+}
+
 export default function DonationCheckoutScreen({route}: RootStackScreenProps<'DonationCheckout'>) {
   const campaign = route.params.campaign;
   const [amount, setAmount] = React.useState('100000');
@@ -34,15 +61,7 @@ export default function DonationCheckoutScreen({route}: RootStackScreenProps<'Do
     <ScrollScreen safeTop={false}>
       <DetailHeader eyebrow="Niat baik Anda" title="Konfirmasi donasi" subtitle={campaign.name} icon="donation" />
       {result ? (
-        <>
-          <Card style={styles.successCard}>
-            <Text style={styles.success}>Transaksi berhasil dibuat</Text>
-            <Muted>ID transaksi</Muted><Text selectable style={styles.id}>{result.id}</Text>
-            <Muted>Status: {result.status || 'WAITING_PAYMENT'}</Muted>
-          </Card>
-          {selected ? <Card><Text style={styles.heading}>{selected.display_name}</Text>{selected.bank_name ? <Text style={styles.body}>{selected.bank_name}</Text> : null}{selected.account_number ? <Text selectable style={styles.account}>{selected.account_number}</Text> : null}{selected.account_holder ? <Muted>a.n. {selected.account_holder}</Muted> : null}{selected.instructions ? <Text style={styles.instructions}>{selected.instructions}</Text> : null}</Card> : null}
-          <Muted>Status pembayaran tetap divalidasi backend. Simpan bukti transaksi sampai proses verifikasi selesai.</Muted>
-        </>
+        <DonationSuccess result={result} method={selected} />
       ) : (
         <>
           <SectionTitle>Nominal</SectionTitle>

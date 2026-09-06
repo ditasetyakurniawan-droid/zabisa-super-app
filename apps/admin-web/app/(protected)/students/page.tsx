@@ -6,6 +6,12 @@ import {can, permissions} from "../../../lib/rbac";
 import {useSessionUser} from "../../../lib/session";
 import type {Student} from "../../../lib/types";
 
+function studentStatusTone(status: string) {
+  if (status === "ACTIVE") return "ok" as const;
+  if (status === "GRADUATED") return "info" as const;
+  return "warn" as const;
+}
+
 export default function StudentsPage() {
   const sessionQuery = useSessionUser();
   const canWrite = sessionQuery.data ? can(sessionQuery.data.role, permissions.studentsWrite) : false;
@@ -49,7 +55,7 @@ export default function StudentsPage() {
           key: "status",
           label: "Status",
           render: row => (
-            <Pill tone={row.status === "ACTIVE" ? "ok" : row.status === "GRADUATED" ? "info" : "warn"}>
+            <Pill tone={studentStatusTone(row.status)}>
               {row.status}
             </Pill>
           ),

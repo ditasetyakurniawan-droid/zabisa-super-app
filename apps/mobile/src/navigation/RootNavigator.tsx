@@ -66,6 +66,12 @@ const tabBaseOptions: BottomTabNavigationOptions = {
   tabBarItemStyle: {borderRadius: radius.md, marginHorizontal: 1},
 };
 
+function linkedStudent(parsed: ReturnType<typeof parseZabisaDeepLink>, students: Student[]) {
+  if (parsed.kind === 'guardian') return students.find(value => value.id === parsed.studentId);
+  if (students.length === 1) return students[0];
+  return undefined;
+}
+
 function Tabs() {
   const user = useAuth(s => s.user);
   return (
@@ -128,9 +134,7 @@ export default function RootNavigator() {
       }
       try {
         const students = await api<Student[]>('/api/v1/guardian/students');
-        const student = parsed.kind === 'guardian'
-          ? students.find(value => value.id === parsed.studentId)
-          : students.length === 1 ? students[0] : undefined;
+        const student = linkedStudent(parsed, students);
         if (student) navigationRef.navigate('GuardianStudent', {student});
         else navigationRef.navigate('GuardianOverview');
       } catch {

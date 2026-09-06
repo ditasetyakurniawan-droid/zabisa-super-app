@@ -63,7 +63,7 @@ func (a *app) createEntry(w http.ResponseWriter, r *http.Request, _ map[string]s
 	if !httpx.Decode(w, r, &in) {
 		return
 	}
-	d, err := time.Parse("2006-01-02", in.ActivityDate)
+	d, err := time.Parse(dateLayout, in.ActivityDate)
 	if err != nil || in.StudentID == "" || in.Surah == "" || in.AyahStart < 1 || in.AyahEnd < in.AyahStart {
 		httpx.Fail(w, r, 400, "VALIDATION", "Invalid tahfidz entry")
 		return
@@ -112,7 +112,7 @@ func (a *app) listEntries(w http.ResponseWriter, r *http.Request, p map[string]s
 		var score sql.NullFloat64
 		var flu, taj, mak, note sql.NullString
 		if rows.Scan(&id, &d, &surah, &a1, &a2, &juz, &page, &typ, &score, &flu, &taj, &mak, &note, &teacher, &status) == nil {
-			out = append(out, map[string]any{"id": id, "date": d.Format("2006-01-02"), "surah": surah, "ayah_start": a1, "ayah_end": a2, "juz": database.NullableInt(juz), "page": database.NullableInt(page), "activity_type": typ, "score": database.NullableFloat(score), "fluency": flu.String, "tajwid": taj.String, "makhraj": mak.String, "teacher_note": note.String, "teacher_user_id": teacher, "verification_status": status})
+			out = append(out, map[string]any{"id": id, "date": d.Format(dateLayout), "surah": surah, "ayah_start": a1, "ayah_end": a2, "juz": database.NullableInt(juz), "page": database.NullableInt(page), "activity_type": typ, "score": database.NullableFloat(score), "fluency": flu.String, "tajwid": taj.String, "makhraj": mak.String, "teacher_note": note.String, "teacher_user_id": teacher, "verification_status": status})
 		}
 	}
 	httpx.JSON(w, 200, out)

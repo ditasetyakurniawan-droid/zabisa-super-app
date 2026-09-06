@@ -2,7 +2,7 @@ import React from 'react';
 import {afterEach, beforeEach, describe, expect, it, jest} from '@jest/globals';
 import {act, create, type ReactTestInstance, type ReactTestRenderer} from 'react-test-renderer';
 import {AccessibilityInfo, Linking, Text} from 'react-native';
-import type {Campaign, CampaignUpdate, ContentItem, DonationHistoryItem, Kajian, PaymentMethod, User} from '../types/domain';
+import type {Attendance, Campaign, CampaignUpdate, ContentItem, DonationHistoryItem, Grade, Kajian, NotificationItem, PaymentMethod, Student, StudentReport, TahfidzEntry, User} from '../types/domain';
 import DonationScreen from './donation/DonationScreen';
 import CampaignDetailScreen from './donation/CampaignDetailScreen';
 import DonationCheckoutScreen from './donation/DonationCheckoutScreen';
@@ -10,6 +10,11 @@ import KajianScreen from './kajian/KajianScreen';
 import KajianDetailScreen from './kajian/KajianDetailScreen';
 import ContentListScreen from './content/ContentListScreen';
 import ContentDetailScreen from './content/ContentDetailScreen';
+import GuardianStudentScreen from './guardian/GuardianStudentScreen';
+import NotificationsScreen from './notifications/NotificationsScreen';
+import GuardianOverviewScreen from './guardian/GuardianOverviewScreen';
+import AccountScreen from './account/AccountScreen';
+import LoginScreen from './auth/LoginScreen';
 
 type QueryResult = {
   data?: unknown;
@@ -20,12 +25,26 @@ type QueryResult = {
 };
 
 let mockUser: User | null = null;
+let mockBusy = false;
 const mockQueries = new Map<string, QueryResult>();
 const mockMutate = jest.fn();
+const mockInvalidateQueries = jest.fn();
+const mockLogin = jest.fn();
+const mockLogout = jest.fn();
+let mutationSuccess: ((data: unknown) => void) | undefined;
 
 jest.mock('@tanstack/react-query', () => ({
-  useQuery: ({queryKey}: {queryKey: unknown[]}) => mockQueries.get(String(queryKey[0])),
-  useMutation: () => ({mutate: mockMutate, isPending: false, error: null}),
+  useQuery: ({queryKey}: {queryKey: unknown[]}) => mockQueries.get(String(queryKey[0])) ?? {
+    data: undefined,
+    isLoading: false,
+    isError: false,
+    refetch: jest.fn(),
+  },
+  useMutation: ({onSuccess}: {onSuccess?: (data: unknown) => void}) => {
+    mutationSuccess = onSuccess;
+    return {mutate: mockMutate, isPending: false, error: null};
+  },
+  useQueryClient: () => ({invalidateQueries: mockInvalidateQueries}),
 }));
 
 jest.mock('../api/client', () => ({
@@ -34,7 +53,7 @@ jest.mock('../api/client', () => ({
 }));
 
 jest.mock('../store/auth', () => ({
-  useAuth: (selector: (state: {user: User | null}) => unknown) => selector({user: mockUser}),
+  useAuth: (selector: (state: {user: User | null; busy: boolean; login: typeof mockLogin; logout: typeof mockLogout}) => unknown) => selector({user: mockUser, busy: mockBusy, login: mockLogin, logout: mockLogout}),
 }));
 
 jest.mock('react-native-safe-area-context', () => ({
@@ -91,6 +110,7 @@ describe('Nawasena service screens', () => {
     jest.clearAllMocks();
     jest.spyOn(AccessibilityInfo, 'isReduceMotionEnabled').mockResolvedValue(true);
     mockUser = {id: 'guardian-1', email: 'wali@example.test', name: 'Wali Demo', role: 'GUARDIAN', status: 'ACTIVE'};
+    mockBusy = false;
     mockQueries.clear();
   });
 
@@ -138,6 +158,11 @@ describe('Nawasena service screens', () => {
     await press(component.root.findByProps({accessibilityLabel: 'Rp 50.000'}));
     await press(component.root.findByProps({accessibilityLabel: 'Tunaikan niat baik'}));
     expect(mockMutate).toHaveBeenCalledTimes(1);
+    await act(async () => {
+      mutationSuccess?.({id: 'donation-1', status: 'WAITING_PAYMENT'});
+      await Promise.resolve();
+    });
+    expect(component.root.findAllByType(Text).some(text => text.props.children === 'Transaksi berhasil dibuat')).toBe(true);
     await unmount(component);
   });
 
@@ -238,6 +263,135 @@ describe('Nawasena service screens', () => {
       <ContentDetailScreen navigation={{} as never} route={{params: {id: 'missing', title: 'Informasi'}} as never} />,
     );
     expect(component.root.findAllByType(Text).some(text => text.props.children === 'Konten tidak ditemukan.')).toBe(true);
+    await unmount(component);
+  });
+
+  it('renders complete guardian learning progress and attendance tones', async () => {
+    const student: Student = {id: 'student-1', student_no: 'S001', full_name: 'Ahmad', class_name: '7A', program_name: 'Tahfidz', academic_year: '2026/2027', status: 'ACTIVE'};
+    const tahfidz: TahfidzEntry = {id: 'entry-1', surah: 'Al-Fatihah', ayah_start: 1, ayah_end: 7, activity_type: 'MEMORIZATION', date: '2026-09-05', teacher_note: 'Baik'};
+    const grade: Grade = {id: 'grade-1', subject_name: 'Fiqih', score: 90, assessment_type: 'EXAM', semester: 1, teacher_note: 'Pertahankan'};
+    const attendance: Attendance[] = [{date: '2026-09-05', status: 'PRESENT', note: 'Tepat waktu'}, {date: '2026-09-06', status: 'ABSENT'}];
+    const report: StudentReport = {id: 'report-1', report_type: 'ACADEMIC', academic_year: '2026/2027', semester: 1, status: 'PUBLISHED'};
+    mockQueries.set('student-tahfidz', query([tahfidz]));
+    mockQueries.set('student-grades', query([grade]));
+    mockQueries.set('student-attendance', query(attendance));
+    mockQueries.set('student-reports', query([report]));
+
+    const component = await render(<GuardianStudentScreen navigation={{} as never} route={{params: {student}} as never} />);
+    const text = component.root.findAllByType(Text).map(node => node.props.children);
+    expect(text).toContain('Ahmad');
+    expect(text).toContain('Al-Fatihah');
+    expect(text).toContain('Fiqih');
+    await unmount(component);
+  });
+
+  it('covers guardian empty and dependency-error states', async () => {
+    const student: Student = {id: 'student-1', student_no: 'S001', full_name: 'Ahmad', class_name: '', program_name: '', academic_year: '', status: 'ACTIVE'};
+    mockQueries.set('student-tahfidz', query([]));
+    mockQueries.set('student-grades', query([]));
+    mockQueries.set('student-attendance', query([]));
+    mockQueries.set('student-reports', query([]));
+    let component = await render(<GuardianStudentScreen navigation={{} as never} route={{params: {student}} as never} />);
+    expect(component.root.findAllByType(Text).some(text => text.props.children === 'Belum ada setoran tahfidz.')).toBe(true);
+    await unmount(component);
+
+    const refetch = jest.fn();
+    const failure = {isLoading: false, isError: true, error: new Error('Dependency gagal'), refetch};
+    mockQueries.set('student-tahfidz', failure);
+    mockQueries.set('student-grades', failure);
+    mockQueries.set('student-attendance', failure);
+    mockQueries.set('student-reports', failure);
+    component = await render(<GuardianStudentScreen navigation={{} as never} route={{params: {student}} as never} />);
+    const retryButtons = component.root
+      .findAllByProps({accessibilityLabel: 'Coba lagi'})
+      .filter(button => typeof button.props.onPress === 'function');
+    for (const button of retryButtons) await press(button);
+    expect(refetch).toHaveBeenCalledTimes(4);
+    await unmount(component);
+  });
+
+  it('renders notification inbox and opens a guardian deep link', async () => {
+    const student: Student = {id: 'student-1', student_no: 'S001', full_name: 'Ahmad', class_name: '7A', program_name: 'Tahfidz', academic_year: '2026/2027', status: 'ACTIVE'};
+    const notification: NotificationItem = {id: 'notification-1', type: 'TAHFIDZ', title: 'Setoran baru', message: 'Setoran Ahmad tersedia.', deep_link: 'zabisa://guardian/students/student-1/tahfidz/entry-1', read: false, created_at: '2026-09-06T00:00:00Z'};
+    mockQueries.set('notifications', query([notification]));
+    mockQueries.set('guardian-students', query([student]));
+    const navigate = jest.fn<(screen: string, params?: unknown) => void>();
+    const component = await render(<NotificationsScreen navigation={{navigate} as never} route={{} as never} />);
+    const notificationButton = component.root.findAllByProps({accessibilityRole: 'button'})
+      .find(node => node.findAllByType(Text).some(text => text.props.children === notification.title));
+    expect(notificationButton).toBeDefined();
+    await press(notificationButton!);
+    expect(navigate).toHaveBeenCalledWith('GuardianStudent', {student});
+    expect(mockMutate).toHaveBeenCalledWith(notification.id);
+    await unmount(component);
+  });
+
+  it('covers notification guest, loading, error and kajian navigation states', async () => {
+    const navigate = jest.fn<(screen: string, params?: unknown) => void>();
+    mockUser = null;
+    let component = await render(<NotificationsScreen navigation={{navigate} as never} route={{} as never} />);
+    expect(component.root.findAllByType(Text).some(text => text.props.children === 'Login melalui menu Akun untuk melihat notifikasi pribadi.')).toBe(true);
+    await unmount(component);
+
+    mockUser = {id: 'user-1', email: 'user@example.test', name: 'User', role: 'DONOR', status: 'ACTIVE'};
+    mockQueries.set('notifications', {isLoading: true, isError: false, refetch: jest.fn()});
+    component = await render(<NotificationsScreen navigation={{navigate} as never} route={{} as never} />);
+    expect(component.root.findAllByType(Text).some(text => text.props.children === 'Memuat notifikasi...')).toBe(true);
+    await unmount(component);
+
+    const refetch = jest.fn();
+    mockQueries.set('notifications', {isLoading: false, isError: true, error: new Error('Inbox gagal'), refetch});
+    component = await render(<NotificationsScreen navigation={{navigate} as never} route={{} as never} />);
+    await press(component.root.findByProps({accessibilityLabel: 'Coba lagi'}));
+    expect(refetch).toHaveBeenCalledTimes(1);
+    await unmount(component);
+
+    const kajianNotification: NotificationItem = {id: 'notification-2', type: 'KAJIAN', title: 'Kajian baru', message: 'Kajian tersedia.', deep_link: 'zabisa://kajian/kajian-1', read: true, created_at: '2026-09-06T00:00:00Z'};
+    mockQueries.set('notifications', query([kajianNotification]));
+    component = await render(<NotificationsScreen navigation={{navigate} as never} route={{} as never} />);
+    const kajianButton = component.root.findAllByProps({accessibilityRole: 'button'})
+      .find(node => node.findAllByType(Text).some(text => text.props.children === kajianNotification.title));
+    await press(kajianButton!);
+    expect(navigate).toHaveBeenCalledWith('Kajian');
+    await unmount(component);
+  });
+
+  it('covers guardian overview, guest account and authenticated account actions', async () => {
+    const student: Student = {id: 'student-1', student_no: 'S001', full_name: 'Ahmad', class_name: '7A', program_name: 'Tahfidz', academic_year: '2026/2027', status: 'ACTIVE'};
+    mockQueries.set('guardian-students', query([student]));
+    const navigate = jest.fn<(screen: string, params?: unknown) => void>();
+    let component = await render(<GuardianOverviewScreen navigation={{navigate} as never} route={{} as never} />);
+    const studentButton = component.root.findAllByProps({accessibilityRole: 'button'})
+      .find(node => node.findAllByType(Text).some(text => text.props.children === student.full_name));
+    await press(studentButton!);
+    expect(navigate).toHaveBeenCalledWith('GuardianStudent', {student});
+    await unmount(component);
+
+    mockUser = null;
+    component = await render(<AccountScreen navigation={{navigate} as never} route={{} as never} />);
+    await press(component.root.findByProps({accessibilityLabel: 'Masuk'}));
+    expect(navigate).toHaveBeenCalledWith('Login');
+    await unmount(component);
+
+    mockUser = {id: 'guardian-1', email: 'wali@example.test', name: 'Wali Demo', role: 'GUARDIAN', status: 'ACTIVE'};
+    component = await render(<AccountScreen navigation={{navigate} as never} route={{} as never} />);
+    await press(component.root.findByProps({accessibilityLabel: 'Buka data ananda'}));
+    await press(component.root.findByProps({accessibilityLabel: 'Keluar dari akun'}));
+    expect(mockLogout).toHaveBeenCalledTimes(1);
+    await unmount(component);
+  });
+
+  it('covers successful login and authenticated redirect', async () => {
+    mockUser = null;
+    const reset = jest.fn();
+    let component = await render(<LoginScreen navigation={{reset} as never} route={{} as never} />);
+    await press(component.root.findByProps({accessibilityLabel: 'Masuk'}));
+    expect(mockLogin).toHaveBeenCalled();
+    await unmount(component);
+
+    mockUser = {id: 'guardian-1', email: 'wali@example.test', name: 'Wali Demo', role: 'GUARDIAN', status: 'ACTIVE'};
+    component = await render(<LoginScreen navigation={{reset} as never} route={{} as never} />);
+    expect(reset).toHaveBeenCalledWith({index: 0, routes: [{name: 'Main', params: {screen: 'Akun'}}]});
     await unmount(component);
   });
 

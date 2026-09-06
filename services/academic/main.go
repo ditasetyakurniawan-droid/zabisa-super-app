@@ -20,6 +20,8 @@ import (
 //go:embed migrations/*.sql
 var migrationFS embed.FS
 
+const createSubjectFailure = "Could not create subject"
+
 type app struct {
 	db     *sql.DB
 	cfg    config.Config
@@ -81,12 +83,12 @@ func (a *app) createSubject(w http.ResponseWriter, r *http.Request, _ map[string
 	id := httpx.NewID()
 	tx, err := a.db.BeginTx(r.Context(), nil)
 	if err != nil {
-		httpx.Fail(w, r, 500, "TX_FAILED", "Could not create subject")
+		httpx.Fail(w, r, 500, "TX_FAILED", createSubjectFailure)
 		return
 	}
 	defer tx.Rollback()
 	if _, err = tx.ExecContext(r.Context(), `INSERT INTO subjects(id,code,name,category) VALUES(?,?,?,?)`, id, in.Code, in.Name, in.Category); err != nil {
-		httpx.Fail(w, r, 409, "CREATE_FAILED", "Could not create subject")
+		httpx.Fail(w, r, 409, "CREATE_FAILED", createSubjectFailure)
 		return
 	}
 	after := map[string]any{"code": in.Code, "name": in.Name, "category": in.Category, "active": true}
@@ -95,7 +97,7 @@ func (a *app) createSubject(w http.ResponseWriter, r *http.Request, _ map[string
 		return
 	}
 	if err = tx.Commit(); err != nil {
-		httpx.Fail(w, r, 500, "COMMIT_FAILED", "Could not create subject")
+		httpx.Fail(w, r, 500, "COMMIT_FAILED", createSubjectFailure)
 		return
 	}
 	httpx.JSON(w, 201, map[string]string{"id": id})
