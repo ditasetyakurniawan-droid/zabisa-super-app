@@ -53,6 +53,11 @@ function subtitleForContent(contentKind: string, title: string) {
   }
 }
 
+function contentEndpoint(contentType: string) {
+  const query = contentType ? `?type=${encodeURIComponent(contentType)}` : '';
+  return `/api/v1/content${query}`;
+}
+
 export default function ContentListScreen({navigation, route}: RootStackScreenProps<'ContentList'>) {
   const requestedType = route.params?.type || '';
   const contentType = normalizeContentType(requestedType);
@@ -60,7 +65,7 @@ export default function ContentListScreen({navigation, route}: RootStackScreenPr
   const mascot = mascotForContent(contentType);
   const query = useQuery({
     queryKey: ['content', contentType],
-    queryFn: () => api<ContentItem[]>(`/api/v1/content${contentType ? `?type=${encodeURIComponent(contentType)}` : ''}`),
+    queryFn: () => api<ContentItem[]>(contentEndpoint(contentType)),
   });
 
   return (

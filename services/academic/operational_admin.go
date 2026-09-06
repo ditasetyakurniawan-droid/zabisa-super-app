@@ -11,6 +11,8 @@ import (
 	"github.com/zabisa/platform/packages/go/platform/outbox"
 )
 
+const updateGradeDraftFailure = "Could not update grade draft"
+
 type updateSubjectIn struct {
 	Code     string `json:"code"`
 	Name     string `json:"name"`
@@ -93,7 +95,7 @@ func (a *app) updateGradeDraft(w http.ResponseWriter, r *http.Request, p map[str
 	}
 	tx, err := a.db.BeginTx(r.Context(), nil)
 	if err != nil {
-		httpx.Fail(w, r, 500, "TX_FAILED", "Could not update grade draft")
+		httpx.Fail(w, r, 500, "TX_FAILED", updateGradeDraftFailure)
 		return
 	}
 	defer tx.Rollback()
@@ -113,7 +115,7 @@ func (a *app) updateGradeDraft(w http.ResponseWriter, r *http.Request, p map[str
 		return
 	}
 	if _, err = tx.ExecContext(r.Context(), `UPDATE grades SET student_id=?,subject_id=?,academic_year=?,semester=?,assessment_type=?,score=?,grade=?,teacher_note=? WHERE id=?`, in.StudentID, in.SubjectID, in.AcademicYear, in.Semester, in.AssessmentType, in.Score, database.NullString(in.Grade), database.NullString(in.TeacherNote), p["id"]); err != nil {
-		httpx.Fail(w, r, 500, "UPDATE_FAILED", "Could not update grade draft")
+		httpx.Fail(w, r, 500, "UPDATE_FAILED", updateGradeDraftFailure)
 		return
 	}
 	before := map[string]any{"student_id": beforeStudent, "subject_id": beforeSubject, "academic_year": beforeYear, "semester": beforeSemester, "assessment_type": beforeType, "score": database.NullableFloat(beforeScore), "grade": beforeGrade.String, "published": false}
@@ -123,7 +125,7 @@ func (a *app) updateGradeDraft(w http.ResponseWriter, r *http.Request, p map[str
 		return
 	}
 	if err = tx.Commit(); err != nil {
-		httpx.Fail(w, r, 500, "COMMIT_FAILED", "Could not update grade draft")
+		httpx.Fail(w, r, 500, "COMMIT_FAILED", updateGradeDraftFailure)
 		return
 	}
 	httpx.JSON(w, 200, map[string]any{"id": p["id"], "published": false})

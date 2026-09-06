@@ -10,6 +10,8 @@ import (
 	"github.com/zabisa/platform/packages/go/platform/httpx"
 )
 
+const updateGuardianLinkFailure = "Could not update guardian link"
+
 type updateStudentIn struct {
 	StudentNo    string `json:"student_no"`
 	FullName     string `json:"full_name"`
@@ -76,7 +78,7 @@ func (a *app) rejectGuardianLinkAdmin(w http.ResponseWriter, r *http.Request, p 
 	actor, _ := a.access.Claims(r)
 	tx, err := a.db.BeginTx(r.Context(), nil)
 	if err != nil {
-		httpx.Fail(w, r, 500, "TX_FAILED", "Could not update guardian link")
+		httpx.Fail(w, r, 500, "TX_FAILED", updateGuardianLinkFailure)
 		return
 	}
 	defer tx.Rollback()
@@ -93,7 +95,7 @@ func (a *app) rejectGuardianLinkAdmin(w http.ResponseWriter, r *http.Request, p 
 		return
 	}
 	if _, err = tx.ExecContext(r.Context(), `UPDATE guardian_relationships SET status='REJECTED' WHERE id=?`, p["id"]); err != nil {
-		httpx.Fail(w, r, 500, "UPDATE_FAILED", "Could not update guardian link")
+		httpx.Fail(w, r, 500, "UPDATE_FAILED", updateGuardianLinkFailure)
 		return
 	}
 	before := map[string]any{"status": status, "relationship": relationship, "guardian_user_id": guardianID, "student_id": studentID}
@@ -103,7 +105,7 @@ func (a *app) rejectGuardianLinkAdmin(w http.ResponseWriter, r *http.Request, p 
 		return
 	}
 	if err = tx.Commit(); err != nil {
-		httpx.Fail(w, r, 500, "COMMIT_FAILED", "Could not update guardian link")
+		httpx.Fail(w, r, 500, "COMMIT_FAILED", updateGuardianLinkFailure)
 		return
 	}
 	httpx.JSON(w, http.StatusOK, map[string]string{"status": "REJECTED"})
@@ -113,7 +115,7 @@ func (a *app) revokeGuardianLinkAdmin(w http.ResponseWriter, r *http.Request, p 
 	actor, _ := a.access.Claims(r)
 	tx, err := a.db.BeginTx(r.Context(), nil)
 	if err != nil {
-		httpx.Fail(w, r, 500, "TX_FAILED", "Could not update guardian link")
+		httpx.Fail(w, r, 500, "TX_FAILED", updateGuardianLinkFailure)
 		return
 	}
 	defer tx.Rollback()
@@ -130,7 +132,7 @@ func (a *app) revokeGuardianLinkAdmin(w http.ResponseWriter, r *http.Request, p 
 		return
 	}
 	if _, err = tx.ExecContext(r.Context(), `UPDATE guardian_relationships SET status='REVOKED' WHERE id=?`, p["id"]); err != nil {
-		httpx.Fail(w, r, 500, "UPDATE_FAILED", "Could not update guardian link")
+		httpx.Fail(w, r, 500, "UPDATE_FAILED", updateGuardianLinkFailure)
 		return
 	}
 	before := map[string]any{"status": status, "relationship": relationship, "guardian_user_id": guardianID, "student_id": studentID}
@@ -140,7 +142,7 @@ func (a *app) revokeGuardianLinkAdmin(w http.ResponseWriter, r *http.Request, p 
 		return
 	}
 	if err = tx.Commit(); err != nil {
-		httpx.Fail(w, r, 500, "COMMIT_FAILED", "Could not update guardian link")
+		httpx.Fail(w, r, 500, "COMMIT_FAILED", updateGuardianLinkFailure)
 		return
 	}
 	httpx.JSON(w, http.StatusOK, map[string]string{"status": "REVOKED"})

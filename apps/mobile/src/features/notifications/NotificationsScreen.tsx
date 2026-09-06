@@ -16,6 +16,12 @@ function tone(typeName: string) {
   return 'neutral' as const;
 }
 
+function notificationStudent(parsed: ReturnType<typeof parseZabisaDeepLink>, students?: Student[]) {
+  if (parsed.kind === 'guardian') return students?.find(value => value.id === parsed.studentId);
+  if (students?.length === 1) return students[0];
+  return undefined;
+}
+
 export default function NotificationsScreen({navigation}: MainTabScreenProps<'Notifikasi'>) {
   const queryClient = useQueryClient();
   const user = useAuth(s => s.user);
@@ -41,9 +47,7 @@ export default function NotificationsScreen({navigation}: MainTabScreenProps<'No
       return;
     }
     if (!guardian) return;
-    const student = parsed.kind === 'guardian'
-      ? students.data?.find(value => value.id === parsed.studentId)
-      : students.data?.length === 1 ? students.data[0] : undefined;
+    const student = notificationStudent(parsed, students.data);
     if (student && (parsed.kind === 'guardian' || parsed.kind === 'legacy-guardian' || ['TAHFIDZ', 'ACADEMIC', 'GRADE'].includes(item.type))) {
       navigation.navigate('GuardianStudent', {student});
       return;

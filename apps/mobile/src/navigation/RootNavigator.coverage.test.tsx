@@ -3,6 +3,7 @@ import {afterEach, beforeEach, describe, expect, it, jest} from '@jest/globals';
 import {act, create} from 'react-test-renderer';
 import {AccessibilityInfo, Linking} from 'react-native';
 import type {User} from '../types/domain';
+import {api} from '../api/client';
 
 let mockUser: User | null = null;
 const mockNavigate = jest.fn();
@@ -108,5 +109,71 @@ describe('Nawasena root navigation presentation', () => {
     });
 
     expect(mockNavigate).not.toHaveBeenCalledWith('Login');
+  });
+
+  it('opens kajian and guardian deep links when their records are available', async () => {
+    mockUser = {id: 'guardian-1', email: 'wali@example.test', name: 'Wali Demo', role: 'GUARDIAN', status: 'ACTIVE'};
+    jest.mocked(api)
+      .mockResolvedValueOnce([{id: 'kajian-1', title: 'Kajian', status: 'PUBLISHED'}] as never)
+      .mockResolvedValueOnce([{id: 'student-1', student_no: 'S001', full_name: 'Ahmad', class_name: '7A', program_name: 'Tahfidz', academic_year: '2026/2027', status: 'ACTIVE'}] as never);
+    let linkHandler: ((event: {url: string}) => void) | undefined;
+    jest.mocked(Linking.addEventListener).mockImplementation((_event, handler) => {
+      linkHandler = handler as (event: {url: string}) => void;
+      return {remove: jest.fn()} as never;
+    });
+
+    await act(async () => {
+      create(<RootNavigator />);
+      await Promise.resolve();
+    });
+    await act(async () => {
+      linkHandler?.({url: 'zabisa://kajian/kajian-1'});
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+    expect(mockNavigate).toHaveBeenCalledWith('KajianDetail', {kajian: expect.objectContaining({id: 'kajian-1'})});
+
+    await act(async () => {
+      linkHandler?.({url: 'zabisa://guardian/students/student-1/tahfidz/entry-1'});
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+    expect(mockNavigate).toHaveBeenCalledWith('GuardianStudent', {student: expect.objectContaining({id: 'student-1'})});
+  });
+
+  it('redirects unauthenticated guardian deep links to login', async () => {
+    jest.mocked(Linking.getInitialURL).mockResolvedValue('zabisa://academic/grade-1');
+    await act(async () => {
+      create(<RootNavigator />);
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+    expect(mockNavigate).toHaveBeenCalledWith('Login');
+  });
+
+  it('falls back to list screens when deep-link records cannot be resolved', async () => {
+    mockUser = {id: 'guardian-1', email: 'wali@example.test', name: 'Wali Demo', role: 'WALI_SANTRI', status: 'ACTIVE'};
+    jest.mocked(api).mockResolvedValueOnce([] as never).mockRejectedValueOnce(new Error('student service unavailable'));
+    let linkHandler: ((event: {url: string}) => void) | undefined;
+    jest.mocked(Linking.addEventListener).mockImplementation((_event, handler) => {
+      linkHandler = handler as (event: {url: string}) => void;
+      return {remove: jest.fn()} as never;
+    });
+    await act(async () => {
+      create(<RootNavigator />);
+      await Promise.resolve();
+    });
+    await act(async () => {
+      linkHandler?.({url: 'zabisa://kajian/missing'});
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+    expect(mockNavigate).toHaveBeenCalledWith('Main', {screen: 'Kajian'});
+    await act(async () => {
+      linkHandler?.({url: 'zabisa://academic/grade-1'});
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+    expect(mockNavigate).toHaveBeenCalledWith('GuardianOverview');
   });
 });

@@ -21,6 +21,12 @@ import (
 //go:embed migrations/*.sql
 var migrationFS embed.FS
 
+const (
+	createCampaignFailure      = "Could not create campaign"
+	donationNotFound           = "Donation not found"
+	createPaymentMethodFailure = "Could not create payment method"
+)
+
 type app struct {
 	db     *sql.DB
 	cfg    config.Config
@@ -123,12 +129,12 @@ func (a *app) createCampaign(w http.ResponseWriter, r *http.Request, _ map[strin
 	id := httpx.NewID()
 	tx, err := a.db.BeginTx(r.Context(), nil)
 	if err != nil {
-		httpx.Fail(w, r, 500, "TX_FAILED", "Could not create campaign")
+		httpx.Fail(w, r, 500, "TX_FAILED", createCampaignFailure)
 		return
 	}
 	defer tx.Rollback()
 	if _, err = tx.ExecContext(r.Context(), `INSERT INTO campaigns(id,name,slug,description,category,target_amount,cover_url,deadline) VALUES(?,?,?,?,?,?,?,?)`, id, in.Name, in.Slug, in.Description, in.Category, in.TargetAmount, database.NullString(in.CoverURL), in.Deadline); err != nil {
-		httpx.Fail(w, r, 409, "CREATE_FAILED", "Could not create campaign")
+		httpx.Fail(w, r, 409, "CREATE_FAILED", createCampaignFailure)
 		return
 	}
 	after := map[string]any{"name": in.Name, "slug": in.Slug, "category": in.Category, "target_amount": in.TargetAmount, "status": "ACTIVE"}
@@ -137,7 +143,7 @@ func (a *app) createCampaign(w http.ResponseWriter, r *http.Request, _ map[strin
 		return
 	}
 	if err = tx.Commit(); err != nil {
-		httpx.Fail(w, r, 500, "COMMIT_FAILED", "Could not create campaign")
+		httpx.Fail(w, r, 500, "COMMIT_FAILED", createCampaignFailure)
 		return
 	}
 	httpx.JSON(w, 201, map[string]string{"id": id})
@@ -187,7 +193,7 @@ func (a *app) getDonation(w http.ResponseWriter, r *http.Request, p map[string]s
 	var created time.Time
 	err := a.db.QueryRowContext(r.Context(), `SELECT id,campaign_id,amount,status,payment_method,created_at FROM donations WHERE id=?`, p["id"]).Scan(&id, &campaign, &amount, &status, &method, &created)
 	if err == sql.ErrNoRows {
-		httpx.Fail(w, r, 404, "NOT_FOUND", "Donation not found")
+		httpx.Fail(w, r, 404, "NOT_FOUND", donationNotFound)
 		return
 	}
 	if err != nil {
@@ -207,7 +213,7 @@ func (a *app) verifyDonation(w http.ResponseWriter, r *http.Request, p map[strin
 	var amount float64
 	var status string
 	if err = tx.QueryRowContext(r.Context(), `SELECT campaign_id,amount,status FROM donations WHERE id=? FOR UPDATE`, p["id"]).Scan(&campaign, &amount, &status); err != nil {
-		httpx.Fail(w, r, 404, "NOT_FOUND", "Donation not found")
+		httpx.Fail(w, r, 404, "NOT_FOUND", donationNotFound)
 		return
 	}
 	if status == "PAID" {
@@ -269,12 +275,12 @@ func (a *app) createPaymentMethod(w http.ResponseWriter, r *http.Request, _ map[
 	id := httpx.NewID()
 	tx, err := a.db.BeginTx(r.Context(), nil)
 	if err != nil {
-		httpx.Fail(w, r, 500, "TX_FAILED", "Could not create payment method")
+		httpx.Fail(w, r, 500, "TX_FAILED", createPaymentMethodFailure)
 		return
 	}
 	defer tx.Rollback()
 	if _, err = tx.ExecContext(r.Context(), `INSERT INTO payment_accounts(id,method_code,display_name,bank_name,account_number,account_holder,instructions) VALUES(?,?,?,?,?,?,?)`, id, in.MethodCode, in.DisplayName, database.NullString(in.BankName), database.NullString(in.AccountNumber), database.NullString(in.AccountHolder), database.NullString(in.Instructions)); err != nil {
-		httpx.Fail(w, r, 409, "CREATE_FAILED", "Could not create payment method")
+		httpx.Fail(w, r, 409, "CREATE_FAILED", createPaymentMethodFailure)
 		return
 	}
 	after := map[string]any{"method_code": in.MethodCode, "display_name": in.DisplayName, "active": true}
@@ -283,7 +289,7 @@ func (a *app) createPaymentMethod(w http.ResponseWriter, r *http.Request, _ map[
 		return
 	}
 	if err = tx.Commit(); err != nil {
-		httpx.Fail(w, r, 500, "COMMIT_FAILED", "Could not create payment method")
+		httpx.Fail(w, r, 500, "COMMIT_FAILED", createPaymentMethodFailure)
 		return
 	}
 	httpx.JSON(w, 201, map[string]string{"id": id})
@@ -299,7 +305,7 @@ func (a *app) attachProof(w http.ResponseWriter, r *http.Request, p map[string]s
 	}
 	var status string
 	if err := a.db.QueryRowContext(r.Context(), `SELECT status FROM donations WHERE id=?`, p["id"]).Scan(&status); err != nil {
-		httpx.Fail(w, r, 404, "NOT_FOUND", "Donation not found")
+		httpx.Fail(w, r, 404, "NOT_FOUND", donationNotFound)
 		return
 	}
 	if status != "WAITING_PAYMENT" && status != "PENDING" {

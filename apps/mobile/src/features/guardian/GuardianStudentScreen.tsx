@@ -16,14 +16,26 @@ import {
 } from '../../utils/format';
 import type {RootStackScreenProps} from '../../navigation/types';
 
+function attendanceValue(statuses?: Attendance[]) {
+  if (!statuses) return '–';
+  if (statuses.length === 0) return 0;
+  const present = statuses.filter(item => item.status === 'PRESENT').length;
+  return `${present}/${statuses.length}`;
+}
+
+function attendanceTone(status: string) {
+  if (status === 'PRESENT') return 'success' as const;
+  if (status === 'ABSENT') return 'danger' as const;
+  return 'warning' as const;
+}
+
 export default function GuardianStudentScreen({route}: RootStackScreenProps<'GuardianStudent'>) {
   const student = route.params.student;
   const tahfidz = useQuery({queryKey: ['student-tahfidz', student.id], queryFn: () => api<TahfidzEntry[]>(`/api/v1/tahfidz/students/${student.id}/entries`)});
   const grades = useQuery({queryKey: ['student-grades', student.id], queryFn: () => api<Grade[]>(`/api/v1/students/${student.id}/grades`)});
   const attendance = useQuery({queryKey: ['student-attendance', student.id], queryFn: () => api<Attendance[]>(`/api/v1/guardian/students/${student.id}/attendance`)});
   const reports = useQuery({queryKey: ['student-reports', student.id], queryFn: () => api<StudentReport[]>(`/api/v1/students/${student.id}/reports`)});
-  const present = attendance.data?.filter(item => item.status === 'PRESENT').length ?? 0;
-  const attendanceSummary = attendance.data?.length ? `${present}/${attendance.data.length}` : attendance.data ? 0 : '–';
+  const attendanceSummary = attendanceValue(attendance.data);
 
   return (
     <ScrollScreen safeTop={false} contentStyle={styles.noTopPadding}>
@@ -67,7 +79,7 @@ export default function GuardianStudentScreen({route}: RootStackScreenProps<'Gua
         <Card key={`${item.date}-${item.status}-${item.note ?? ''}`}>
           <View style={styles.rowBetween}>
             <Text style={styles.itemTitle}>{formatDateID(item.date)}</Text>
-            <Pill tone={item.status === 'PRESENT' ? 'success' : item.status === 'ABSENT' ? 'danger' : 'warning'} text={formatAttendanceStatus(item.status)} />
+            <Pill tone={attendanceTone(item.status)} text={formatAttendanceStatus(item.status)} />
           </View>
           {item.note ? <Muted>{formatDevelopmentNote(item.note)}</Muted> : null}
         </Card>

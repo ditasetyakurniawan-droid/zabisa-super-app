@@ -10,6 +10,8 @@ import (
 	"github.com/zabisa/platform/packages/go/platform/httpx"
 )
 
+const updateTahfidzTargetFailure = "Could not update tahfidz target"
+
 type updateTargetIn struct {
 	TargetJuz  float64 `json:"target_juz"`
 	TargetDate string  `json:"target_date"`
@@ -27,7 +29,7 @@ func (a *app) updateTarget(w http.ResponseWriter, r *http.Request, p map[string]
 	}
 	var date any
 	if strings.TrimSpace(in.TargetDate) != "" {
-		d, err := time.Parse("2006-01-02", in.TargetDate)
+		d, err := time.Parse(dateLayout, in.TargetDate)
 		if err != nil {
 			httpx.Fail(w, r, http.StatusBadRequest, "VALIDATION", "target_date must be YYYY-MM-DD")
 			return
@@ -36,7 +38,7 @@ func (a *app) updateTarget(w http.ResponseWriter, r *http.Request, p map[string]
 	}
 	tx, err := a.db.BeginTx(r.Context(), nil)
 	if err != nil {
-		httpx.Fail(w, r, 500, "TX_FAILED", "Could not update tahfidz target")
+		httpx.Fail(w, r, 500, "TX_FAILED", updateTahfidzTargetFailure)
 		return
 	}
 	defer tx.Rollback()
@@ -51,12 +53,12 @@ func (a *app) updateTarget(w http.ResponseWriter, r *http.Request, p map[string]
 		return
 	}
 	if _, err = tx.ExecContext(r.Context(), `UPDATE tahfidz_targets SET target_juz=?,target_date=? WHERE id=?`, in.TargetJuz, date, p["id"]); err != nil {
-		httpx.Fail(w, r, http.StatusInternalServerError, "UPDATE_FAILED", "Could not update tahfidz target")
+		httpx.Fail(w, r, http.StatusInternalServerError, "UPDATE_FAILED", updateTahfidzTargetFailure)
 		return
 	}
 	beforeDateValue := ""
 	if beforeDate.Valid {
-		beforeDateValue = beforeDate.Time.Format("2006-01-02")
+		beforeDateValue = beforeDate.Time.Format(dateLayout)
 	}
 	before := map[string]any{"student_id": studentID, "target_juz": beforeJuz, "target_date": beforeDateValue}
 	after := map[string]any{"student_id": studentID, "target_juz": in.TargetJuz, "target_date": strings.TrimSpace(in.TargetDate)}
@@ -65,7 +67,7 @@ func (a *app) updateTarget(w http.ResponseWriter, r *http.Request, p map[string]
 		return
 	}
 	if err = tx.Commit(); err != nil {
-		httpx.Fail(w, r, 500, "COMMIT_FAILED", "Could not update tahfidz target")
+		httpx.Fail(w, r, 500, "COMMIT_FAILED", updateTahfidzTargetFailure)
 		return
 	}
 	httpx.JSON(w, http.StatusOK, map[string]any{"id": p["id"], "target_juz": in.TargetJuz})

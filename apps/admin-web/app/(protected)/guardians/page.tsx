@@ -124,6 +124,16 @@ export default function GuardiansPage() {
     }
   }
 
+  function guardianAction(row: GuardianLink) {
+    if (row.status === "PENDING") {
+      return <div className="formActions"><button className="small primary" onClick={() => approve(row.id)}>Approve</button><button className="small ghost dark" onClick={() => reject(row.id)}>Tolak</button></div>;
+    }
+    if (row.status === "APPROVED") {
+      return <button className="small ghost dark" onClick={() => revoke(row.id)}>Cabut</button>;
+    }
+    return "-";
+  }
+
   return (
     <>
       <PageHeader
@@ -212,11 +222,7 @@ export default function GuardiansPage() {
             }},
             {key: "relationship", label: "Hubungan"},
             {key: "status", label: "Status", render: row => <Pill tone={row.status === "APPROVED" ? "ok" : "warn"}>{row.status}</Pill>},
-            {key: "action", label: "Aksi", render: row => row.status === "PENDING" ? (
-              <div className="formActions"><button className="small primary" onClick={() => approve(row.id)}>Approve</button><button className="small ghost dark" onClick={() => reject(row.id)}>Tolak</button></div>
-            ) : row.status === "APPROVED" ? (
-              <button className="small ghost dark" onClick={() => revoke(row.id)}>Cabut</button>
-            ) : "-"},
+            {key: "action", label: "Aksi", render: guardianAction},
           ]}
         />
       </Card>

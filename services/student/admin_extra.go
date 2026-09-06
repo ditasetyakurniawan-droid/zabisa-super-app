@@ -12,6 +12,8 @@ import (
 	"github.com/zabisa/platform/packages/go/platform/httpx"
 )
 
+const createGuardianRelationshipFailure = "Could not create guardian relationship"
+
 type adminLinkIn struct {
 	GuardianUserID string `json:"guardian_user_id"`
 	StudentID      string `json:"student_id"`
@@ -86,7 +88,7 @@ func (a *app) createGuardianLinkAdmin(w http.ResponseWriter, r *http.Request, _ 
 	}
 	tx, err := a.db.BeginTx(r.Context(), nil)
 	if err != nil {
-		httpx.Fail(w, r, 500, "TX_FAILED", "Could not create guardian relationship")
+		httpx.Fail(w, r, 500, "TX_FAILED", createGuardianRelationshipFailure)
 		return
 	}
 	defer tx.Rollback()
@@ -137,7 +139,7 @@ func (a *app) createGuardianLinkAdmin(w http.ResponseWriter, r *http.Request, _ 
 	}
 	id := httpx.NewID()
 	if _, err = tx.ExecContext(r.Context(), `INSERT INTO guardian_relationships(id,guardian_user_id,student_id,relationship) VALUES(?,?,?,?)`, id, in.GuardianUserID, in.StudentID, in.Relationship); err != nil {
-		httpx.Fail(w, r, 409, "CREATE_FAILED", "Could not create guardian relationship")
+		httpx.Fail(w, r, 409, "CREATE_FAILED", createGuardianRelationshipFailure)
 		return
 	}
 	after := map[string]any{"status": "PENDING", "relationship": in.Relationship, "guardian_user_id": in.GuardianUserID, "student_id": in.StudentID}
@@ -146,7 +148,7 @@ func (a *app) createGuardianLinkAdmin(w http.ResponseWriter, r *http.Request, _ 
 		return
 	}
 	if err = tx.Commit(); err != nil {
-		httpx.Fail(w, r, 500, "COMMIT_FAILED", "Could not create guardian relationship")
+		httpx.Fail(w, r, 500, "COMMIT_FAILED", createGuardianRelationshipFailure)
 		return
 	}
 	httpx.JSON(w, 201, map[string]any{"id": id, "status": "PENDING", "re_requested": false})

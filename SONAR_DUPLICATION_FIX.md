@@ -33,6 +33,11 @@ the largest concentrations in the database-backed service entrypoints.
 - Added offline smoke coverage for all six refactored `buildService` functions;
   the tests verify dependency wiring and route construction without MySQL or a
   running HTTP server.
+- Expanded behavioural coverage for guardian progress, account/login,
+  notifications, donation completion, and successful/fallback deep-link flows.
+- Removed the reported duplicated Go failure literals and API Gateway targets,
+  replaced reported nested TypeScript ternaries with named decisions, and
+  split runtime configuration validation into focused validation helpers.
 
 ## Local verification
 

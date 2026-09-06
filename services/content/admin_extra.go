@@ -12,6 +12,8 @@ import (
 	"github.com/zabisa/platform/packages/go/platform/outbox"
 )
 
+const updateKajianFailure = "Could not update kajian"
+
 type contentIn struct {
 	Type      string `json:"type"`
 	Title     string `json:"title"`
@@ -59,7 +61,7 @@ func (a *app) updateKajian(w http.ResponseWriter, r *http.Request, p map[string]
 	}
 	tx, err := a.db.BeginTx(r.Context(), nil)
 	if err != nil {
-		httpx.Fail(w, r, 500, "TX_FAILED", "Could not update kajian")
+		httpx.Fail(w, r, 500, "TX_FAILED", updateKajianFailure)
 		return
 	}
 	defer tx.Rollback()
@@ -82,11 +84,11 @@ func (a *app) updateKajian(w http.ResponseWriter, r *http.Request, p map[string]
 		err = auditx.Add(r.Context(), tx, auditx.FromRequest(r, actor.Sub, "KAJIAN_UPDATED", "kajian", p["id"], before, after))
 	}
 	if err != nil {
-		httpx.Fail(w, r, 409, "UPDATE_FAILED", "Could not update kajian")
+		httpx.Fail(w, r, 409, "UPDATE_FAILED", updateKajianFailure)
 		return
 	}
 	if err = tx.Commit(); err != nil {
-		httpx.Fail(w, r, 500, "COMMIT_FAILED", "Could not update kajian")
+		httpx.Fail(w, r, 500, "COMMIT_FAILED", updateKajianFailure)
 		return
 	}
 	httpx.JSON(w, 200, map[string]any{"id": p["id"], "status": status, "published": in.Published})

@@ -21,6 +21,11 @@ import (
 //go:embed migrations/*.sql
 var migrationFS embed.FS
 
+const (
+	approveLinkFailure    = "Could not approve link"
+	saveAttendanceFailure = "Could not save attendance"
+)
+
 type app struct {
 	db     *sql.DB
 	cfg    config.Config
@@ -199,7 +204,7 @@ func (a *app) approveLink(w http.ResponseWriter, r *http.Request, p map[string]s
 	actor, _ := a.access.Claims(r)
 	tx, err := a.db.BeginTx(r.Context(), nil)
 	if err != nil {
-		httpx.Fail(w, r, 500, "TX_FAILED", "Could not approve link")
+		httpx.Fail(w, r, 500, "TX_FAILED", approveLinkFailure)
 		return
 	}
 	defer tx.Rollback()
@@ -216,7 +221,7 @@ func (a *app) approveLink(w http.ResponseWriter, r *http.Request, p map[string]s
 		return
 	}
 	if _, err = tx.ExecContext(r.Context(), `UPDATE guardian_relationships SET status='APPROVED',approved_by=?,approved_at=UTC_TIMESTAMP(6) WHERE id=?`, actor.Sub, p["id"]); err != nil {
-		httpx.Fail(w, r, 500, "UPDATE_FAILED", "Could not approve link")
+		httpx.Fail(w, r, 500, "UPDATE_FAILED", approveLinkFailure)
 		return
 	}
 	before := map[string]any{"status": status, "relationship": relationship, "guardian_user_id": guardianID, "student_id": studentID}
@@ -226,7 +231,7 @@ func (a *app) approveLink(w http.ResponseWriter, r *http.Request, p map[string]s
 		return
 	}
 	if err = tx.Commit(); err != nil {
-		httpx.Fail(w, r, 500, "COMMIT_FAILED", "Could not approve link")
+		httpx.Fail(w, r, 500, "COMMIT_FAILED", approveLinkFailure)
 		return
 	}
 	httpx.JSON(w, 200, map[string]string{"status": "APPROVED"})
@@ -270,7 +275,7 @@ func (a *app) recordAttendance(w http.ResponseWriter, r *http.Request, _ map[str
 	}
 	tx, err := a.db.BeginTx(r.Context(), nil)
 	if err != nil {
-		httpx.Fail(w, r, 500, "TX_FAILED", "Could not save attendance")
+		httpx.Fail(w, r, 500, "TX_FAILED", saveAttendanceFailure)
 		return
 	}
 	defer tx.Rollback()
@@ -285,7 +290,7 @@ func (a *app) recordAttendance(w http.ResponseWriter, r *http.Request, _ map[str
 		return
 	}
 	if _, err = tx.ExecContext(r.Context(), `INSERT INTO attendance(id,student_id,attendance_date,status,note,recorded_by) VALUES(?,?,?,?,?,?) ON DUPLICATE KEY UPDATE status=VALUES(status),note=VALUES(note),recorded_by=VALUES(recorded_by)`, id, in.StudentID, d, in.Status, database.NullString(in.Note), c.Sub); err != nil {
-		httpx.Fail(w, r, 500, "SAVE_FAILED", "Could not save attendance")
+		httpx.Fail(w, r, 500, "SAVE_FAILED", saveAttendanceFailure)
 		return
 	}
 	var before any
@@ -298,7 +303,7 @@ func (a *app) recordAttendance(w http.ResponseWriter, r *http.Request, _ map[str
 		return
 	}
 	if err = tx.Commit(); err != nil {
-		httpx.Fail(w, r, 500, "COMMIT_FAILED", "Could not save attendance")
+		httpx.Fail(w, r, 500, "COMMIT_FAILED", saveAttendanceFailure)
 		return
 	}
 	httpx.JSON(w, 200, map[string]string{"id": id, "status": "SAVED"})

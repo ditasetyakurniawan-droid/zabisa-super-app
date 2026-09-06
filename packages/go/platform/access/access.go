@@ -15,7 +15,10 @@ import (
 	"github.com/zabisa/platform/packages/go/platform/router"
 )
 
-const defaultStudentServiceURL = "http://student:8083"
+const (
+	defaultStudentServiceURL = "http://student:8083"
+	authenticationRequired   = "Authentication required"
+)
 
 // Control centralizes HTTP authentication and authorization for the services.
 type Control struct {
@@ -33,7 +36,7 @@ func (c Control) Claims(r *http.Request) (auth.Claims, error) {
 func (c Control) Authenticated(next router.HandlerFunc) router.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request, params map[string]string) {
 		if _, err := c.Claims(r); err != nil {
-			httpx.Fail(w, r, http.StatusUnauthorized, "UNAUTHORIZED", "Authentication required")
+			httpx.Fail(w, r, http.StatusUnauthorized, "UNAUTHORIZED", authenticationRequired)
 			return
 		}
 		next(w, r, params)
@@ -44,7 +47,7 @@ func (c Control) RequirePermission(permission authz.Permission, next router.Hand
 	return func(w http.ResponseWriter, r *http.Request, params map[string]string) {
 		claims, err := c.Claims(r)
 		if err != nil {
-			httpx.Fail(w, r, http.StatusUnauthorized, "UNAUTHORIZED", "Authentication required")
+			httpx.Fail(w, r, http.StatusUnauthorized, "UNAUTHORIZED", authenticationRequired)
 			return
 		}
 		if !authz.Has(claims.Role, permission) {
@@ -71,7 +74,7 @@ func (c Control) StudentScoped(permission authz.Permission, next router.HandlerF
 	return func(w http.ResponseWriter, r *http.Request, params map[string]string) {
 		claims, err := c.Claims(r)
 		if err != nil {
-			httpx.Fail(w, r, http.StatusUnauthorized, "UNAUTHORIZED", "Authentication required")
+			httpx.Fail(w, r, http.StatusUnauthorized, "UNAUTHORIZED", authenticationRequired)
 			return
 		}
 		if authz.Has(claims.Role, permission) {

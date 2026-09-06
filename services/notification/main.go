@@ -24,6 +24,11 @@ import (
 //go:embed migrations/*.sql
 var migrationFS embed.FS
 
+const (
+	persistNotificationFailure = "Could not persist notification"
+	resolveGuardiansFailure    = "Could not resolve guardians"
+)
+
 type app struct {
 	db     *sql.DB
 	cfg    config.Config
@@ -163,7 +168,7 @@ func (a *app) handleEvent(w http.ResponseWriter, r *http.Request, _ map[string]s
 			p.Title = "Kajian baru"
 		}
 		if err := a.insertNotification(r.Context(), "", "KAJIAN", p.Title, "Kajian baru telah dipublikasikan.", p.DeepLink); err != nil {
-			httpx.Fail(w, r, 500, "EVENT_FAILED", "Could not persist notification")
+			httpx.Fail(w, r, 500, "EVENT_FAILED", persistNotificationFailure)
 			return
 		}
 	case "TahfidzEntryCreated":
@@ -179,12 +184,12 @@ func (a *app) handleEvent(w http.ResponseWriter, r *http.Request, _ map[string]s
 		}
 		ids, err := a.guardians(r.Context(), p.StudentID)
 		if err != nil {
-			httpx.Fail(w, r, 502, "DEPENDENCY_FAILED", "Could not resolve guardians")
+			httpx.Fail(w, r, 502, "DEPENDENCY_FAILED", resolveGuardiansFailure)
 			return
 		}
 		for _, id := range ids {
 			if err = a.insertNotification(r.Context(), id, "TAHFIDZ", "Setoran tahfidz baru", "Setoran tahfidz terbaru telah dicatat.", p.DeepLink); err != nil {
-				httpx.Fail(w, r, 500, "EVENT_FAILED", "Could not persist notification")
+				httpx.Fail(w, r, 500, "EVENT_FAILED", persistNotificationFailure)
 				return
 			}
 		}
@@ -199,12 +204,12 @@ func (a *app) handleEvent(w http.ResponseWriter, r *http.Request, _ map[string]s
 		}
 		ids, err := a.guardians(r.Context(), p.StudentID)
 		if err != nil {
-			httpx.Fail(w, r, 502, "DEPENDENCY_FAILED", "Could not resolve guardians")
+			httpx.Fail(w, r, 502, "DEPENDENCY_FAILED", resolveGuardiansFailure)
 			return
 		}
 		for _, id := range ids {
 			if err = a.insertNotification(r.Context(), id, "ACADEMIC", "Nilai baru tersedia", "Nilai terbaru telah dipublikasikan.", p.DeepLink); err != nil {
-				httpx.Fail(w, r, 500, "EVENT_FAILED", "Could not persist notification")
+				httpx.Fail(w, r, 500, "EVENT_FAILED", persistNotificationFailure)
 				return
 			}
 		}
@@ -219,12 +224,12 @@ func (a *app) handleEvent(w http.ResponseWriter, r *http.Request, _ map[string]s
 		}
 		ids, err := a.guardians(r.Context(), p.StudentID)
 		if err != nil {
-			httpx.Fail(w, r, 502, "DEPENDENCY_FAILED", "Could not resolve guardians")
+			httpx.Fail(w, r, 502, "DEPENDENCY_FAILED", resolveGuardiansFailure)
 			return
 		}
 		for _, id := range ids {
 			if err = a.insertNotification(r.Context(), id, "ACADEMIC", "Report baru tersedia", "Report perkembangan terbaru telah dipublikasikan.", p.DeepLink); err != nil {
-				httpx.Fail(w, r, 500, "EVENT_FAILED", "Could not persist notification")
+				httpx.Fail(w, r, 500, "EVENT_FAILED", persistNotificationFailure)
 				return
 			}
 		}

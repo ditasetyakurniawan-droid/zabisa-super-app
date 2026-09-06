@@ -12,6 +12,11 @@ import (
 	"github.com/zabisa/platform/packages/go/platform/httpx"
 )
 
+const (
+	scheduleNotificationFailure = "Could not schedule notification"
+	createNotificationFailure   = "Could not create notification"
+)
+
 type adminNotificationIn struct {
 	UserID      string `json:"user_id"`
 	Type        string `json:"type"`
@@ -41,12 +46,12 @@ func (a *app) createAdminNotification(w http.ResponseWriter, r *http.Request, _ 
 		id := httpx.NewID()
 		tx, err := a.db.BeginTx(r.Context(), nil)
 		if err != nil {
-			httpx.Fail(w, r, 500, "TX_FAILED", "Could not schedule notification")
+			httpx.Fail(w, r, 500, "TX_FAILED", scheduleNotificationFailure)
 			return
 		}
 		defer tx.Rollback()
 		if _, err = tx.ExecContext(r.Context(), `INSERT INTO scheduled_notifications(id,user_id,type,title,message,deep_link,scheduled_at) VALUES(?,?,?,?,?,?,?)`, id, database.NullString(in.UserID), in.Type, in.Title, in.Message, database.NullString(in.DeepLink), t.UTC()); err != nil {
-			httpx.Fail(w, r, 500, "SAVE_FAILED", "Could not schedule notification")
+			httpx.Fail(w, r, 500, "SAVE_FAILED", scheduleNotificationFailure)
 			return
 		}
 		after := map[string]any{"user_id": strings.TrimSpace(in.UserID), "type": in.Type, "title": strings.TrimSpace(in.Title), "scheduled_at": t.UTC()}
@@ -55,7 +60,7 @@ func (a *app) createAdminNotification(w http.ResponseWriter, r *http.Request, _ 
 			return
 		}
 		if err = tx.Commit(); err != nil {
-			httpx.Fail(w, r, 500, "COMMIT_FAILED", "Could not schedule notification")
+			httpx.Fail(w, r, 500, "COMMIT_FAILED", scheduleNotificationFailure)
 			return
 		}
 		httpx.JSON(w, 201, map[string]any{"id": id, "status": "SCHEDULED"})
@@ -64,12 +69,12 @@ func (a *app) createAdminNotification(w http.ResponseWriter, r *http.Request, _ 
 	id := httpx.NewID()
 	tx, err := a.db.BeginTx(r.Context(), nil)
 	if err != nil {
-		httpx.Fail(w, r, 500, "TX_FAILED", "Could not create notification")
+		httpx.Fail(w, r, 500, "TX_FAILED", createNotificationFailure)
 		return
 	}
 	defer tx.Rollback()
 	if _, err = tx.ExecContext(r.Context(), `INSERT INTO notifications(id,user_id,type,title,message,deep_link) VALUES(?,?,?,?,?,?)`, id, database.NullString(in.UserID), in.Type, in.Title, in.Message, database.NullString(in.DeepLink)); err != nil {
-		httpx.Fail(w, r, 500, "SAVE_FAILED", "Could not create notification")
+		httpx.Fail(w, r, 500, "SAVE_FAILED", createNotificationFailure)
 		return
 	}
 	after := map[string]any{"user_id": strings.TrimSpace(in.UserID), "type": in.Type, "title": strings.TrimSpace(in.Title), "delivery": "QUEUED"}
@@ -78,7 +83,7 @@ func (a *app) createAdminNotification(w http.ResponseWriter, r *http.Request, _ 
 		return
 	}
 	if err = tx.Commit(); err != nil {
-		httpx.Fail(w, r, 500, "COMMIT_FAILED", "Could not create notification")
+		httpx.Fail(w, r, 500, "COMMIT_FAILED", createNotificationFailure)
 		return
 	}
 	httpx.JSON(w, 201, map[string]any{"id": id, "delivery": "QUEUED"})

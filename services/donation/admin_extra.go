@@ -12,6 +12,8 @@ import (
 	"github.com/zabisa/platform/packages/go/platform/httpx"
 )
 
+const createCampaignUpdateFailure = "Could not create campaign update"
+
 type campaignUpdateIn struct {
 	Title string `json:"title"`
 	Body  string `json:"body"`
@@ -101,7 +103,7 @@ func (a *app) createCampaignUpdate(w http.ResponseWriter, r *http.Request, p map
 	id := httpx.NewID()
 	tx, err := a.db.BeginTx(r.Context(), nil)
 	if err != nil {
-		httpx.Fail(w, r, 500, "TX_FAILED", "Could not create campaign update")
+		httpx.Fail(w, r, 500, "TX_FAILED", createCampaignUpdateFailure)
 		return
 	}
 	defer tx.Rollback()
@@ -111,7 +113,7 @@ func (a *app) createCampaignUpdate(w http.ResponseWriter, r *http.Request, p map
 		return
 	}
 	if _, err = tx.ExecContext(r.Context(), `INSERT INTO campaign_updates(id,campaign_id,title,body) VALUES(?,?,?,?)`, id, p["id"], in.Title, in.Body); err != nil {
-		httpx.Fail(w, r, 500, "SAVE_FAILED", "Could not create campaign update")
+		httpx.Fail(w, r, 500, "SAVE_FAILED", createCampaignUpdateFailure)
 		return
 	}
 	after := map[string]any{"campaign_id": p["id"], "title": in.Title}
@@ -120,7 +122,7 @@ func (a *app) createCampaignUpdate(w http.ResponseWriter, r *http.Request, p map
 		return
 	}
 	if err = tx.Commit(); err != nil {
-		httpx.Fail(w, r, 500, "COMMIT_FAILED", "Could not create campaign update")
+		httpx.Fail(w, r, 500, "COMMIT_FAILED", createCampaignUpdateFailure)
 		return
 	}
 	httpx.JSON(w, 201, map[string]string{"id": id})

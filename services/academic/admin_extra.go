@@ -11,6 +11,8 @@ import (
 	"github.com/zabisa/platform/packages/go/platform/httpx"
 )
 
+const createReportFailure = "Could not create report"
+
 type reportIn struct {
 	StudentID    string `json:"student_id"`
 	AcademicYear string `json:"academic_year"`
@@ -57,12 +59,12 @@ func (a *app) createReport(w http.ResponseWriter, r *http.Request, _ map[string]
 	id := httpx.NewID()
 	tx, err := a.db.BeginTx(r.Context(), nil)
 	if err != nil {
-		httpx.Fail(w, r, 500, "TX_FAILED", "Could not create report")
+		httpx.Fail(w, r, 500, "TX_FAILED", createReportFailure)
 		return
 	}
 	defer tx.Rollback()
 	if _, err = tx.ExecContext(r.Context(), `INSERT INTO reports(id,student_id,academic_year,semester,report_type) VALUES(?,?,?,?,?)`, id, in.StudentID, in.AcademicYear, in.Semester, in.ReportType); err != nil {
-		httpx.Fail(w, r, 500, "SAVE_FAILED", "Could not create report")
+		httpx.Fail(w, r, 500, "SAVE_FAILED", createReportFailure)
 		return
 	}
 	after := map[string]any{"student_id": in.StudentID, "academic_year": in.AcademicYear, "semester": in.Semester, "report_type": in.ReportType, "status": "DRAFT"}
@@ -71,7 +73,7 @@ func (a *app) createReport(w http.ResponseWriter, r *http.Request, _ map[string]
 		return
 	}
 	if err = tx.Commit(); err != nil {
-		httpx.Fail(w, r, 500, "COMMIT_FAILED", "Could not create report")
+		httpx.Fail(w, r, 500, "COMMIT_FAILED", createReportFailure)
 		return
 	}
 	httpx.JSON(w, 201, map[string]any{"id": id, "status": "DRAFT"})

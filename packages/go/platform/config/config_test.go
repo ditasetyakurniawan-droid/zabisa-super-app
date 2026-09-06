@@ -95,3 +95,36 @@ func TestEnvUsesTrimmedValueAndFallback(t *testing.T) {
 		t.Fatalf("Env fallback = %q", got)
 	}
 }
+
+func TestRuntimeValidationBranches(t *testing.T) {
+	validSecrets := Config{Mode: ModeServe, JWTKey: strings.Repeat("j", 24), InternalServiceKey: strings.Repeat("i", 24)}
+	if errs := validSecrets.validateMode(); len(errs) != 0 {
+		t.Fatalf("valid mode errors = %v", errs)
+	}
+	if errs := (Config{Mode: "invalid"}).validateMode(); len(errs) != 1 {
+		t.Fatalf("invalid mode errors = %v", errs)
+	}
+	if errs := validSecrets.validateAuthSecrets(); len(errs) != 0 {
+		t.Fatalf("valid auth errors = %v", errs)
+	}
+	if errs := (Config{}).validateAuthSecrets(); len(errs) != 2 {
+		t.Fatalf("invalid auth errors = %v", errs)
+	}
+
+	validDatabase := Config{Environment: "local", MySQLUser: "user", MySQLPassword: "password", MySQLTLSMode: MySQLTLSDisabled}
+	if errs := validDatabase.validateDatabase(); len(errs) != 0 {
+		t.Fatalf("valid local database errors = %v", errs)
+	}
+	if errs := (Config{Environment: "dt", MySQLTLSMode: "invalid"}).validateDatabase(); len(errs) < 3 {
+		t.Fatalf("invalid database errors = %v", errs)
+	}
+	if errs := (Config{Environment: "dt", MySQLUser: "user", MySQLPassword: "password", MySQLTLSMode: MySQLTLSVerifyIdentity}).validateDatabase(); len(errs) != 2 {
+		t.Fatalf("verify identity errors = %v", errs)
+	}
+	if errs := (Config{Environment: "dt", MySQLUser: "user", MySQLPassword: "password", MySQLTLSMode: MySQLTLSVerifyCA, MySQLTLSCAFile: filepath.Join(t.TempDir(), "missing")}).validateDatabase(); len(errs) != 1 {
+		t.Fatalf("missing CA errors = %v", errs)
+	}
+	if errs := (Config{Environment: "dt", MySQLUser: "user", MySQLPassword: "password", MySQLTLSMode: MySQLTLSVerifyCA, MySQLTLSCAFile: t.TempDir()}).validateDatabase(); len(errs) != 1 {
+		t.Fatalf("directory CA errors = %v", errs)
+	}
+}

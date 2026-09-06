@@ -18,6 +18,11 @@ import (
 	"github.com/zabisa/platform/packages/go/platform/router"
 )
 
+const (
+	createUserFailure   = "Could not create user"
+	updateAccessFailure = "Could not update access"
+)
+
 type createUserIn struct {
 	Email       string `json:"email"`
 	Phone       string `json:"phone"`
@@ -28,6 +33,15 @@ type createUserIn struct {
 type updateUserAccessIn struct {
 	Role   string `json:"role"`
 	Status string `json:"status"`
+}
+
+type auditChange struct {
+	Actor      string
+	Action     string
+	Resource   string
+	ResourceID string
+	Before     any
+	After      any
 }
 
 func (a *app) claims(r *http.Request) (auth.Claims, error) {
@@ -187,7 +201,7 @@ func (a *app) createUser(w http.ResponseWriter, r *http.Request, _ map[string]st
 	id := httpx.NewID()
 	tx, err := a.db.BeginTx(r.Context(), nil)
 	if err != nil {
-		httpx.Fail(w, r, http.StatusInternalServerError, "TX_FAILED", "Could not create user")
+		httpx.Fail(w, r, http.StatusInternalServerError, "TX_FAILED", createUserFailure)
 		return
 	}
 	defer tx.Rollback()
@@ -198,15 +212,15 @@ func (a *app) createUser(w http.ResponseWriter, r *http.Request, _ map[string]st
 			httpx.Fail(w, r, http.StatusConflict, "EMAIL_EXISTS", "Email sudah terdaftar")
 			return
 		}
-		httpx.Fail(w, r, http.StatusInternalServerError, "CREATE_FAILED", "Could not create user")
+		httpx.Fail(w, r, http.StatusInternalServerError, "CREATE_FAILED", createUserFailure)
 		return
 	}
-	if err = a.writeAuditTx(r, tx, actor.Sub, "USER_CREATED", "user", id, nil, map[string]any{"email": in.Email, "display_name": in.DisplayName, "role": in.Role, "status": "ACTIVE"}); err != nil {
+	if err = a.writeAuditTx(r, tx, auditChange{Actor: actor.Sub, Action: "USER_CREATED", Resource: "user", ResourceID: id, After: map[string]any{"email": in.Email, "display_name": in.DisplayName, "role": in.Role, "status": "ACTIVE"}}); err != nil {
 		httpx.Fail(w, r, http.StatusInternalServerError, "AUDIT_WRITE_FAILED", "Could not create user audit")
 		return
 	}
 	if err = tx.Commit(); err != nil {
-		httpx.Fail(w, r, http.StatusInternalServerError, "COMMIT_FAILED", "Could not create user")
+		httpx.Fail(w, r, http.StatusInternalServerError, "COMMIT_FAILED", createUserFailure)
 		return
 	}
 	httpx.JSON(w, http.StatusCreated, map[string]string{"id": id})
@@ -258,12 +272,12 @@ func (a *app) updateUserAccess(w http.ResponseWriter, r *http.Request, p map[str
 	}
 	tx, err := a.db.BeginTx(r.Context(), nil)
 	if err != nil {
-		httpx.Fail(w, r, http.StatusInternalServerError, "TX_FAILED", "Could not update access")
+		httpx.Fail(w, r, http.StatusInternalServerError, "TX_FAILED", updateAccessFailure)
 		return
 	}
 	defer tx.Rollback()
 	if _, err = tx.ExecContext(r.Context(), `UPDATE users SET role=?,status=? WHERE id=?`, in.Role, in.Status, p["id"]); err != nil {
-		httpx.Fail(w, r, http.StatusInternalServerError, "UPDATE_FAILED", "Could not update access")
+		httpx.Fail(w, r, http.StatusInternalServerError, "UPDATE_FAILED", updateAccessFailure)
 		return
 	}
 	// Security invariant: any role/status change revokes all existing target sessions.
@@ -271,12 +285,12 @@ func (a *app) updateUserAccess(w http.ResponseWriter, r *http.Request, p map[str
 		httpx.Fail(w, r, http.StatusInternalServerError, "SESSION_REVOKE_FAILED", "Could not revoke existing sessions")
 		return
 	}
-	if err = a.writeAuditTx(r, tx, actor.Sub, "USER_ACCESS_CHANGED", "user", p["id"], map[string]any{"role": beforeRole, "status": beforeStatus}, map[string]any{"role": in.Role, "status": in.Status}); err != nil {
+	if err = a.writeAuditTx(r, tx, auditChange{Actor: actor.Sub, Action: "USER_ACCESS_CHANGED", Resource: "user", ResourceID: p["id"], Before: map[string]any{"role": beforeRole, "status": beforeStatus}, After: map[string]any{"role": in.Role, "status": in.Status}}); err != nil {
 		httpx.Fail(w, r, http.StatusInternalServerError, "AUDIT_WRITE_FAILED", "Could not audit access change")
 		return
 	}
 	if err = tx.Commit(); err != nil {
-		httpx.Fail(w, r, http.StatusInternalServerError, "COMMIT_FAILED", "Could not update access")
+		httpx.Fail(w, r, http.StatusInternalServerError, "COMMIT_FAILED", updateAccessFailure)
 		return
 	}
 	httpx.JSON(w, http.StatusOK, map[string]any{"id": p["id"], "role": in.Role, "status": in.Status, "sessions_revoked": true})
@@ -339,23 +353,23 @@ func (a *app) listAuditLogs(w http.ResponseWriter, r *http.Request, _ map[string
 	httpx.JSON(w, http.StatusOK, out)
 }
 
-func (a *app) writeAuditTx(r *http.Request, tx *sql.Tx, actor, action, resource, resourceID string, before, after any) error {
+func (a *app) writeAuditTx(r *http.Request, tx *sql.Tx, change auditChange) error {
 	var beforeJSON, afterJSON any
-	if before != nil {
-		if b, err := json.Marshal(before); err == nil {
+	if change.Before != nil {
+		if b, err := json.Marshal(change.Before); err == nil {
 			beforeJSON = string(b)
 		} else {
 			return err
 		}
 	}
-	if after != nil {
-		if b, err := json.Marshal(after); err == nil {
+	if change.After != nil {
+		if b, err := json.Marshal(change.After); err == nil {
 			afterJSON = string(b)
 		} else {
 			return err
 		}
 	}
-	_, err := tx.ExecContext(r.Context(), `INSERT INTO audit_logs(id,actor_id,action,resource,resource_id,source_service,before_json,after_json,ip,user_agent,request_id,trace_id) VALUES(?,?,?,?,?,?,?,?,?,?,?,?)`, httpx.NewID(), nullIfEmpty(actor), action, resource, nullIfEmpty(resourceID), "identity-service", beforeJSON, afterJSON, nullIfEmpty(clientIP(r)), nullIfEmpty(r.UserAgent()), nullIfEmpty(httpx.RequestID(r.Context())), nullIfEmpty(traceIDFromRequest(r)))
+	_, err := tx.ExecContext(r.Context(), `INSERT INTO audit_logs(id,actor_id,action,resource,resource_id,source_service,before_json,after_json,ip,user_agent,request_id,trace_id) VALUES(?,?,?,?,?,?,?,?,?,?,?,?)`, httpx.NewID(), nullIfEmpty(change.Actor), change.Action, change.Resource, nullIfEmpty(change.ResourceID), "identity-service", beforeJSON, afterJSON, nullIfEmpty(clientIP(r)), nullIfEmpty(r.UserAgent()), nullIfEmpty(httpx.RequestID(r.Context())), nullIfEmpty(traceIDFromRequest(r)))
 	return err
 }
 
