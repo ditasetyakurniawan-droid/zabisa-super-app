@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/zabisa/platform/packages/go/platform/auditx"
+	"github.com/zabisa/platform/packages/go/platform/database"
 	"github.com/zabisa/platform/packages/go/platform/httpx"
 	"github.com/zabisa/platform/packages/go/platform/outbox"
 )
@@ -36,7 +37,7 @@ func (a *app) listSubjectsAdmin(w http.ResponseWriter, r *http.Request, _ map[st
 }
 
 func (a *app) updateSubject(w http.ResponseWriter, r *http.Request, p map[string]string) {
-	actor, _ := a.claims(r)
+	actor, _ := a.access.Claims(r)
 	var in updateSubjectIn
 	if !httpx.Decode(w, r, &in) {
 		return
@@ -81,7 +82,7 @@ func (a *app) updateSubject(w http.ResponseWriter, r *http.Request, p map[string
 }
 
 func (a *app) updateGradeDraft(w http.ResponseWriter, r *http.Request, p map[string]string) {
-	actor, _ := a.claims(r)
+	actor, _ := a.access.Claims(r)
 	var in gradeIn
 	if !httpx.Decode(w, r, &in) {
 		return
@@ -111,11 +112,11 @@ func (a *app) updateGradeDraft(w http.ResponseWriter, r *http.Request, p map[str
 		httpx.Fail(w, r, 409, "IMMUTABLE", "Published grade cannot be edited")
 		return
 	}
-	if _, err = tx.ExecContext(r.Context(), `UPDATE grades SET student_id=?,subject_id=?,academic_year=?,semester=?,assessment_type=?,score=?,grade=?,teacher_note=? WHERE id=?`, in.StudentID, in.SubjectID, in.AcademicYear, in.Semester, in.AssessmentType, in.Score, n(in.Grade), n(in.TeacherNote), p["id"]); err != nil {
+	if _, err = tx.ExecContext(r.Context(), `UPDATE grades SET student_id=?,subject_id=?,academic_year=?,semester=?,assessment_type=?,score=?,grade=?,teacher_note=? WHERE id=?`, in.StudentID, in.SubjectID, in.AcademicYear, in.Semester, in.AssessmentType, in.Score, database.NullString(in.Grade), database.NullString(in.TeacherNote), p["id"]); err != nil {
 		httpx.Fail(w, r, 500, "UPDATE_FAILED", "Could not update grade draft")
 		return
 	}
-	before := map[string]any{"student_id": beforeStudent, "subject_id": beforeSubject, "academic_year": beforeYear, "semester": beforeSemester, "assessment_type": beforeType, "score": nullableFloat(beforeScore), "grade": beforeGrade.String, "published": false}
+	before := map[string]any{"student_id": beforeStudent, "subject_id": beforeSubject, "academic_year": beforeYear, "semester": beforeSemester, "assessment_type": beforeType, "score": database.NullableFloat(beforeScore), "grade": beforeGrade.String, "published": false}
 	after := map[string]any{"student_id": in.StudentID, "subject_id": in.SubjectID, "academic_year": in.AcademicYear, "semester": in.Semester, "assessment_type": in.AssessmentType, "score": in.Score, "grade": strings.TrimSpace(in.Grade), "published": false}
 	if err = auditx.Add(r.Context(), tx, auditx.FromRequest(r, actor.Sub, "GRADE_UPDATED", "grade", p["id"], before, after)); err != nil {
 		httpx.Fail(w, r, 500, "AUDIT_ENQUEUE_FAILED", "Could not audit grade update")
@@ -152,7 +153,7 @@ func (a *app) publishGrade(w http.ResponseWriter, r *http.Request, p map[string]
 		err = outbox.Add(r.Context(), tx, "GradePublished", map[string]any{"student_id": studentID, "grade_id": p["id"], "deep_link": "zabisa://guardian/students/" + studentID + "/academic/" + p["id"]})
 	}
 	if err == nil {
-		actor, _ := a.claims(r)
+		actor, _ := a.access.Claims(r)
 		err = auditx.Add(r.Context(), tx, auditx.FromRequest(r, actor.Sub, "GRADE_PUBLISHED", "grade", p["id"], map[string]any{"published": false}, map[string]any{"published": true, "student_id": studentID}))
 	}
 	if err == nil {
@@ -188,7 +189,7 @@ func (a *app) publishReportWithNotification(w http.ResponseWriter, r *http.Reque
 		err = outbox.Add(r.Context(), tx, "ReportPublished", map[string]any{"student_id": studentID, "report_id": p["id"], "deep_link": "zabisa://guardian/students/" + studentID + "/academic/" + p["id"]})
 	}
 	if err == nil {
-		actor, _ := a.claims(r)
+		actor, _ := a.access.Claims(r)
 		err = auditx.Add(r.Context(), tx, auditx.FromRequest(r, actor.Sub, "REPORT_PUBLISHED", "report", p["id"], map[string]any{"status": status}, map[string]any{"status": "PUBLISHED", "student_id": studentID}))
 	}
 	if err == nil {

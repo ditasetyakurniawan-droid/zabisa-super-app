@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/zabisa/platform/packages/go/platform/auditx"
+	"github.com/zabisa/platform/packages/go/platform/database"
 	"github.com/zabisa/platform/packages/go/platform/httpx"
 )
 
@@ -63,14 +64,14 @@ func (a *app) listGuardianLinksAdmin(w http.ResponseWriter, r *http.Request, _ m
 		var approvedAt sql.NullTime
 		var created time.Time
 		if rows.Scan(&id, &gid, &sid, &no, &name, &rel, &status, &approvedBy, &approvedAt, &created) == nil {
-			out = append(out, map[string]any{"id": id, "guardian_user_id": gid, "student_id": sid, "student_no": no, "student_name": name, "relationship": rel, "status": status, "approved_by": approvedBy.String, "approved_at": nullableTime(approvedAt), "created_at": created})
+			out = append(out, map[string]any{"id": id, "guardian_user_id": gid, "student_id": sid, "student_no": no, "student_name": name, "relationship": rel, "status": status, "approved_by": approvedBy.String, "approved_at": database.NullableTime(approvedAt), "created_at": created})
 		}
 	}
 	httpx.JSON(w, 200, out)
 }
 
 func (a *app) createGuardianLinkAdmin(w http.ResponseWriter, r *http.Request, _ map[string]string) {
-	actor, _ := a.claims(r)
+	actor, _ := a.access.Claims(r)
 	var in adminLinkIn
 	if !httpx.Decode(w, r, &in) {
 		return
@@ -170,11 +171,4 @@ func (a *app) listAttendanceAdmin(w http.ResponseWriter, r *http.Request, _ map[
 		}
 	}
 	httpx.JSON(w, 200, out)
-}
-
-func nullableTime(v sql.NullTime) any {
-	if !v.Valid {
-		return nil
-	}
-	return v.Time
 }

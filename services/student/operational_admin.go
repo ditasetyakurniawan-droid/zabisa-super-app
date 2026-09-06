@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/zabisa/platform/packages/go/platform/auditx"
+	"github.com/zabisa/platform/packages/go/platform/database"
 	"github.com/zabisa/platform/packages/go/platform/httpx"
 )
 
@@ -20,7 +21,7 @@ type updateStudentIn struct {
 }
 
 func (a *app) updateStudentAdmin(w http.ResponseWriter, r *http.Request, p map[string]string) {
-	actor, _ := a.claims(r)
+	actor, _ := a.access.Claims(r)
 	var in updateStudentIn
 	if !httpx.Decode(w, r, &in) {
 		return
@@ -54,7 +55,7 @@ func (a *app) updateStudentAdmin(w http.ResponseWriter, r *http.Request, p map[s
 		httpx.Fail(w, r, 500, "QUERY_FAILED", "Could not load student")
 		return
 	}
-	if _, err = tx.ExecContext(r.Context(), `UPDATE students SET student_no=?,full_name=?,photo_url=?,class_name=?,program_name=?,academic_year=?,status=? WHERE id=?`, in.StudentNo, in.FullName, n(in.PhotoURL), n(in.ClassName), n(in.ProgramName), n(in.AcademicYear), in.Status, p["id"]); err != nil {
+	if _, err = tx.ExecContext(r.Context(), `UPDATE students SET student_no=?,full_name=?,photo_url=?,class_name=?,program_name=?,academic_year=?,status=? WHERE id=?`, in.StudentNo, in.FullName, database.NullString(in.PhotoURL), database.NullString(in.ClassName), database.NullString(in.ProgramName), database.NullString(in.AcademicYear), in.Status, p["id"]); err != nil {
 		httpx.Fail(w, r, http.StatusConflict, "UPDATE_FAILED", "Could not update student; student number may already exist")
 		return
 	}
@@ -72,7 +73,7 @@ func (a *app) updateStudentAdmin(w http.ResponseWriter, r *http.Request, p map[s
 }
 
 func (a *app) rejectGuardianLinkAdmin(w http.ResponseWriter, r *http.Request, p map[string]string) {
-	actor, _ := a.claims(r)
+	actor, _ := a.access.Claims(r)
 	tx, err := a.db.BeginTx(r.Context(), nil)
 	if err != nil {
 		httpx.Fail(w, r, 500, "TX_FAILED", "Could not update guardian link")
@@ -109,7 +110,7 @@ func (a *app) rejectGuardianLinkAdmin(w http.ResponseWriter, r *http.Request, p 
 }
 
 func (a *app) revokeGuardianLinkAdmin(w http.ResponseWriter, r *http.Request, p map[string]string) {
-	actor, _ := a.claims(r)
+	actor, _ := a.access.Claims(r)
 	tx, err := a.db.BeginTx(r.Context(), nil)
 	if err != nil {
 		httpx.Fail(w, r, 500, "TX_FAILED", "Could not update guardian link")

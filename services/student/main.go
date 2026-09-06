@@ -4,30 +4,27 @@ import (
 	"context"
 	"database/sql"
 	"embed"
+	"net/http"
+	"strings"
+	"time"
+
+	"github.com/zabisa/platform/packages/go/platform/access"
 	"github.com/zabisa/platform/packages/go/platform/auditx"
-	"github.com/zabisa/platform/packages/go/platform/auth"
 	"github.com/zabisa/platform/packages/go/platform/authz"
 	"github.com/zabisa/platform/packages/go/platform/config"
 	"github.com/zabisa/platform/packages/go/platform/database"
-	"github.com/zabisa/platform/packages/go/platform/health"
 	"github.com/zabisa/platform/packages/go/platform/httpx"
-	"github.com/zabisa/platform/packages/go/platform/migrate"
 	"github.com/zabisa/platform/packages/go/platform/outbox"
-	"github.com/zabisa/platform/packages/go/platform/router"
-	"github.com/zabisa/platform/packages/go/platform/server"
-	"log/slog"
-	"net/http"
-	"os"
-	"strings"
-	"time"
+	"github.com/zabisa/platform/packages/go/platform/service"
 )
 
 //go:embed migrations/*.sql
 var migrationFS embed.FS
 
 type app struct {
-	db  *sql.DB
-	cfg config.Config
+	db     *sql.DB
+	cfg    config.Config
+	access access.Control
 }
 type studentIn struct {
 	StudentNo    string `json:"student_no"`
@@ -50,86 +47,36 @@ type attendanceIn struct {
 }
 
 func main() {
-	cfg := config.Load("student-service", "student_db", 8083)
-	if err := cfg.ValidateRuntime(true); err != nil {
-		slog.Error("invalid config", "error", err)
-		os.Exit(1)
-	}
-	db, err := database.Open(context.Background(), cfg.DSN(), database.TLSOptions{Mode: cfg.MySQLTLSMode, CAFile: cfg.MySQLTLSCAFile, ServerName: cfg.MySQLTLSServerName})
-	if err != nil {
-		panic(err)
-	}
-	defer db.Close()
-	if cfg.ShouldMigrate() {
-		if err = migrate.Apply(context.Background(), db, migrationFS, "migrations"); err != nil {
-			panic(err)
-		}
-		if cfg.MigrateOnly() {
-			slog.Info("database migrations complete", "service", cfg.Service, "database", cfg.DBName)
-			return
-		}
-	}
-	a := &app{db, cfg}
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-	go outbox.Worker{DB: db, AuditEndpoint: envURL("AUDIT_SERVICE_URL", "http://identity:8081/internal/v1/audit-events"), InternalKey: cfg.InternalServiceKey, Service: cfg.Service}.Run(ctx)
+	service.MustRun(service.Options{Name: "student-service", Database: "student_db", Port: 8083, Migrations: migrationFS, Build: buildService})
+}
+
+func buildService(ctx context.Context, db *sql.DB, cfg config.Config) (http.Handler, error) {
+	a := &app{db: db, cfg: cfg, access: access.Control{JWTKey: cfg.JWTKey, InternalKey: cfg.InternalServiceKey}}
+	go outbox.Worker{DB: db, AuditEndpoint: config.Env("AUDIT_SERVICE_URL", "http://identity:8081/internal/v1/audit-events"), InternalKey: cfg.InternalServiceKey, Service: cfg.Service}.Run(ctx)
 	if cfg.Environment == "local" {
-		if err = a.seedLocal(context.Background()); err != nil {
-			slog.Error("seed", "error", err)
-			os.Exit(1)
+		if err := a.seedLocal(ctx); err != nil {
+			return nil, err
 		}
 	}
-	rt := router.New()
-	rt.Handle("GET", "/health/live", health.Live)
-	rt.Handle("GET", "/health/ready", health.Ready(db))
-	rt.Handle("POST", "/api/v1/admin/students", a.requirePermission(authz.StudentsWrite, a.createStudent))
-	rt.Handle("GET", "/api/v1/admin/students", a.requirePermission(authz.StudentsRead, a.listStudentsAdmin))
-	rt.Handle("PATCH", "/api/v1/admin/students/{id}", a.requirePermission(authz.StudentsWrite, a.updateStudentAdmin))
-	rt.Handle("GET", "/api/v1/admin/guardian-links", a.requirePermission(authz.GuardiansRead, a.listGuardianLinksAdmin))
-	rt.Handle("POST", "/api/v1/admin/guardian-links", a.requirePermission(authz.GuardiansWrite, a.createGuardianLinkAdmin))
-	rt.Handle("GET", "/api/v1/admin/attendance", a.requirePermission(authz.AttendanceRead, a.listAttendanceAdmin))
-	rt.Handle("POST", "/api/v1/guardian/links", a.authed(a.requestLink))
-	rt.Handle("PATCH", "/api/v1/admin/guardian-links/{id}/approve", a.requirePermission(authz.GuardiansWrite, a.approveLink))
-	rt.Handle("PATCH", "/api/v1/admin/guardian-links/{id}/reject", a.requirePermission(authz.GuardiansWrite, a.rejectGuardianLinkAdmin))
-	rt.Handle("PATCH", "/api/v1/admin/guardian-links/{id}/revoke", a.requirePermission(authz.GuardiansWrite, a.revokeGuardianLinkAdmin))
-	rt.Handle("GET", "/api/v1/guardian/students", a.authed(a.guardianStudents))
-	rt.Handle("POST", "/api/v1/admin/attendance", a.requirePermission(authz.AttendanceWrite, a.recordAttendance))
-	rt.Handle("GET", "/internal/v1/students/{id}/guardians", a.internal(a.internalGuardians))
-	rt.Handle("GET", "/api/v1/guardian/students/{id}/attendance", a.authed(a.guardianAttendance))
-	if err = server.Run(cfg.Port, httpx.Middleware(cfg.Service, cfg.AllowedOrigins, rt)); err != nil {
-		slog.Error("server", "error", err)
-		os.Exit(1)
-	}
-}
-func (a *app) claims(r *http.Request) (auth.Claims, error) {
-	raw := strings.TrimSpace(strings.TrimPrefix(r.Header.Get("Authorization"), "Bearer "))
-	return auth.Verify(a.cfg.JWTKey, raw)
-}
-func (a *app) authed(h router.HandlerFunc) router.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request, p map[string]string) {
-		if _, err := a.claims(r); err != nil {
-			httpx.Fail(w, r, 401, "UNAUTHORIZED", "Authentication required")
-			return
-		}
-		h(w, r, p)
-	}
-}
-func (a *app) requirePermission(permission authz.Permission, h router.HandlerFunc) router.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request, p map[string]string) {
-		c, err := a.claims(r)
-		if err != nil {
-			httpx.Fail(w, r, 401, "UNAUTHORIZED", "Authentication required")
-			return
-		}
-		if !authz.Has(c.Role, permission) {
-			httpx.Fail(w, r, 403, "FORBIDDEN", "Insufficient permission")
-			return
-		}
-		h(w, r, p)
-	}
+	routes := service.Router(db)
+	routes.Handle("POST", "/api/v1/admin/students", a.access.RequirePermission(authz.StudentsWrite, a.createStudent))
+	routes.Handle("GET", "/api/v1/admin/students", a.access.RequirePermission(authz.StudentsRead, a.listStudentsAdmin))
+	routes.Handle("PATCH", "/api/v1/admin/students/{id}", a.access.RequirePermission(authz.StudentsWrite, a.updateStudentAdmin))
+	routes.Handle("GET", "/api/v1/admin/guardian-links", a.access.RequirePermission(authz.GuardiansRead, a.listGuardianLinksAdmin))
+	routes.Handle("POST", "/api/v1/admin/guardian-links", a.access.RequirePermission(authz.GuardiansWrite, a.createGuardianLinkAdmin))
+	routes.Handle("GET", "/api/v1/admin/attendance", a.access.RequirePermission(authz.AttendanceRead, a.listAttendanceAdmin))
+	routes.Handle("POST", "/api/v1/guardian/links", a.access.Authenticated(a.requestLink))
+	routes.Handle("PATCH", "/api/v1/admin/guardian-links/{id}/approve", a.access.RequirePermission(authz.GuardiansWrite, a.approveLink))
+	routes.Handle("PATCH", "/api/v1/admin/guardian-links/{id}/reject", a.access.RequirePermission(authz.GuardiansWrite, a.rejectGuardianLinkAdmin))
+	routes.Handle("PATCH", "/api/v1/admin/guardian-links/{id}/revoke", a.access.RequirePermission(authz.GuardiansWrite, a.revokeGuardianLinkAdmin))
+	routes.Handle("GET", "/api/v1/guardian/students", a.access.Authenticated(a.guardianStudents))
+	routes.Handle("POST", "/api/v1/admin/attendance", a.access.RequirePermission(authz.AttendanceWrite, a.recordAttendance))
+	routes.Handle("GET", "/internal/v1/students/{id}/guardians", a.access.Internal(a.internalGuardians))
+	routes.Handle("GET", "/api/v1/guardian/students/{id}/attendance", a.access.Authenticated(a.guardianAttendance))
+	return routes, nil
 }
 func (a *app) createStudent(w http.ResponseWriter, r *http.Request, _ map[string]string) {
-	actor, _ := a.claims(r)
+	actor, _ := a.access.Claims(r)
 	var in studentIn
 	if !httpx.Decode(w, r, &in) {
 		return
@@ -159,7 +106,7 @@ func (a *app) createStudent(w http.ResponseWriter, r *http.Request, _ map[string
 		return
 	}
 	defer tx.Rollback()
-	if _, err = tx.ExecContext(r.Context(), `INSERT INTO students(id,student_no,full_name,photo_url,class_name,program_name,academic_year,status) VALUES(?,?,?,?,?,?,?,?)`, id, in.StudentNo, in.FullName, n(in.PhotoURL), n(in.ClassName), n(in.ProgramName), n(in.AcademicYear), in.Status); err != nil {
+	if _, err = tx.ExecContext(r.Context(), `INSERT INTO students(id,student_no,full_name,photo_url,class_name,program_name,academic_year,status) VALUES(?,?,?,?,?,?,?,?)`, id, in.StudentNo, in.FullName, database.NullString(in.PhotoURL), database.NullString(in.ClassName), database.NullString(in.ProgramName), database.NullString(in.AcademicYear), in.Status); err != nil {
 		httpx.Fail(w, r, 409, "STUDENT_CREATE_CONFLICT", "Nomor santri sudah digunakan atau data tidak dapat disimpan")
 		return
 	}
@@ -175,7 +122,7 @@ func (a *app) createStudent(w http.ResponseWriter, r *http.Request, _ map[string
 	httpx.JSON(w, 201, map[string]string{"id": id})
 }
 func (a *app) requestLink(w http.ResponseWriter, r *http.Request, _ map[string]string) {
-	c, _ := a.claims(r)
+	c, _ := a.access.Claims(r)
 	if c.Role != "GUARDIAN" && c.Role != "WALI_SANTRI" {
 		httpx.Fail(w, r, 403, "FORBIDDEN", "Only guardian accounts can request student linking")
 		return
@@ -249,7 +196,7 @@ func (a *app) requestLink(w http.ResponseWriter, r *http.Request, _ map[string]s
 	httpx.JSON(w, 201, map[string]any{"id": id, "status": "PENDING", "re_requested": before != nil})
 }
 func (a *app) approveLink(w http.ResponseWriter, r *http.Request, p map[string]string) {
-	actor, _ := a.claims(r)
+	actor, _ := a.access.Claims(r)
 	tx, err := a.db.BeginTx(r.Context(), nil)
 	if err != nil {
 		httpx.Fail(w, r, 500, "TX_FAILED", "Could not approve link")
@@ -285,7 +232,7 @@ func (a *app) approveLink(w http.ResponseWriter, r *http.Request, p map[string]s
 	httpx.JSON(w, 200, map[string]string{"status": "APPROVED"})
 }
 func (a *app) guardianStudents(w http.ResponseWriter, r *http.Request, _ map[string]string) {
-	c, _ := a.claims(r)
+	c, _ := a.access.Claims(r)
 	rows, err := a.db.QueryContext(r.Context(), `SELECT s.id,s.student_no,s.full_name,s.class_name,s.program_name,s.academic_year,s.status FROM guardian_relationships g JOIN students s ON s.id=g.student_id WHERE g.guardian_user_id=? AND g.status='APPROVED' ORDER BY s.full_name`, c.Sub)
 	if err != nil {
 		httpx.Fail(w, r, 500, "QUERY_FAILED", "Could not load students")
@@ -303,7 +250,7 @@ func (a *app) guardianStudents(w http.ResponseWriter, r *http.Request, _ map[str
 	httpx.JSON(w, 200, out)
 }
 func (a *app) recordAttendance(w http.ResponseWriter, r *http.Request, _ map[string]string) {
-	c, _ := a.claims(r)
+	c, _ := a.access.Claims(r)
 	var in attendanceIn
 	if !httpx.Decode(w, r, &in) {
 		return
@@ -337,7 +284,7 @@ func (a *app) recordAttendance(w http.ResponseWriter, r *http.Request, _ map[str
 		httpx.Fail(w, r, 500, "QUERY_FAILED", "Could not load attendance state")
 		return
 	}
-	if _, err = tx.ExecContext(r.Context(), `INSERT INTO attendance(id,student_id,attendance_date,status,note,recorded_by) VALUES(?,?,?,?,?,?) ON DUPLICATE KEY UPDATE status=VALUES(status),note=VALUES(note),recorded_by=VALUES(recorded_by)`, id, in.StudentID, d, in.Status, n(in.Note), c.Sub); err != nil {
+	if _, err = tx.ExecContext(r.Context(), `INSERT INTO attendance(id,student_id,attendance_date,status,note,recorded_by) VALUES(?,?,?,?,?,?) ON DUPLICATE KEY UPDATE status=VALUES(status),note=VALUES(note),recorded_by=VALUES(recorded_by)`, id, in.StudentID, d, in.Status, database.NullString(in.Note), c.Sub); err != nil {
 		httpx.Fail(w, r, 500, "SAVE_FAILED", "Could not save attendance")
 		return
 	}
@@ -357,7 +304,7 @@ func (a *app) recordAttendance(w http.ResponseWriter, r *http.Request, _ map[str
 	httpx.JSON(w, 200, map[string]string{"id": id, "status": "SAVED"})
 }
 func (a *app) guardianAttendance(w http.ResponseWriter, r *http.Request, p map[string]string) {
-	c, _ := a.claims(r)
+	c, _ := a.access.Claims(r)
 	var ok int
 	if err := a.db.QueryRowContext(r.Context(), `SELECT COUNT(*) FROM guardian_relationships WHERE guardian_user_id=? AND student_id=? AND status='APPROVED'`, c.Sub, p["id"]).Scan(&ok); err != nil || ok == 0 {
 		httpx.Fail(w, r, 403, "FORBIDDEN", "Student is not linked to this guardian")
@@ -380,23 +327,6 @@ func (a *app) guardianAttendance(w http.ResponseWriter, r *http.Request, p map[s
 	}
 	httpx.JSON(w, 200, out)
 }
-func n(v string) any {
-	if strings.TrimSpace(v) == "" {
-		return nil
-	}
-	return strings.TrimSpace(v)
-}
-
-func (a *app) internal(h router.HandlerFunc) router.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request, p map[string]string) {
-		if a.cfg.InternalServiceKey == "" || r.Header.Get("X-Internal-Key") != a.cfg.InternalServiceKey {
-			httpx.Fail(w, r, http.StatusForbidden, "FORBIDDEN", "Invalid service credential")
-			return
-		}
-		h(w, r, p)
-	}
-}
-
 func (a *app) internalGuardians(w http.ResponseWriter, r *http.Request, p map[string]string) {
 	rows, err := a.db.QueryContext(r.Context(), `SELECT guardian_user_id FROM guardian_relationships WHERE student_id=? AND status='APPROVED'`, p["id"])
 	if err != nil {
@@ -412,11 +342,4 @@ func (a *app) internalGuardians(w http.ResponseWriter, r *http.Request, p map[st
 		}
 	}
 	httpx.JSON(w, 200, map[string]any{"guardian_user_ids": ids})
-}
-
-func envURL(key, fallback string) string {
-	if v := strings.TrimSpace(os.Getenv(key)); v != "" {
-		return v
-	}
-	return fallback
 }

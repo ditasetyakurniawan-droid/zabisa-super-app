@@ -4,35 +4,27 @@ import (
 	"context"
 	"database/sql"
 	"embed"
+	"net/http"
+	"strings"
+	"time"
+
+	"github.com/zabisa/platform/packages/go/platform/access"
 	"github.com/zabisa/platform/packages/go/platform/auditx"
-	"github.com/zabisa/platform/packages/go/platform/auth"
 	"github.com/zabisa/platform/packages/go/platform/authz"
 	"github.com/zabisa/platform/packages/go/platform/config"
 	"github.com/zabisa/platform/packages/go/platform/database"
-	"github.com/zabisa/platform/packages/go/platform/health"
 	"github.com/zabisa/platform/packages/go/platform/httpx"
-	"github.com/zabisa/platform/packages/go/platform/migrate"
 	"github.com/zabisa/platform/packages/go/platform/outbox"
-	"github.com/zabisa/platform/packages/go/platform/router"
-	"github.com/zabisa/platform/packages/go/platform/server"
-	"log/slog"
-	"net/http"
-	"os"
-	"strings"
-	"time"
+	"github.com/zabisa/platform/packages/go/platform/service"
 )
 
 //go:embed migrations/*.sql
 var migrationFS embed.FS
 
 type app struct {
-	db  *sql.DB
-	cfg config.Config
-}
-
-func (a *app) claims(r *http.Request) (auth.Claims, error) {
-	raw := strings.TrimSpace(strings.TrimPrefix(r.Header.Get("Authorization"), "Bearer "))
-	return auth.Verify(a.cfg.JWTKey, raw)
+	db     *sql.DB
+	cfg    config.Config
+	access access.Control
 }
 
 type campaignIn struct {
@@ -68,72 +60,35 @@ type donationIn struct {
 }
 
 func main() {
-	cfg := config.Load("donation-service", "donation_db", 8086)
-	if err := cfg.ValidateRuntime(true); err != nil {
-		slog.Error("invalid config", "error", err)
-		os.Exit(1)
-	}
-	db, err := database.Open(context.Background(), cfg.DSN(), database.TLSOptions{Mode: cfg.MySQLTLSMode, CAFile: cfg.MySQLTLSCAFile, ServerName: cfg.MySQLTLSServerName})
-	if err != nil {
-		panic(err)
-	}
-	defer db.Close()
-	if cfg.ShouldMigrate() {
-		if err = migrate.Apply(context.Background(), db, migrationFS, "migrations"); err != nil {
-			panic(err)
-		}
-		if cfg.MigrateOnly() {
-			slog.Info("database migrations complete", "service", cfg.Service, "database", cfg.DBName)
-			return
-		}
-	}
-	a := &app{db, cfg}
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-	go outbox.Worker{DB: db, AuditEndpoint: envURL("AUDIT_SERVICE_URL", "http://identity:8081/internal/v1/audit-events"), InternalKey: cfg.InternalServiceKey, Service: cfg.Service}.Run(ctx)
-	if cfg.Environment == "local" {
-		if err = a.seedLocal(context.Background()); err != nil {
-			slog.Error("seed", "error", err)
-			os.Exit(1)
-		}
-	}
-	rt := router.New()
-	rt.Handle("GET", "/health/live", health.Live)
-	rt.Handle("GET", "/health/ready", health.Ready(db))
-	rt.Handle("GET", "/api/v1/donation/campaigns", a.listCampaigns)
-	rt.Handle("GET", "/api/v1/donation/payment-methods", a.listPaymentMethods)
-	rt.Handle("POST", "/api/v1/admin/donation/payment-methods", a.requirePermission(authz.DonationWrite, a.createPaymentMethod))
-	rt.Handle("GET", "/api/v1/admin/donation/payment-methods", a.requirePermission(authz.DonationRead, a.listPaymentMethodsAdmin))
-	rt.Handle("PATCH", "/api/v1/admin/donation/payment-methods/{id}", a.requirePermission(authz.DonationWrite, a.updatePaymentMethod))
-	rt.Handle("POST", "/api/v1/admin/donation/campaigns", a.requirePermission(authz.DonationWrite, a.createCampaign))
-	rt.Handle("GET", "/api/v1/admin/donation/campaigns", a.requirePermission(authz.DonationRead, a.listCampaignsAdmin))
-	rt.Handle("PATCH", "/api/v1/admin/donation/campaigns/{id}", a.requirePermission(authz.DonationWrite, a.updateCampaign))
-	rt.Handle("GET", "/api/v1/admin/donations", a.requirePermission(authz.DonationRead, a.listDonationsAdmin))
-	rt.Handle("POST", "/api/v1/donations", a.createDonation)
-	rt.Handle("GET", "/api/v1/donations/history", a.listDonationHistory)
-	rt.Handle("GET", "/api/v1/donations/{id}", a.getDonation)
-	rt.Handle("GET", "/api/v1/donation/campaigns/{id}/updates", a.listCampaignUpdates)
-	rt.Handle("POST", "/api/v1/admin/donation/campaigns/{id}/updates", a.requirePermission(authz.DonationWrite, a.createCampaignUpdate))
-	rt.Handle("POST", "/api/v1/donations/{id}/proof", a.attachProof)
-	rt.Handle("PATCH", "/api/v1/admin/donations/{id}/verify", a.requirePermission(authz.DonationVerify, a.verifyDonation))
-	if err = server.Run(cfg.Port, httpx.Middleware(cfg.Service, cfg.AllowedOrigins, rt)); err != nil {
-		slog.Error("server", "error", err)
-		os.Exit(1)
-	}
+	service.MustRun(service.Options{Name: "donation-service", Database: "donation_db", Port: 8086, Migrations: migrationFS, Build: buildService})
 }
-func (a *app) requirePermission(permission authz.Permission, h router.HandlerFunc) router.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request, p map[string]string) {
-		c, err := a.claims(r)
-		if err != nil {
-			httpx.Fail(w, r, 401, "UNAUTHORIZED", "Authentication required")
-			return
+
+func buildService(ctx context.Context, db *sql.DB, cfg config.Config) (http.Handler, error) {
+	a := &app{db: db, cfg: cfg, access: access.Control{JWTKey: cfg.JWTKey, InternalKey: cfg.InternalServiceKey}}
+	go outbox.Worker{DB: db, AuditEndpoint: config.Env("AUDIT_SERVICE_URL", "http://identity:8081/internal/v1/audit-events"), InternalKey: cfg.InternalServiceKey, Service: cfg.Service}.Run(ctx)
+	if cfg.Environment == "local" {
+		if err := a.seedLocal(ctx); err != nil {
+			return nil, err
 		}
-		if !authz.Has(c.Role, permission) {
-			httpx.Fail(w, r, 403, "FORBIDDEN", "Insufficient permission")
-			return
-		}
-		h(w, r, p)
 	}
+	routes := service.Router(db)
+	routes.Handle("GET", "/api/v1/donation/campaigns", a.listCampaigns)
+	routes.Handle("GET", "/api/v1/donation/payment-methods", a.listPaymentMethods)
+	routes.Handle("POST", "/api/v1/admin/donation/payment-methods", a.access.RequirePermission(authz.DonationWrite, a.createPaymentMethod))
+	routes.Handle("GET", "/api/v1/admin/donation/payment-methods", a.access.RequirePermission(authz.DonationRead, a.listPaymentMethodsAdmin))
+	routes.Handle("PATCH", "/api/v1/admin/donation/payment-methods/{id}", a.access.RequirePermission(authz.DonationWrite, a.updatePaymentMethod))
+	routes.Handle("POST", "/api/v1/admin/donation/campaigns", a.access.RequirePermission(authz.DonationWrite, a.createCampaign))
+	routes.Handle("GET", "/api/v1/admin/donation/campaigns", a.access.RequirePermission(authz.DonationRead, a.listCampaignsAdmin))
+	routes.Handle("PATCH", "/api/v1/admin/donation/campaigns/{id}", a.access.RequirePermission(authz.DonationWrite, a.updateCampaign))
+	routes.Handle("GET", "/api/v1/admin/donations", a.access.RequirePermission(authz.DonationRead, a.listDonationsAdmin))
+	routes.Handle("POST", "/api/v1/donations", a.createDonation)
+	routes.Handle("GET", "/api/v1/donations/history", a.listDonationHistory)
+	routes.Handle("GET", "/api/v1/donations/{id}", a.getDonation)
+	routes.Handle("GET", "/api/v1/donation/campaigns/{id}/updates", a.listCampaignUpdates)
+	routes.Handle("POST", "/api/v1/admin/donation/campaigns/{id}/updates", a.access.RequirePermission(authz.DonationWrite, a.createCampaignUpdate))
+	routes.Handle("POST", "/api/v1/donations/{id}/proof", a.attachProof)
+	routes.Handle("PATCH", "/api/v1/admin/donations/{id}/verify", a.access.RequirePermission(authz.DonationVerify, a.verifyDonation))
+	return routes, nil
 }
 func (a *app) listCampaigns(w http.ResponseWriter, r *http.Request, _ map[string]string) {
 	rows, err := a.db.QueryContext(r.Context(), `SELECT id,name,slug,description,category,target_amount,collected_amount,cover_url,deadline,status FROM campaigns WHERE status='ACTIVE' ORDER BY created_at DESC LIMIT 100`)
@@ -150,14 +105,13 @@ func (a *app) listCampaigns(w http.ResponseWriter, r *http.Request, _ map[string
 		var cover sql.NullString
 		var deadline sql.NullTime
 		if rows.Scan(&id, &name, &slug, &desc, &cat, &target, &collected, &cover, &deadline, &status) == nil {
-			out = append(out, map[string]any{"id": id, "name": name, "slug": slug, "description": desc, "category": cat, "target_amount": nf(target), "collected_amount": collected, "cover_url": cover.String, "deadline": nt(deadline), "status": status})
+			out = append(out, map[string]any{"id": id, "name": name, "slug": slug, "description": desc, "category": cat, "target_amount": database.NullableFloat(target), "collected_amount": collected, "cover_url": cover.String, "deadline": database.NullableTime(deadline), "status": status})
 		}
 	}
 	httpx.JSON(w, 200, out)
 }
 func (a *app) createCampaign(w http.ResponseWriter, r *http.Request, _ map[string]string) {
-	raw := strings.TrimSpace(strings.TrimPrefix(r.Header.Get("Authorization"), "Bearer "))
-	actor, _ := auth.Verify(a.cfg.JWTKey, raw)
+	actor, _ := a.access.Claims(r)
 	var in campaignIn
 	if !httpx.Decode(w, r, &in) {
 		return
@@ -173,7 +127,7 @@ func (a *app) createCampaign(w http.ResponseWriter, r *http.Request, _ map[strin
 		return
 	}
 	defer tx.Rollback()
-	if _, err = tx.ExecContext(r.Context(), `INSERT INTO campaigns(id,name,slug,description,category,target_amount,cover_url,deadline) VALUES(?,?,?,?,?,?,?,?)`, id, in.Name, in.Slug, in.Description, in.Category, in.TargetAmount, n(in.CoverURL), in.Deadline); err != nil {
+	if _, err = tx.ExecContext(r.Context(), `INSERT INTO campaigns(id,name,slug,description,category,target_amount,cover_url,deadline) VALUES(?,?,?,?,?,?,?,?)`, id, in.Name, in.Slug, in.Description, in.Category, in.TargetAmount, database.NullString(in.CoverURL), in.Deadline); err != nil {
 		httpx.Fail(w, r, 409, "CREATE_FAILED", "Could not create campaign")
 		return
 	}
@@ -216,11 +170,11 @@ func (a *app) createDonation(w http.ResponseWriter, r *http.Request, _ map[strin
 	id := httpx.NewID()
 	var donorUserID any
 	if raw := strings.TrimSpace(strings.TrimPrefix(r.Header.Get("Authorization"), "Bearer ")); raw != "" {
-		if c, verifyErr := auth.Verify(a.cfg.JWTKey, raw); verifyErr == nil {
+		if c, verifyErr := a.access.Claims(r); verifyErr == nil {
 			donorUserID = c.Sub
 		}
 	}
-	_, err = a.db.ExecContext(r.Context(), `INSERT INTO donations(id,campaign_id,donor_user_id,donor_name,donor_email,anonymous,message,amount,payment_method,idempotency_key) VALUES(?,?,?,?,?,?,?,?,?,?)`, id, in.CampaignID, donorUserID, n(in.DonorName), n(in.DonorEmail), in.Anonymous, n(in.Message), in.Amount, in.PaymentMethod, key)
+	_, err = a.db.ExecContext(r.Context(), `INSERT INTO donations(id,campaign_id,donor_user_id,donor_name,donor_email,anonymous,message,amount,payment_method,idempotency_key) VALUES(?,?,?,?,?,?,?,?,?,?)`, id, in.CampaignID, donorUserID, database.NullString(in.DonorName), database.NullString(in.DonorEmail), in.Anonymous, database.NullString(in.Message), in.Amount, in.PaymentMethod, key)
 	if err != nil {
 		httpx.Fail(w, r, 409, "CREATE_FAILED", "Could not create donation")
 		return
@@ -272,8 +226,7 @@ func (a *app) verifyDonation(w http.ResponseWriter, r *http.Request, p map[strin
 		httpx.Fail(w, r, 500, "UPDATE_FAILED", "Could not update campaign")
 		return
 	}
-	raw := strings.TrimSpace(strings.TrimPrefix(r.Header.Get("Authorization"), "Bearer "))
-	actor, _ := auth.Verify(a.cfg.JWTKey, raw)
+	actor, _ := a.access.Claims(r)
 	if err = auditx.Add(r.Context(), tx, auditx.FromRequest(r, actor.Sub, "PAYMENT_VERIFIED", "donation", p["id"], map[string]any{"status": status, "campaign_id": campaign, "amount": amount}, map[string]any{"status": "PAID", "campaign_id": campaign, "amount": amount})); err != nil {
 		httpx.Fail(w, r, 500, "AUDIT_ENQUEUE_FAILED", "Could not audit payment verification")
 		return
@@ -284,25 +237,6 @@ func (a *app) verifyDonation(w http.ResponseWriter, r *http.Request, p map[strin
 	}
 	httpx.JSON(w, 200, map[string]string{"status": "PAID"})
 }
-func n(v string) any {
-	if strings.TrimSpace(v) == "" {
-		return nil
-	}
-	return strings.TrimSpace(v)
-}
-func nf(v sql.NullFloat64) any {
-	if !v.Valid {
-		return nil
-	}
-	return v.Float64
-}
-func nt(v sql.NullTime) any {
-	if !v.Valid {
-		return nil
-	}
-	return v.Time
-}
-
 func (a *app) listPaymentMethods(w http.ResponseWriter, r *http.Request, _ map[string]string) {
 	rows, err := a.db.QueryContext(r.Context(), `SELECT method_code,display_name,bank_name,account_number,account_holder,instructions FROM payment_accounts WHERE active=TRUE ORDER BY display_name`)
 	if err != nil {
@@ -321,8 +255,7 @@ func (a *app) listPaymentMethods(w http.ResponseWriter, r *http.Request, _ map[s
 	httpx.JSON(w, 200, out)
 }
 func (a *app) createPaymentMethod(w http.ResponseWriter, r *http.Request, _ map[string]string) {
-	raw := strings.TrimSpace(strings.TrimPrefix(r.Header.Get("Authorization"), "Bearer "))
-	actor, _ := auth.Verify(a.cfg.JWTKey, raw)
+	actor, _ := a.access.Claims(r)
 	var in paymentAccountIn
 	if !httpx.Decode(w, r, &in) {
 		return
@@ -340,7 +273,7 @@ func (a *app) createPaymentMethod(w http.ResponseWriter, r *http.Request, _ map[
 		return
 	}
 	defer tx.Rollback()
-	if _, err = tx.ExecContext(r.Context(), `INSERT INTO payment_accounts(id,method_code,display_name,bank_name,account_number,account_holder,instructions) VALUES(?,?,?,?,?,?,?)`, id, in.MethodCode, in.DisplayName, n(in.BankName), n(in.AccountNumber), n(in.AccountHolder), n(in.Instructions)); err != nil {
+	if _, err = tx.ExecContext(r.Context(), `INSERT INTO payment_accounts(id,method_code,display_name,bank_name,account_number,account_holder,instructions) VALUES(?,?,?,?,?,?,?)`, id, in.MethodCode, in.DisplayName, database.NullString(in.BankName), database.NullString(in.AccountNumber), database.NullString(in.AccountHolder), database.NullString(in.Instructions)); err != nil {
 		httpx.Fail(w, r, 409, "CREATE_FAILED", "Could not create payment method")
 		return
 	}
@@ -379,11 +312,4 @@ func (a *app) attachProof(w http.ResponseWriter, r *http.Request, p map[string]s
 		return
 	}
 	httpx.JSON(w, 201, map[string]string{"id": id, "status": "PENDING"})
-}
-
-func envURL(key, fallback string) string {
-	if v := strings.TrimSpace(os.Getenv(key)); v != "" {
-		return v
-	}
-	return fallback
 }

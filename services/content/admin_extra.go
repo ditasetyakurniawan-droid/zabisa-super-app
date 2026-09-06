@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/zabisa/platform/packages/go/platform/auditx"
-	"github.com/zabisa/platform/packages/go/platform/auth"
+	"github.com/zabisa/platform/packages/go/platform/database"
 	"github.com/zabisa/platform/packages/go/platform/httpx"
 	"github.com/zabisa/platform/packages/go/platform/outbox"
 )
@@ -37,15 +37,14 @@ func (a *app) listKajianAdmin(w http.ResponseWriter, r *http.Request, _ map[stri
 		var end sql.NullTime
 		var published bool
 		if rows.Scan(&id, &title, &slug, &desc, &speaker, &start, &end, &location, &mapURL, &liveURL, &posterURL, &status, &published, &created, &updated) == nil {
-			out = append(out, map[string]any{"id": id, "title": title, "slug": slug, "description": desc, "speaker": speaker.String, "start_at": start, "end_at": nullableTime(end), "location": location.String, "map_url": mapURL.String, "live_url": liveURL.String, "poster_url": posterURL.String, "status": status, "published": published, "created_at": created, "updated_at": updated})
+			out = append(out, map[string]any{"id": id, "title": title, "slug": slug, "description": desc, "speaker": speaker.String, "start_at": start, "end_at": database.NullableTime(end), "location": location.String, "map_url": mapURL.String, "live_url": liveURL.String, "poster_url": posterURL.String, "status": status, "published": published, "created_at": created, "updated_at": updated})
 		}
 	}
 	httpx.JSON(w, 200, out)
 }
 
 func (a *app) updateKajian(w http.ResponseWriter, r *http.Request, p map[string]string) {
-	raw := strings.TrimSpace(strings.TrimPrefix(r.Header.Get("Authorization"), "Bearer "))
-	actor, _ := auth.Verify(a.cfg.JWTKey, raw)
+	actor, _ := a.access.Claims(r)
 	var in kajianIn
 	if !httpx.Decode(w, r, &in) {
 		return
@@ -94,8 +93,7 @@ func (a *app) updateKajian(w http.ResponseWriter, r *http.Request, p map[string]
 }
 
 func (a *app) createContent(w http.ResponseWriter, r *http.Request, _ map[string]string) {
-	raw := strings.TrimSpace(strings.TrimPrefix(r.Header.Get("Authorization"), "Bearer "))
-	actor, _ := auth.Verify(a.cfg.JWTKey, raw)
+	actor, _ := a.access.Claims(r)
 	var in contentIn
 	if !httpx.Decode(w, r, &in) {
 		return
@@ -138,8 +136,7 @@ func (a *app) createContent(w http.ResponseWriter, r *http.Request, _ map[string
 }
 
 func (a *app) updateContent(w http.ResponseWriter, r *http.Request, p map[string]string) {
-	raw := strings.TrimSpace(strings.TrimPrefix(r.Header.Get("Authorization"), "Bearer "))
-	actor, _ := auth.Verify(a.cfg.JWTKey, raw)
+	actor, _ := a.access.Claims(r)
 	var in contentIn
 	if !httpx.Decode(w, r, &in) {
 		return
@@ -202,7 +199,7 @@ func (a *app) listContentAdmin(w http.ResponseWriter, r *http.Request, _ map[str
 		var pub sql.NullTime
 		var created time.Time
 		if rows.Scan(&id, &t, &title, &slug, &summary, &body, &image, &published, &pub, &created) == nil {
-			out = append(out, map[string]any{"id": id, "type": t, "title": title, "slug": slug, "summary": summary.String, "body": body.String, "image_url": image.String, "published": published, "published_at": nullableTime(pub), "created_at": created})
+			out = append(out, map[string]any{"id": id, "type": t, "title": title, "slug": slug, "summary": summary.String, "body": body.String, "image_url": image.String, "published": published, "published_at": database.NullableTime(pub), "created_at": created})
 		}
 	}
 	httpx.JSON(w, 200, out)
@@ -221,5 +218,5 @@ func (a *app) getContent(w http.ResponseWriter, r *http.Request, p map[string]st
 		httpx.Fail(w, r, 500, "QUERY_FAILED", "Could not load content")
 		return
 	}
-	httpx.JSON(w, 200, map[string]any{"id": id, "type": typ, "title": title, "slug": slug, "summary": summary.String, "body": body.String, "image_url": image.String, "published_at": nullableTime(pub)})
+	httpx.JSON(w, 200, map[string]any{"id": id, "type": typ, "title": title, "slug": slug, "summary": summary.String, "body": body.String, "image_url": image.String, "published_at": database.NullableTime(pub)})
 }

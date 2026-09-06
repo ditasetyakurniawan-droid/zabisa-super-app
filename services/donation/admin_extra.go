@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"github.com/zabisa/platform/packages/go/platform/auditx"
-	"github.com/zabisa/platform/packages/go/platform/auth"
+	"github.com/zabisa/platform/packages/go/platform/database"
 	"github.com/zabisa/platform/packages/go/platform/httpx"
 )
 
@@ -33,7 +33,7 @@ func (a *app) listCampaignsAdmin(w http.ResponseWriter, r *http.Request, _ map[s
 		var deadline sql.NullTime
 		var created time.Time
 		if rows.Scan(&id, &name, &slug, &desc, &cat, &target, &collected, &cover, &deadline, &status, &created) == nil {
-			out = append(out, map[string]any{"id": id, "name": name, "slug": slug, "description": desc, "category": cat, "target_amount": nf(target), "collected_amount": collected, "cover_url": cover.String, "deadline": nt(deadline), "status": status, "created_at": created})
+			out = append(out, map[string]any{"id": id, "name": name, "slug": slug, "description": desc, "category": cat, "target_amount": database.NullableFloat(target), "collected_amount": collected, "cover_url": cover.String, "deadline": database.NullableTime(deadline), "status": status, "created_at": created})
 		}
 	}
 	httpx.JSON(w, 200, out)
@@ -63,8 +63,7 @@ func (a *app) listDonationsAdmin(w http.ResponseWriter, r *http.Request, _ map[s
 }
 
 func (a *app) listDonationHistory(w http.ResponseWriter, r *http.Request, _ map[string]string) {
-	raw := strings.TrimSpace(strings.TrimPrefix(r.Header.Get("Authorization"), "Bearer "))
-	c, err := auth.Verify(a.cfg.JWTKey, raw)
+	c, err := a.access.Claims(r)
 	if err != nil {
 		httpx.Fail(w, r, 401, "UNAUTHORIZED", "Authentication required")
 		return
@@ -88,8 +87,7 @@ func (a *app) listDonationHistory(w http.ResponseWriter, r *http.Request, _ map[
 }
 
 func (a *app) createCampaignUpdate(w http.ResponseWriter, r *http.Request, p map[string]string) {
-	raw := strings.TrimSpace(strings.TrimPrefix(r.Header.Get("Authorization"), "Bearer "))
-	actor, _ := auth.Verify(a.cfg.JWTKey, raw)
+	actor, _ := a.access.Claims(r)
 	var in campaignUpdateIn
 	if !httpx.Decode(w, r, &in) {
 		return

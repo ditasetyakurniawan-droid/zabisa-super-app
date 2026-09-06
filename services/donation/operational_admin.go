@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/zabisa/platform/packages/go/platform/auditx"
-	"github.com/zabisa/platform/packages/go/platform/auth"
+	"github.com/zabisa/platform/packages/go/platform/database"
 	"github.com/zabisa/platform/packages/go/platform/httpx"
 )
 
@@ -33,8 +33,7 @@ type updatePaymentAccountIn struct {
 }
 
 func (a *app) updateCampaign(w http.ResponseWriter, r *http.Request, p map[string]string) {
-	raw := strings.TrimSpace(strings.TrimPrefix(r.Header.Get("Authorization"), "Bearer "))
-	actor, _ := auth.Verify(a.cfg.JWTKey, raw)
+	actor, _ := a.access.Claims(r)
 	var in updateCampaignIn
 	if !httpx.Decode(w, r, &in) {
 		return
@@ -79,11 +78,11 @@ func (a *app) updateCampaign(w http.ResponseWriter, r *http.Request, p map[strin
 		httpx.Fail(w, r, 500, "QUERY_FAILED", "Could not load campaign")
 		return
 	}
-	if _, err = tx.ExecContext(r.Context(), `UPDATE campaigns SET name=?,slug=?,description=?,category=?,target_amount=?,cover_url=?,deadline=?,status=? WHERE id=?`, in.Name, in.Slug, in.Description, in.Category, in.TargetAmount, n(in.CoverURL), deadline, in.Status, p["id"]); err != nil {
+	if _, err = tx.ExecContext(r.Context(), `UPDATE campaigns SET name=?,slug=?,description=?,category=?,target_amount=?,cover_url=?,deadline=?,status=? WHERE id=?`, in.Name, in.Slug, in.Description, in.Category, in.TargetAmount, database.NullString(in.CoverURL), deadline, in.Status, p["id"]); err != nil {
 		httpx.Fail(w, r, 409, "UPDATE_FAILED", "Could not update campaign; slug may already exist")
 		return
 	}
-	before := map[string]any{"name": beforeName, "slug": beforeSlug, "category": beforeCategory, "target_amount": nf(beforeTarget), "status": beforeStatus}
+	before := map[string]any{"name": beforeName, "slug": beforeSlug, "category": beforeCategory, "target_amount": database.NullableFloat(beforeTarget), "status": beforeStatus}
 	after := map[string]any{"name": in.Name, "slug": in.Slug, "category": in.Category, "target_amount": in.TargetAmount, "status": in.Status}
 	if err = auditx.Add(r.Context(), tx, auditx.FromRequest(r, actor.Sub, "CAMPAIGN_UPDATED", "campaign", p["id"], before, after)); err != nil {
 		httpx.Fail(w, r, 500, "AUDIT_ENQUEUE_FAILED", "Could not audit campaign update")
@@ -117,7 +116,7 @@ func (a *app) listPaymentMethodsAdmin(w http.ResponseWriter, r *http.Request, _ 
 }
 
 func (a *app) updatePaymentMethod(w http.ResponseWriter, r *http.Request, p map[string]string) {
-	actor, _ := a.claims(r)
+	actor, _ := a.access.Claims(r)
 	var in updatePaymentAccountIn
 	if !httpx.Decode(w, r, &in) {
 		return
@@ -143,7 +142,7 @@ func (a *app) updatePaymentMethod(w http.ResponseWriter, r *http.Request, p map[
 		httpx.Fail(w, r, 500, "QUERY_FAILED", "Could not load payment method")
 		return
 	}
-	if _, err = tx.ExecContext(r.Context(), `UPDATE payment_accounts SET method_code=?,display_name=?,bank_name=?,account_number=?,account_holder=?,instructions=?,active=? WHERE id=?`, in.MethodCode, in.DisplayName, n(in.BankName), n(in.AccountNumber), n(in.AccountHolder), n(in.Instructions), in.Active, p["id"]); err != nil {
+	if _, err = tx.ExecContext(r.Context(), `UPDATE payment_accounts SET method_code=?,display_name=?,bank_name=?,account_number=?,account_holder=?,instructions=?,active=? WHERE id=?`, in.MethodCode, in.DisplayName, database.NullString(in.BankName), database.NullString(in.AccountNumber), database.NullString(in.AccountHolder), database.NullString(in.Instructions), in.Active, p["id"]); err != nil {
 		httpx.Fail(w, r, http.StatusConflict, "UPDATE_FAILED", "Could not update payment method; method code may already exist")
 		return
 	}

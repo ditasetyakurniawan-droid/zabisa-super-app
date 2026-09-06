@@ -4,30 +4,26 @@ import (
 	"context"
 	"database/sql"
 	"embed"
+	"net/http"
+	"time"
+
+	"github.com/zabisa/platform/packages/go/platform/access"
 	"github.com/zabisa/platform/packages/go/platform/auditx"
-	"github.com/zabisa/platform/packages/go/platform/auth"
 	"github.com/zabisa/platform/packages/go/platform/authz"
 	"github.com/zabisa/platform/packages/go/platform/config"
 	"github.com/zabisa/platform/packages/go/platform/database"
-	"github.com/zabisa/platform/packages/go/platform/health"
 	"github.com/zabisa/platform/packages/go/platform/httpx"
-	"github.com/zabisa/platform/packages/go/platform/migrate"
 	"github.com/zabisa/platform/packages/go/platform/outbox"
-	"github.com/zabisa/platform/packages/go/platform/router"
-	"github.com/zabisa/platform/packages/go/platform/server"
-	"log/slog"
-	"net/http"
-	"os"
-	"strings"
-	"time"
+	"github.com/zabisa/platform/packages/go/platform/service"
 )
 
 //go:embed migrations/*.sql
 var migrationFS embed.FS
 
 type app struct {
-	db  *sql.DB
-	cfg config.Config
+	db     *sql.DB
+	cfg    config.Config
+	access access.Control
 }
 type entryIn struct {
 	StudentID    string   `json:"student_id"`
@@ -46,71 +42,23 @@ type entryIn struct {
 }
 
 func main() {
-	cfg := config.Load("tahfidz-service", "tahfidz_db", 8084)
-	if err := cfg.ValidateRuntime(true); err != nil {
-		slog.Error("invalid config", "error", err)
-		os.Exit(1)
-	}
-	db, err := database.Open(context.Background(), cfg.DSN(), database.TLSOptions{Mode: cfg.MySQLTLSMode, CAFile: cfg.MySQLTLSCAFile, ServerName: cfg.MySQLTLSServerName})
-	if err != nil {
-		panic(err)
-	}
-	defer db.Close()
-	if cfg.ShouldMigrate() {
-		if err = migrate.Apply(context.Background(), db, migrationFS, "migrations"); err != nil {
-			panic(err)
-		}
-		if cfg.MigrateOnly() {
-			slog.Info("database migrations complete", "service", cfg.Service, "database", cfg.DBName)
-			return
-		}
-	}
-	a := &app{db, cfg}
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-	go outbox.Worker{DB: db, Endpoint: envURL("NOTIFICATION_SERVICE_URL", "http://notification:8087/internal/v1/events"), AuditEndpoint: envURL("AUDIT_SERVICE_URL", "http://identity:8081/internal/v1/audit-events"), InternalKey: cfg.InternalServiceKey, Service: cfg.Service}.Run(ctx)
-	rt := router.New()
-	rt.Handle("GET", "/health/live", health.Live)
-	rt.Handle("GET", "/health/ready", health.Ready(db))
-	rt.Handle("POST", "/api/v1/tahfidz/entries", a.requirePermission(authz.TahfidzWrite, a.createEntry))
-	rt.Handle("GET", "/api/v1/tahfidz/entries", a.requirePermission(authz.TahfidzRead, a.listEntriesAdmin))
-	rt.Handle("POST", "/api/v1/tahfidz/targets", a.requirePermission(authz.TahfidzWrite, a.createTarget))
-	rt.Handle("GET", "/api/v1/tahfidz/targets", a.requirePermission(authz.TahfidzRead, a.listTargets))
-	rt.Handle("PATCH", "/api/v1/tahfidz/targets/{id}", a.requirePermission(authz.TahfidzWrite, a.updateTarget))
-	rt.Handle("GET", "/api/v1/tahfidz/students/{id}/entries", a.studentScoped(authz.TahfidzRead, a.listEntries))
-	if err = server.Run(cfg.Port, httpx.Middleware(cfg.Service, cfg.AllowedOrigins, rt)); err != nil {
-		slog.Error("server", "error", err)
-		os.Exit(1)
-	}
+	service.MustRun(service.Options{Name: "tahfidz-service", Database: "tahfidz_db", Port: 8084, Migrations: migrationFS, Build: buildService})
 }
-func (a *app) claims(r *http.Request) (auth.Claims, error) {
-	return auth.Verify(a.cfg.JWTKey, strings.TrimSpace(strings.TrimPrefix(r.Header.Get("Authorization"), "Bearer ")))
-}
-func (a *app) authed(h router.HandlerFunc) router.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request, p map[string]string) {
-		if _, err := a.claims(r); err != nil {
-			httpx.Fail(w, r, 401, "UNAUTHORIZED", "Authentication required")
-			return
-		}
-		h(w, r, p)
-	}
-}
-func (a *app) requirePermission(permission authz.Permission, h router.HandlerFunc) router.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request, p map[string]string) {
-		c, err := a.claims(r)
-		if err != nil {
-			httpx.Fail(w, r, 401, "UNAUTHORIZED", "Authentication required")
-			return
-		}
-		if !authz.Has(c.Role, permission) {
-			httpx.Fail(w, r, 403, "FORBIDDEN", "Insufficient permission")
-			return
-		}
-		h(w, r, p)
-	}
+
+func buildService(ctx context.Context, db *sql.DB, cfg config.Config) (http.Handler, error) {
+	a := &app{db: db, cfg: cfg, access: access.Control{JWTKey: cfg.JWTKey, InternalKey: cfg.InternalServiceKey, StudentServiceURL: config.Env("STUDENT_SERVICE_URL", "http://student:8083")}}
+	go outbox.Worker{DB: db, Endpoint: config.Env("NOTIFICATION_SERVICE_URL", "http://notification:8087/internal/v1/events"), AuditEndpoint: config.Env("AUDIT_SERVICE_URL", "http://identity:8081/internal/v1/audit-events"), InternalKey: cfg.InternalServiceKey, Service: cfg.Service}.Run(ctx)
+	routes := service.Router(db)
+	routes.Handle("POST", "/api/v1/tahfidz/entries", a.access.RequirePermission(authz.TahfidzWrite, a.createEntry))
+	routes.Handle("GET", "/api/v1/tahfidz/entries", a.access.RequirePermission(authz.TahfidzRead, a.listEntriesAdmin))
+	routes.Handle("POST", "/api/v1/tahfidz/targets", a.access.RequirePermission(authz.TahfidzWrite, a.createTarget))
+	routes.Handle("GET", "/api/v1/tahfidz/targets", a.access.RequirePermission(authz.TahfidzRead, a.listTargets))
+	routes.Handle("PATCH", "/api/v1/tahfidz/targets/{id}", a.access.RequirePermission(authz.TahfidzWrite, a.updateTarget))
+	routes.Handle("GET", "/api/v1/tahfidz/students/{id}/entries", a.access.StudentScoped(authz.TahfidzRead, a.listEntries))
+	return routes, nil
 }
 func (a *app) createEntry(w http.ResponseWriter, r *http.Request, _ map[string]string) {
-	c, _ := a.claims(r)
+	c, _ := a.access.Claims(r)
 	var in entryIn
 	if !httpx.Decode(w, r, &in) {
 		return
@@ -128,7 +76,7 @@ func (a *app) createEntry(w http.ResponseWriter, r *http.Request, _ map[string]s
 	id := httpx.NewID()
 	tx, err := a.db.BeginTx(r.Context(), nil)
 	if err == nil {
-		_, err = tx.ExecContext(r.Context(), `INSERT INTO tahfidz_entries(id,student_id,activity_date,surah,ayah_start,ayah_end,juz,page_no,activity_type,score,fluency,tajwid,makhraj,teacher_note,teacher_user_id) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`, id, in.StudentID, d, in.Surah, in.AyahStart, in.AyahEnd, in.Juz, in.Page, in.ActivityType, in.Score, n(in.Fluency), n(in.Tajwid), n(in.Makhraj), n(in.TeacherNote), c.Sub)
+		_, err = tx.ExecContext(r.Context(), `INSERT INTO tahfidz_entries(id,student_id,activity_date,surah,ayah_start,ayah_end,juz,page_no,activity_type,score,fluency,tajwid,makhraj,teacher_note,teacher_user_id) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`, id, in.StudentID, d, in.Surah, in.AyahStart, in.AyahEnd, in.Juz, in.Page, in.ActivityType, in.Score, database.NullString(in.Fluency), database.NullString(in.Tajwid), database.NullString(in.Makhraj), database.NullString(in.TeacherNote), c.Sub)
 	}
 	if err == nil {
 		err = outbox.Add(r.Context(), tx, "TahfidzEntryCreated", map[string]any{"student_id": in.StudentID, "entry_id": id, "surah": in.Surah, "deep_link": "zabisa://guardian/students/" + in.StudentID + "/tahfidz/" + id})
@@ -164,33 +112,8 @@ func (a *app) listEntries(w http.ResponseWriter, r *http.Request, p map[string]s
 		var score sql.NullFloat64
 		var flu, taj, mak, note sql.NullString
 		if rows.Scan(&id, &d, &surah, &a1, &a2, &juz, &page, &typ, &score, &flu, &taj, &mak, &note, &teacher, &status) == nil {
-			out = append(out, map[string]any{"id": id, "date": d.Format("2006-01-02"), "surah": surah, "ayah_start": a1, "ayah_end": a2, "juz": nullableInt(juz), "page": nullableInt(page), "activity_type": typ, "score": nullableFloat(score), "fluency": flu.String, "tajwid": taj.String, "makhraj": mak.String, "teacher_note": note.String, "teacher_user_id": teacher, "verification_status": status})
+			out = append(out, map[string]any{"id": id, "date": d.Format("2006-01-02"), "surah": surah, "ayah_start": a1, "ayah_end": a2, "juz": database.NullableInt(juz), "page": database.NullableInt(page), "activity_type": typ, "score": database.NullableFloat(score), "fluency": flu.String, "tajwid": taj.String, "makhraj": mak.String, "teacher_note": note.String, "teacher_user_id": teacher, "verification_status": status})
 		}
 	}
 	httpx.JSON(w, 200, out)
-}
-func n(v string) any {
-	if strings.TrimSpace(v) == "" {
-		return nil
-	}
-	return strings.TrimSpace(v)
-}
-func nullableInt(v sql.NullInt64) any {
-	if !v.Valid {
-		return nil
-	}
-	return v.Int64
-}
-func nullableFloat(v sql.NullFloat64) any {
-	if !v.Valid {
-		return nil
-	}
-	return v.Float64
-}
-
-func envURL(key, fallback string) string {
-	if v := strings.TrimSpace(os.Getenv(key)); v != "" {
-		return v
-	}
-	return fallback
 }
