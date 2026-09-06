@@ -22,9 +22,9 @@ export default function CampaignDetailScreen({navigation, route}: RootStackScree
       <SectionTitle>Tentang campaign</SectionTitle>
       <Text style={styles.body}>{campaign.description || 'Deskripsi campaign belum tersedia.'}</Text>
       <SectionTitle>Update campaign</SectionTitle>
-      {updates.isLoading ? <Loading /> : null}
+      {updates.isLoading ? <Loading mascot="donation" /> : null}
       {updates.isError ? <ErrorState message={userMessage(updates.error)} onRetry={() => updates.refetch()} /> : null}
-      {!updates.isLoading && !updates.isError && !updates.data?.length ? <Empty icon="info" text="Belum ada update campaign." /> : null}
+      {!updates.isLoading && !updates.isError && !updates.data?.length ? <Empty icon="info" mascot="donation" text="Belum ada update campaign." /> : null}
       {updates.data?.map(item => <Card key={item.id}><Text style={styles.updateTitle}>{item.title}</Text><Text style={styles.body}>{item.body}</Text><Muted>{new Date(item.created_at).toLocaleString('id-ID')}</Muted></Card>)}
     </ScrollScreen>
   );

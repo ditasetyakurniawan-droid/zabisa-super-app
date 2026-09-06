@@ -15,7 +15,9 @@ import {
 } from 'react-native';
 import {SafeAreaView, useSafeAreaInsets} from 'react-native-safe-area-context';
 import {AppIcon, type AppIconName} from './AppIcon';
-import {colors, control, motion, radius, shadow, shadowSoft, space, type} from '../theme/tokens';
+import {Mascot, type MascotVariant} from './Mascot';
+import {AnimatedPressDepth, usePulseAnimation} from './Motion';
+import {colors, control, depth, motion, radius, shadow, shadowMedium, shadowSoft, space, type} from '../theme/tokens';
 
 function useAmbientMotion() {
   const value = React.useRef(new Animated.Value(0)).current;
@@ -81,15 +83,16 @@ export function ScrollScreen({children, contentStyle, safeTop = true}: {children
   );
 }
 
-export function AppHeader({eyebrow, title, subtitle}: {eyebrow?: string; title: string; subtitle?: string}) {
+export function AppHeader({eyebrow, title, subtitle, mascot = 'welcome'}: {eyebrow?: string; title: string; subtitle?: string; mascot?: MascotVariant}) {
   return (
     <View style={styles.appHeader}>
-      <View style={styles.headerCopy}>
+      <View style={[styles.headerCopy, styles.headerCopyWithMascot]}>
         {eyebrow ? <View style={styles.eyebrowRow}><View style={styles.eyebrowLine} /><Text style={styles.eyebrow}>{eyebrow}</Text></View> : null}
         <Text accessibilityRole="header" style={styles.headerTitle}>{title}</Text>
         {subtitle ? <Text style={styles.headerSubtitle}>{subtitle}</Text> : null}
       </View>
       <IslamicOrnament compact />
+      <Mascot variant={mascot} size={64} decorative style={styles.headerMascot} />
     </View>
   );
 }
@@ -119,7 +122,37 @@ export function DisplayTitle({children}: {children: React.ReactNode}) {
   return <Text accessibilityRole="header" style={styles.display}>{children}</Text>;
 }
 
-export function DetailHeader({eyebrow, title, subtitle, icon}: {eyebrow: string; title: string; subtitle?: string; icon: AppIconName}) {
+function detailMascotForIcon(icon: AppIconName): MascotVariant {
+  switch (icon) {
+    case 'donation':
+      return 'donation';
+    case 'kajian':
+      return 'learning';
+    case 'tahfidz':
+      return 'tahfidz';
+    case 'grade':
+      return 'academic';
+    case 'attendance':
+      return 'attendance';
+    case 'notification':
+      return 'notification';
+    case 'account':
+      return 'profile';
+    case 'program':
+      return 'program';
+    case 'gallery':
+      return 'gallery';
+    case 'info':
+      return 'about';
+    case 'news':
+    case 'chevronRight':
+    default:
+      return 'news';
+  }
+}
+
+export function DetailHeader({eyebrow, title, subtitle, icon, mascot}: {eyebrow: string; title: string; subtitle?: string; icon: AppIconName; mascot?: MascotVariant}) {
+  const headerMascot = mascot ?? detailMascotForIcon(icon);
   return (
     <View style={styles.detailHeader}>
       <IslamicOrnament compact />
@@ -129,7 +162,10 @@ export function DetailHeader({eyebrow, title, subtitle, icon}: {eyebrow: string;
           <Text accessibilityRole="header" style={styles.detailTitle}>{title}</Text>
           {subtitle ? <Text style={styles.detailSubtitle}>{subtitle}</Text> : null}
         </View>
-        <AppIcon name={icon} size={24} color={colors.primary} background />
+        <View style={styles.detailHeaderVisual}>
+          <Mascot variant={headerMascot} size={64} decorative style={styles.detailHeaderMascot} />
+          <View style={styles.detailHeaderBadge}><AppIcon name={icon} size={18} color={colors.primary} /></View>
+        </View>
       </View>
     </View>
   );
@@ -148,18 +184,23 @@ export function Body({children, style}: {children: React.ReactNode; style?: obje
 }
 
 export function Button({title, onPress, disabled, secondary, icon, color = colors.primary, softColor = colors.primarySofter}: {title: string; onPress: () => void; disabled?: boolean; secondary?: boolean; icon?: AppIconName; color?: string; softColor?: string}) {
+  const [pressed, setPressed] = React.useState(false);
   return (
-    <Pressable
-      accessibilityRole="button"
-      accessibilityState={{disabled: !!disabled}}
-      accessibilityLabel={title}
-      disabled={disabled}
-      onPress={onPress}
-      android_ripple={{color: secondary ? softColor : colors.onPrimaryRipple}}
-      style={({pressed}) => [styles.button, {backgroundColor: color, borderColor: color}, secondary && styles.secondaryButton, secondary && {backgroundColor: softColor, borderColor: color}, disabled && styles.disabled, pressed && styles.pressed]}>
-      {icon ? <AppIcon name={icon} size={19} color={secondary ? color : colors.white} /> : null}
-      <Text style={[styles.buttonText, secondary && styles.secondaryButtonText, secondary && {color}]}>{title}</Text>
-    </Pressable>
+    <AnimatedPressDepth pressed={pressed && !disabled}>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityState={{disabled: !!disabled}}
+        accessibilityLabel={title}
+        disabled={disabled}
+        onPress={onPress}
+        onPressIn={() => setPressed(true)}
+        onPressOut={() => setPressed(false)}
+        android_ripple={{color: secondary ? softColor : colors.onPrimaryRipple}}
+        style={[styles.button, {backgroundColor: color, borderColor: color}, secondary && styles.secondaryButton, secondary && {backgroundColor: softColor, borderColor: color}, disabled && styles.disabled]}>
+        {icon ? <AppIcon name={icon} size={19} color={secondary ? color : colors.white} /> : null}
+        <Text style={[styles.buttonText, secondary && styles.secondaryButtonText, secondary && {color}]}>{title}</Text>
+      </Pressable>
+    </AnimatedPressDepth>
   );
 }
 
@@ -198,18 +239,38 @@ export function TextField({label, error, secureToggle, style, ...props}: TextInp
   );
 }
 
-export function IconTile({icon, label, subtitle, onPress, color = colors.primary, softColor = colors.primarySofter}: {icon: AppIconName; label: string; subtitle?: string; onPress: () => void; color?: string; softColor?: string}) {
+export function PremiumServiceCard({icon, label, subtitle, onPress, color = colors.primary, softColor = colors.primarySofter}: {icon: AppIconName; label: string; subtitle?: string; onPress: () => void; color?: string; softColor?: string}) {
+  const [pressed, setPressed] = React.useState(false);
   return (
-    <Pressable accessibilityRole="button" accessibilityLabel={label} onPress={onPress} android_ripple={{color: softColor}} style={({pressed}) => [styles.iconTile, pressed && styles.pressed]}>
-      <View style={[styles.iconTileAccent, {backgroundColor: color}]} />
-      <AppIcon name={icon} size={22} color={color} background backgroundColor={softColor} borderColor={softColor} />
-      <View style={styles.iconTileCopy}>
-        <Text numberOfLines={1} style={styles.iconTileText}>{label}</Text>
-        {subtitle ? <Text numberOfLines={1} style={styles.iconTileSubtitle}>{subtitle}</Text> : null}
-      </View>
-      <Text style={[styles.iconTileArrow, {color}]}>›</Text>
-    </Pressable>
+    <View style={styles.serviceCardShell}>
+      <View pointerEvents="none" style={[styles.serviceCardDepth, {backgroundColor: color}]} />
+      <AnimatedPressDepth pressed={pressed} style={styles.serviceCardMotion}>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={label}
+          accessibilityHint={subtitle}
+          onPress={onPress}
+          onPressIn={() => setPressed(true)}
+          onPressOut={() => setPressed(false)}
+          android_ripple={{color: softColor}}
+          style={[styles.serviceCard, {borderColor: softColor, backgroundColor: colors.surface}]}>
+          <View pointerEvents="none" style={[styles.serviceHighlight, {backgroundColor: softColor}]} />
+          <View style={styles.serviceCardTopRow}>
+            <AppIcon name={icon} size={22} color={color} background backgroundColor={softColor} borderColor={softColor} />
+            <View style={[styles.serviceArrow, {backgroundColor: softColor}]}><Text style={[styles.iconTileArrow, {color}]}>›</Text></View>
+          </View>
+          <View style={styles.serviceCopy}>
+            <Text numberOfLines={2} style={styles.iconTileText}>{label}</Text>
+            {subtitle ? <Text numberOfLines={1} style={[styles.iconTileSubtitle, {color}]}>{subtitle}</Text> : null}
+          </View>
+        </Pressable>
+      </AnimatedPressDepth>
+    </View>
   );
+}
+
+export function IconTile(props: React.ComponentProps<typeof PremiumServiceCard>) {
+  return <PremiumServiceCard {...props} />;
 }
 
 type PillTone = 'neutral' | 'success' | 'warning' | 'danger' | 'primary';
@@ -240,18 +301,43 @@ export function Pill({text, tone = 'neutral'}: {text: string; tone?: PillTone}) 
   return <View style={[styles.pill, toneStyle]}><Text style={[styles.pillText, toneText]}>{text}</Text></View>;
 }
 
-export function Loading({label = 'Memuat data...'}: {label?: string}) {
-  return <View style={styles.state}><ActivityIndicator color={colors.primary} /><Muted style={{marginTop: space.sm}}>{label}</Muted></View>;
+export function Loading({label = 'Memuat data...', mascot = 'loading'}: {label?: string; mascot?: MascotVariant}) {
+  const pulse = usePulseAnimation();
+  return (
+    <View accessibilityRole="progressbar" accessibilityLabel={label} style={styles.loadingState}>
+      <View style={styles.loadingLead}>
+        <Mascot variant={mascot} size={68} decorative />
+        <View style={styles.loadingCopy}>
+          <Text style={styles.stateTitle}>Menyiapkan data</Text>
+          <Muted>{label}</Muted>
+        </View>
+        <ActivityIndicator color={colors.primary} />
+      </View>
+      <Animated.View style={[styles.skeletonGroup, {opacity: pulse}]}>
+        <View style={[styles.skeleton, styles.skeletonWide]} />
+        <View style={[styles.skeleton, styles.skeletonMedium]} />
+        <View style={[styles.skeleton, styles.skeletonShort]} />
+      </Animated.View>
+    </View>
+  );
 }
 
-export function Empty({text = 'Belum ada data.', icon = 'info'}: {text?: string; icon?: AppIconName}) {
-  return <View style={styles.state}><AppIcon name={icon} size={26} background /><Muted style={styles.stateText}>{text}</Muted></View>;
+export function Empty({text = 'Belum ada data.', icon = 'info', mascot = 'empty'}: {text?: string; icon?: AppIconName; mascot?: MascotVariant}) {
+  return (
+    <View style={styles.stateCard}>
+      <Mascot variant={mascot} size={76} decorative />
+      <View style={styles.stateCopy}>
+        <View style={styles.stateTitleRow}><AppIcon name={icon} size={17} color={colors.sky} /><Text style={styles.stateTitle}>Belum ada data</Text></View>
+        <Muted>{text}</Muted>
+      </View>
+    </View>
+  );
 }
 
-export function ErrorState({message = 'Data belum dapat dimuat.', onRetry}: {message?: string; onRetry?: () => void}) {
+export function ErrorState({message = 'Data belum dapat dimuat.', onRetry, mascot = 'error'}: {message?: string; onRetry?: () => void; mascot?: MascotVariant}) {
   return (
     <View style={styles.errorState}>
-      <View style={styles.errorIcon}><Text style={styles.errorMark}>!</Text></View>
+      <Mascot variant={mascot} size={68} decorative />
       <View style={styles.errorCopy}>
         <Text style={styles.errorTitle}>Belum tersambung</Text>
         <Muted>{message}</Muted>
@@ -278,6 +364,8 @@ const styles = StyleSheet.create({
   scrollContent: {paddingHorizontal: space.lg, paddingTop: space.lg, paddingBottom: space.jumbo, zIndex: 1},
   appHeader: {paddingHorizontal: space.lg, paddingTop: space.xl, paddingBottom: space.lg, minHeight: 122, flexDirection: 'row', alignItems: 'flex-start', overflow: 'hidden'},
   headerCopy: {flex: 1, zIndex: 2, paddingRight: space.md},
+  headerCopyWithMascot: {paddingRight: 76},
+  headerMascot: {position: 'absolute', right: space.lg, bottom: space.md, zIndex: 3},
   eyebrowRow: {flexDirection: 'row', alignItems: 'center', marginBottom: space.xs},
   eyebrowLine: {width: 22, height: 3, borderRadius: radius.pill, backgroundColor: colors.sky, marginRight: space.sm},
   eyebrow: {...type.micro, color: colors.primary, textTransform: 'uppercase'},
@@ -303,7 +391,10 @@ const styles = StyleSheet.create({
   display: {...type.display, color: colors.text},
   detailHeader: {position: 'relative', overflow: 'hidden', backgroundColor: colors.surfaceWarm, borderWidth: 1, borderColor: colors.line, borderRadius: radius.xl, padding: space.xl, minHeight: 144, justifyContent: 'center', marginBottom: space.lg},
   detailHeaderRow: {flexDirection: 'row', alignItems: 'center', gap: space.lg, zIndex: 2},
-  detailHeaderCopy: {flex: 1},
+  detailHeaderCopy: {flex: 1, paddingRight: space.sm},
+  detailHeaderVisual: {width: 78, alignItems: 'center', justifyContent: 'center'},
+  detailHeaderMascot: {alignSelf: 'center'},
+  detailHeaderBadge: {position: 'absolute', right: 3, bottom: 0, width: 30, height: 30, borderRadius: 11, backgroundColor: colors.white, borderWidth: 1, borderColor: colors.lineStrong, alignItems: 'center', justifyContent: 'center', ...shadowSoft},
   detailEyebrow: {...type.micro, color: colors.accentDark, textTransform: 'uppercase', marginBottom: space.xs},
   detailTitle: {...type.title, color: colors.text},
   detailSubtitle: {...type.body, color: colors.muted, marginTop: space.xs},
@@ -328,12 +419,17 @@ const styles = StyleSheet.create({
   inputAction: {minWidth: 76, minHeight: 48, alignItems: 'center', justifyContent: 'center', paddingHorizontal: space.sm},
   inputActionText: {...type.caption, color: colors.primary, fontWeight: '900'},
   fieldError: {...type.caption, color: colors.danger, marginTop: space.sm},
-  iconTile: {width: '48.5%', minHeight: 92, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.line, borderRadius: radius.lg, flexDirection: 'row', alignItems: 'center', padding: space.md, overflow: 'hidden', ...shadowSoft},
-  iconTileAccent: {position: 'absolute', left: 0, top: 18, bottom: 18, width: 4, borderTopRightRadius: 4, borderBottomRightRadius: 4},
-  iconTileCopy: {flex: 1, minWidth: 0, marginLeft: space.sm},
-  iconTileText: {...type.caption, color: colors.text, fontWeight: '900'},
-  iconTileSubtitle: {...type.micro, color: colors.muted, letterSpacing: 0, marginTop: 2},
-  iconTileArrow: {fontSize: 21, fontWeight: '700', marginLeft: 2},
+  serviceCardShell: {width: '48.5%', minHeight: 120, position: 'relative', paddingBottom: depth.serviceBase},
+  serviceCardDepth: {position: 'absolute', left: 3, right: 3, bottom: 0, height: 16, borderRadius: radius.lg, opacity: 0.22},
+  serviceCardMotion: {flex: 1},
+  serviceCard: {minHeight: 114, borderWidth: 1, borderRadius: radius.lg, padding: space.md, overflow: 'hidden', justifyContent: 'space-between', ...shadowMedium},
+  serviceHighlight: {position: 'absolute', left: 0, right: 0, top: 0, height: depth.highlight, opacity: 0.88},
+  serviceCardTopRow: {flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between'},
+  serviceArrow: {width: 30, height: 30, borderRadius: 11, alignItems: 'center', justifyContent: 'center'},
+  serviceCopy: {marginTop: space.md},
+  iconTileText: {...type.bodyStrong, color: colors.text, fontWeight: '900'},
+  iconTileSubtitle: {...type.micro, color: colors.muted, letterSpacing: 0.1, marginTop: 3, textTransform: 'uppercase'},
+  iconTileArrow: {fontSize: 20, lineHeight: 22, fontWeight: '800', marginTop: -2},
   pill: {alignSelf: 'flex-start', borderRadius: radius.pill, paddingHorizontal: 11, paddingVertical: 6},
   pillNeutral: {backgroundColor: colors.surfaceMuted},
   pillPrimary: {backgroundColor: colors.primarySoft},
@@ -345,12 +441,20 @@ const styles = StyleSheet.create({
   pillTextSuccess: {color: colors.success},
   pillTextWarning: {color: colors.warning},
   pillTextDanger: {color: colors.danger},
-  state: {paddingVertical: space.xxxl, paddingHorizontal: space.lg, alignItems: 'center', justifyContent: 'center'},
-  stateText: {marginTop: space.md, textAlign: 'center', maxWidth: 300},
-  errorState: {marginVertical: space.md, padding: space.md, borderWidth: 1, borderColor: colors.dangerLine, backgroundColor: colors.dangerSoft, borderRadius: radius.lg, flexDirection: 'row', alignItems: 'center'},
-  errorIcon: {width: 40, height: 40, borderRadius: 14, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.dangerIcon, marginRight: space.md},
-  errorCopy: {flex: 1, paddingRight: space.sm},
-  errorMark: {fontSize: 20, fontWeight: '900', color: colors.danger},
+  loadingState: {marginVertical: space.md, padding: space.lg, borderWidth: 1, borderColor: colors.line, backgroundColor: colors.surface, borderRadius: radius.lg, ...shadowSoft},
+  loadingLead: {flexDirection: 'row', alignItems: 'center', gap: space.md},
+  loadingCopy: {flex: 1},
+  skeletonGroup: {marginTop: space.lg, gap: space.sm},
+  skeleton: {height: 9, borderRadius: radius.pill, backgroundColor: colors.primarySoft},
+  skeletonWide: {width: '92%'},
+  skeletonMedium: {width: '72%'},
+  skeletonShort: {width: '48%'},
+  stateCard: {marginVertical: space.md, padding: space.lg, minHeight: 112, borderWidth: 1, borderColor: colors.line, backgroundColor: colors.surface, borderRadius: radius.lg, flexDirection: 'row', alignItems: 'center', gap: space.lg, ...shadowSoft},
+  stateCopy: {flex: 1},
+  stateTitleRow: {flexDirection: 'row', alignItems: 'center', gap: space.sm, marginBottom: space.xs},
+  stateTitle: {...type.bodyStrong, color: colors.text},
+  errorState: {marginVertical: space.md, padding: space.md, minHeight: 104, borderWidth: 1, borderColor: colors.dangerLine, backgroundColor: colors.dangerSoft, borderRadius: radius.lg, flexDirection: 'row', alignItems: 'center', gap: space.md},
+  errorCopy: {flex: 1, paddingRight: space.xs},
   errorTitle: {...type.bodyStrong, color: colors.danger, marginBottom: space.xs},
   errorRetry: {minHeight: control.minimumTapSize, justifyContent: 'center', paddingHorizontal: space.sm},
   errorRetryText: {...type.caption, color: colors.danger, fontWeight: '900'},

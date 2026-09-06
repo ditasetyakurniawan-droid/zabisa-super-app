@@ -1,8 +1,9 @@
 import React from 'react';
-import {FlatList, Image, Pressable, StyleSheet, Text, View} from 'react-native';
+import {FlatList, Pressable, StyleSheet, Text, View} from 'react-native';
 import {useQuery} from '@tanstack/react-query';
 import {api, userMessage} from '../../api/client';
-import {Card, Empty, ErrorState, HeroCard, IconTile, Loading, Muted, ScrollScreen, SectionTitle, TextButton} from '../../components/UI';
+import {Card, Empty, ErrorState, HeroCard, Loading, Muted, PremiumServiceCard, ScrollScreen, SectionTitle, TextButton} from '../../components/UI';
+import {Mascot} from '../../components/Mascot';
 import {colors, radius, serviceColors, shadowSoft, space, type} from '../../theme/tokens';
 import type {Campaign, Kajian, Student} from '../../types/domain';
 import {useAuth} from '../../store/auth';
@@ -22,7 +23,7 @@ export default function HomeScreen({navigation}: MainTabScreenProps<'Home'>) {
       <View style={styles.topBar}>
         <View>
           <Text style={styles.greet}>Assalamu'alaikum{firstName ? `, ${firstName}` : ''}</Text>
-          <View style={styles.brandRow}><Text style={styles.brand}>Zabisa</Text><View style={styles.onlinePill}><View style={styles.onlineDot} /><Text style={styles.onlineText}>Ruang santri</Text></View></View>
+          <View style={styles.brandRow}><Text style={styles.brand}>Zabisa</Text><View style={styles.onlinePill}><View style={styles.onlineDot} /><Text style={styles.onlineText}>Publik & wali santri</Text></View></View>
         </View>
         <View style={styles.brandMark}><Text style={styles.brandMarkText}>Z</Text><View style={styles.brandMarkDot} /></View>
       </View>
@@ -32,8 +33,8 @@ export default function HomeScreen({navigation}: MainTabScreenProps<'Home'>) {
           <View style={styles.heroMetaRow}>
             <View style={styles.heroEyebrowPill}><View style={styles.heroEyebrowDot} /><Text style={styles.heroEyebrow}>BERSAMA AL-QUR'AN</Text></View>
           </View>
-          <Text style={styles.heroTitle}>Ilmu tumbuh. Adab berlabuh.</Text>
-          <Text style={styles.heroBody}>Dekat dengan perjalanan santri dan kebaikan Zabisa, setiap hari.</Text>
+          <Text style={styles.heroTitle}>Satu ruang untuk kajian, donasi, dan tumbuh bersama Al-Qur'an.</Text>
+          <Text style={styles.heroBody}>Jelajahi majelis ilmu, dukung program kebaikan, dan pantau perkembangan santri dari satu aplikasi yang hangat dan mudah diakses.</Text>
           {guardian && students.data?.length ? (
             <Pressable accessibilityRole="button" onPress={() => navigation.navigate('GuardianStudent', {student: students.data[0]})} style={({pressed}) => [styles.heroAction, pressed && styles.heroActionPressed]}>
               <Text style={styles.heroActionText}>Lihat ananda</Text>
@@ -42,26 +43,26 @@ export default function HomeScreen({navigation}: MainTabScreenProps<'Home'>) {
           ) : null}
         </View>
         <View pointerEvents="none" style={styles.mascotGlow} />
-        <Image accessibilityIgnoresInvertColors source={require('../../assets/zabisa-quran-mascot.png')} resizeMode="contain" style={styles.mascot} />
+        <Mascot variant="learning" size={205} decorative unframed style={styles.mascot} />
         <View pointerEvents="none" style={styles.heroGoldLine} />
       </HeroCard>
 
       <SectionTitle>Layanan pilihan</SectionTitle>
       <View style={styles.actions}>
-        <IconTile icon="donation" label="Berbagi" subtitle="Donasi" color={serviceColors.donation.solid} softColor={serviceColors.donation.soft} onPress={() => navigation.navigate('Donasi')} />
-        <IconTile icon="kajian" label="Majelis Ilmu" subtitle="Kajian" color={serviceColors.kajian.solid} softColor={serviceColors.kajian.soft} onPress={() => navigation.navigate('Kajian')} />
-        <IconTile icon="news" label="Kabar Zabisa" subtitle="Berita" color={serviceColors.news.solid} softColor={serviceColors.news.soft} onPress={() => navigation.navigate('ContentList', {type: 'news', title: 'Berita'})} />
-        <IconTile icon="program" label="Jejak Karya" subtitle="Program" color={serviceColors.program.solid} softColor={serviceColors.program.soft} onPress={() => navigation.navigate('ContentList', {type: 'programs', title: 'Program'})} />
-        <IconTile icon="info" label="Mengenal Kami" subtitle="Tentang" color={serviceColors.info.solid} softColor={serviceColors.info.soft} onPress={() => navigation.navigate('ContentList', {type: 'profile', title: 'Tentang Zabisa'})} />
-        <IconTile icon="gallery" label="Momen Santri" subtitle="Galeri" color={serviceColors.gallery.solid} softColor={serviceColors.gallery.soft} onPress={() => navigation.navigate('ContentList', {type: 'gallery', title: 'Galeri'})} />
-        <IconTile icon="notification" label="Amanah Baru" subtitle="Notifikasi" color={serviceColors.notification.solid} softColor={serviceColors.notification.soft} onPress={() => navigation.navigate('Notifikasi')} />
-        <IconTile icon="account" label="Ruang Pribadi" subtitle="Akun" color={serviceColors.account.solid} softColor={serviceColors.account.soft} onPress={() => user ? navigation.navigate('Akun') : navigation.navigate('Login')} />
+        <PremiumServiceCard icon="donation" label="Berbagi" subtitle="Donasi" color={serviceColors.donation.solid} softColor={serviceColors.donation.soft} onPress={() => navigation.navigate('Donasi')} />
+        <PremiumServiceCard icon="kajian" label="Majelis Ilmu" subtitle="Kajian" color={serviceColors.kajian.solid} softColor={serviceColors.kajian.soft} onPress={() => navigation.navigate('Kajian')} />
+        <PremiumServiceCard icon="news" label="Kabar Zabisa" subtitle="Berita" color={serviceColors.news.solid} softColor={serviceColors.news.soft} onPress={() => navigation.navigate('ContentList', {type: 'news', title: 'Berita'})} />
+        <PremiumServiceCard icon="program" label="Jejak Karya" subtitle="Program" color={serviceColors.program.solid} softColor={serviceColors.program.soft} onPress={() => navigation.navigate('ContentList', {type: 'programs', title: 'Program'})} />
+        <PremiumServiceCard icon="info" label="Mengenal Kami" subtitle="Tentang" color={serviceColors.info.solid} softColor={serviceColors.info.soft} onPress={() => navigation.navigate('ContentList', {type: 'profile', title: 'Tentang Zabisa'})} />
+        <PremiumServiceCard icon="gallery" label="Momen Santri" subtitle="Galeri" color={serviceColors.gallery.solid} softColor={serviceColors.gallery.soft} onPress={() => navigation.navigate('ContentList', {type: 'gallery', title: 'Galeri'})} />
+        <PremiumServiceCard icon="notification" label="Amanah Baru" subtitle="Notifikasi" color={serviceColors.notification.solid} softColor={serviceColors.notification.soft} onPress={() => navigation.navigate('Notifikasi')} />
+        <PremiumServiceCard icon="account" label="Ruang Pribadi" subtitle="Akun" color={serviceColors.account.solid} softColor={serviceColors.account.soft} onPress={() => user ? navigation.navigate('Akun') : navigation.navigate('Login')} />
       </View>
 
       <SectionTitle action={<TextButton title="Lihat semua" onPress={() => navigation.navigate('Kajian')} />}>Majelis ilmu terbaru</SectionTitle>
-      {kajian.isLoading ? <Loading label="Memuat kajian terbaru..." /> : null}
+      {kajian.isLoading ? <Loading label="Memuat kajian terbaru..." mascot="learning" /> : null}
       {kajian.isError ? <ErrorState message={userMessage(kajian.error)} onRetry={() => kajian.refetch()} /> : null}
-      {!kajian.isLoading && !kajian.isError && !kajian.data?.length ? <Empty icon="kajian" text="Belum ada kajian yang dipublikasikan." /> : null}
+      {!kajian.isLoading && !kajian.isError && !kajian.data?.length ? <Empty icon="kajian" mascot="learning" text="Belum ada kajian yang dipublikasikan." /> : null}
       {kajian.data?.slice(0, 2).map(item => (
         <Card key={item.id} onPress={() => navigation.navigate('KajianDetail', {kajian: item})}>
           <Text style={styles.cardTitle}>{item.title}</Text>
@@ -72,9 +73,9 @@ export default function HomeScreen({navigation}: MainTabScreenProps<'Home'>) {
       ))}
 
       <SectionTitle action={<TextButton title="Lihat semua" onPress={() => navigation.navigate('Donasi')} />}>Jalan kebaikan</SectionTitle>
-      {campaigns.isLoading ? <Loading label="Memuat program donasi..." /> : null}
+      {campaigns.isLoading ? <Loading label="Memuat program donasi..." mascot="donation" /> : null}
       {campaigns.isError ? <ErrorState message={userMessage(campaigns.error)} onRetry={() => campaigns.refetch()} /> : null}
-      {!campaigns.isLoading && !campaigns.isError && !campaigns.data?.length ? <Empty icon="donation" text="Belum ada campaign donasi aktif." /> : null}
+      {!campaigns.isLoading && !campaigns.isError && !campaigns.data?.length ? <Empty icon="donation" mascot="donation" text="Belum ada campaign donasi aktif." /> : null}
       {campaigns.data?.length ? (
         <FlatList
           data={campaigns.data.slice(0, 4)}
@@ -114,12 +115,12 @@ const styles = StyleSheet.create({
   heroEyebrow: {...type.micro, color: colors.white, flexShrink: 1, letterSpacing: 0.45},
   heroTitle: {fontSize: 23, lineHeight: 29, fontWeight: '900', color: colors.white, marginTop: space.md, letterSpacing: -0.4},
   heroBody: {fontSize: 12.5, lineHeight: 19, fontWeight: '500', color: colors.onPrimaryMuted, marginTop: space.sm},
-  heroAction: {minHeight: 44, marginTop: space.md, borderRadius: radius.md, backgroundColor: colors.white, paddingHorizontal: space.md, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between'},
+  heroAction: {minHeight: 48, marginTop: space.lg, borderRadius: radius.md, backgroundColor: colors.white, paddingHorizontal: space.md, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between'},
   heroActionPressed: {backgroundColor: colors.onPrimarySurfacePressed},
   heroActionText: {...type.caption, color: colors.primaryDeep, fontWeight: '900'},
   heroActionArrow: {fontSize: 23, color: colors.primary, marginLeft: space.md},
   mascotGlow: {position: 'absolute', right: -42, bottom: -54, width: 220, height: 220, borderRadius: 110, backgroundColor: colors.sky, opacity: 0.24},
-  mascot: {position: 'absolute', right: -31, bottom: -95, width: 205, height: 310, zIndex: 4},
+  mascot: {position: 'absolute', right: -31, bottom: -95, zIndex: 4},
   heroGoldLine: {position: 'absolute', right: 23, top: 22, width: 35, height: 4, borderRadius: radius.pill, backgroundColor: colors.accent, opacity: 0.9},
   actions: {flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', rowGap: space.md},
   cardTitle: {...type.bodyStrong, color: colors.text, marginBottom: space.xs},

@@ -1,6 +1,6 @@
 3ceb54c3c187838c9656df4a23d85d0da386ae2a4b7d2da8ef6445cd7fefc55b  apps/mobile/package.json
 069781e752b6615efcd7a75e02455a4b6823156947dd998d1a2bcac9c57a20fb  apps/mobile/src/App.tsx
-30ac90806ce8d1927c61de29576ae214074c204598271a79b6fb78abad4945d5  apps/mobile/src/app/App.tsx
+5146dcf689457a6bd686d41478240b028a9fcc405c4e2fcc8c61155b86a5bd94  apps/mobile/src/app/App.tsx
 a42a746e49860794b01000cf5e77d8231d734b321972a701c387caa7b1eb1945  apps/mobile/src/api/client.ts
 9ff7cff8c45eb88f7971bec92e810c5915fa983eed1b102231930cac87a03399  apps/mobile/src/api/errors.test.ts
 a5927eb483288801fb3dea52d45c61f4cc553d17229fdc525cbb6730eb697c19  apps/mobile/src/api/errors.ts

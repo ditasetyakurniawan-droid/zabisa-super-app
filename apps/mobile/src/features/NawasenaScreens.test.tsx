@@ -1,13 +1,15 @@
 import React from 'react';
 import {afterEach, beforeEach, describe, expect, it, jest} from '@jest/globals';
-import {act, create, type ReactTestRenderer} from 'react-test-renderer';
+import {act, create, type ReactTestInstance, type ReactTestRenderer} from 'react-test-renderer';
 import {AccessibilityInfo, Linking, Text} from 'react-native';
-import type {Campaign, CampaignUpdate, DonationHistoryItem, Kajian, PaymentMethod, User} from '../types/domain';
+import type {Campaign, CampaignUpdate, ContentItem, DonationHistoryItem, Kajian, PaymentMethod, User} from '../types/domain';
 import DonationScreen from './donation/DonationScreen';
 import CampaignDetailScreen from './donation/CampaignDetailScreen';
 import DonationCheckoutScreen from './donation/DonationCheckoutScreen';
 import KajianScreen from './kajian/KajianScreen';
 import KajianDetailScreen from './kajian/KajianDetailScreen';
+import ContentListScreen from './content/ContentListScreen';
+import ContentDetailScreen from './content/ContentDetailScreen';
 
 type QueryResult = {
   data?: unknown;
@@ -66,6 +68,24 @@ async function render(element: React.ReactElement) {
   return component!;
 }
 
+async function press(node: ReactTestInstance) {
+  const onPress: unknown = node.props.onPress;
+  if (typeof onPress !== 'function') {
+    throw new Error('Expected a pressable test node');
+  }
+  await act(async () => {
+    onPress();
+    await Promise.resolve();
+  });
+}
+
+async function unmount(component: ReactTestRenderer) {
+  await act(async () => {
+    component.unmount();
+    await Promise.resolve();
+  });
+}
+
 describe('Nawasena service screens', () => {
   beforeEach(() => {
     jest.clearAllMocks();
@@ -87,8 +107,9 @@ describe('Nawasena service screens', () => {
 
     const campaignButton = component.root.findAllByProps({accessibilityRole: 'button'})
       .find(node => node.findAllByType(Text).some(text => text.props.children === campaign.name))!;
-    act(() => campaignButton.props.onPress());
+    await press(campaignButton);
     expect(navigate).toHaveBeenCalledWith('CampaignDetail', {campaign});
+    await unmount(component);
   });
 
   it('renders campaign detail and starts checkout', async () => {
@@ -99,8 +120,9 @@ describe('Nawasena service screens', () => {
       <CampaignDetailScreen navigation={{navigate} as never} route={{params: {campaign}} as never} />,
     );
 
-    act(() => component.root.findByProps({accessibilityLabel: 'Donasi sekarang'}).props.onPress());
+    await press(component.root.findByProps({accessibilityLabel: 'Donasi sekarang'}));
     expect(navigate).toHaveBeenCalledWith('DonationCheckout', {campaign});
+    await unmount(component);
   });
 
   it('renders checkout presets, payment method and submit control', async () => {
@@ -113,9 +135,10 @@ describe('Nawasena service screens', () => {
       <DonationCheckoutScreen navigation={{} as never} route={{params: {campaign}} as never} />,
     );
 
-    act(() => component.root.findByProps({accessibilityLabel: 'Rp 50.000'}).props.onPress());
-    act(() => component.root.findByProps({accessibilityLabel: 'Tunaikan niat baik'}).props.onPress());
+    await press(component.root.findByProps({accessibilityLabel: 'Rp 50.000'}));
+    await press(component.root.findByProps({accessibilityLabel: 'Tunaikan niat baik'}));
     expect(mockMutate).toHaveBeenCalledTimes(1);
+    await unmount(component);
   });
 
   it('renders kajian list/detail and opens published external links', async () => {
@@ -124,16 +147,98 @@ describe('Nawasena service screens', () => {
     const list = await render(<KajianScreen navigation={{navigate} as never} route={{} as never} />);
     const kajianButton = list.root.findAllByProps({accessibilityRole: 'button'})
       .find(node => node.findAllByType(Text).some(text => text.props.children === kajian.title))!;
-    act(() => kajianButton.props.onPress());
+    await press(kajianButton);
     expect(navigate).toHaveBeenCalledWith('KajianDetail', {kajian});
 
     const openURL = jest.spyOn(Linking, 'openURL').mockResolvedValue(undefined);
     const detail = await render(
       <KajianDetailScreen navigation={{} as never} route={{params: {kajian}} as never} />,
     );
-    act(() => detail.root.findByProps({accessibilityLabel: 'Buka peta'}).props.onPress());
-    act(() => detail.root.findByProps({accessibilityLabel: 'Buka live stream'}).props.onPress());
+    await press(detail.root.findByProps({accessibilityLabel: 'Buka peta'}));
+    await press(detail.root.findByProps({accessibilityLabel: 'Buka live stream'}));
     expect(openURL).toHaveBeenNthCalledWith(1, kajian.map_url);
     expect(openURL).toHaveBeenNthCalledWith(2, kajian.live_url);
+    await unmount(list);
+    await unmount(detail);
   });
+
+  it('renders public content variants and preserves ContentDetail navigation', async () => {
+    const items: ContentItem[] = [
+      {id: 'news-1', type: 'news', title: 'Kabar Zabisa', slug: 'kabar-zabisa', summary: 'Kabar terbaru.', body: 'Isi berita.'},
+      {id: 'program-1', type: 'programs', title: 'Program Santri', slug: 'program-santri', summary: 'Program publik.', body: 'Isi program.'},
+      {id: 'gallery-1', type: 'gallery', title: 'Galeri Kegiatan', slug: 'galeri-kegiatan', summary: 'Dokumentasi.', body: 'Isi galeri.'},
+      {id: 'profile-1', type: 'profile', title: 'Tentang Zabisa', slug: 'tentang-zabisa', summary: 'Profil publik.', body: 'Isi profil.'},
+    ];
+
+    for (const item of items) {
+      mockQueries.set('content', query([item]));
+      const navigate = jest.fn<(screen: string, params?: unknown) => void>();
+      const list = await render(
+        <ContentListScreen
+          navigation={{navigate} as never}
+          route={{params: {type: item.type, title: item.title}} as never}
+        />,
+      );
+      const itemButton = list.root.findAllByProps({accessibilityRole: 'button'})
+        .find(node => node.findAllByType(Text).some(text => text.props.children === item.title))!;
+      await press(itemButton);
+      expect(navigate).toHaveBeenCalledWith('ContentDetail', {id: item.id, title: item.title});
+      await unmount(list);
+
+      mockQueries.set('content-detail', query(item));
+      const detail = await render(
+        <ContentDetailScreen navigation={{} as never} route={{params: {id: item.id, title: item.title}} as never} />,
+      );
+      expect(detail.root.findAllByType(Text).some(text => text.props.children === item.body)).toBe(true);
+      await unmount(detail);
+    }
+  });
+
+  it('renders public content loading, empty, error, retry and missing-detail states', async () => {
+    const refetch = jest.fn();
+    mockQueries.set('content', {isLoading: true, isError: false, refetch});
+    let component = await render(
+      <ContentListScreen navigation={{navigate: jest.fn()} as never} route={{params: {type: 'news', title: 'Berita'}} as never} />,
+    );
+    expect(component.root.findAllByType(Text).some(text => text.props.children === 'Memuat berita...')).toBe(true);
+    await unmount(component);
+
+    mockQueries.set('content', query([]));
+    component = await render(
+      <ContentListScreen navigation={{navigate: jest.fn()} as never} route={{params: {type: 'news', title: 'Berita'}} as never} />,
+    );
+    expect(component.root.findAllByType(Text).some(text => text.props.children === 'Belum ada berita yang dipublikasikan.')).toBe(true);
+    await unmount(component);
+
+    mockQueries.set('content', {isLoading: false, isError: true, error: new Error('Konten gagal dimuat'), refetch});
+    component = await render(
+      <ContentListScreen navigation={{navigate: jest.fn()} as never} route={{params: {type: 'news', title: 'Berita'}} as never} />,
+    );
+    await press(component.root.findByProps({accessibilityLabel: 'Coba lagi'}));
+    expect(refetch).toHaveBeenCalledTimes(1);
+    await unmount(component);
+
+    mockQueries.set('content-detail', {isLoading: true, isError: false, refetch});
+    component = await render(
+      <ContentDetailScreen navigation={{} as never} route={{params: {id: 'news-1', title: 'Kabar Zabisa'}} as never} />,
+    );
+    expect(component.root.findAllByType(Text).some(text => text.props.children === 'Memuat kabar zabisa...')).toBe(true);
+    await unmount(component);
+
+    mockQueries.set('content-detail', {isLoading: false, isError: true, error: new Error('Detail gagal dimuat'), refetch});
+    component = await render(
+      <ContentDetailScreen navigation={{} as never} route={{params: {id: 'news-1', title: 'Kabar Zabisa'}} as never} />,
+    );
+    await press(component.root.findByProps({accessibilityLabel: 'Coba lagi'}));
+    expect(refetch).toHaveBeenCalledTimes(2);
+    await unmount(component);
+
+    mockQueries.set('content-detail', query(undefined));
+    component = await render(
+      <ContentDetailScreen navigation={{} as never} route={{params: {id: 'missing', title: 'Informasi'}} as never} />,
+    );
+    expect(component.root.findAllByType(Text).some(text => text.props.children === 'Konten tidak ditemukan.')).toBe(true);
+    await unmount(component);
+  });
+
 });

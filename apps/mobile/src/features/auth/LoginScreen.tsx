@@ -43,7 +43,8 @@ export default function LoginScreen({navigation}: RootStackScreenProps<'Login'>)
           </View>
         </View>
       </View>
-      <AppHeader eyebrow="PORTAL WALI SANTRI" title="Selamat datang kembali" subtitle="Masuk untuk melihat perkembangan ananda secara privat dan aman." />
+      <AppHeader eyebrow="AKSES PRIVAT WALI SANTRI" title="Selamat datang kembali" subtitle="Kajian dan donasi dapat diakses publik. Login hanya diperlukan untuk melihat data ananda dan notifikasi pribadi." mascot="welcome" />
+      <Card style={styles.publicAccessCard}><Text style={styles.publicAccessTitle}>Akses publik tetap terbuka</Text><Muted>Kajian, program donasi, berita, galeri, dan profil Zabisa tetap dapat dibuka tanpa login.</Muted></Card>
       <View style={styles.loginCard}>
         <Text style={styles.loginTitle}>Masuk ke akun</Text>
         <TextField label="Email" value={email} onChangeText={setEmail} autoCapitalize="none" autoCorrect={false} keyboardType="email-address" textContentType="username" placeholder="nama@email.com" />
@@ -71,6 +72,8 @@ const styles = StyleSheet.create({
   brandCopy: {flex: 1},
   brand: {fontSize: 24, lineHeight: 29, fontWeight: '900', color: colors.white},
   brandSubtitle: {...type.caption, color: colors.onPrimaryMuted, marginTop: 2},
+  publicAccessCard: {marginTop: space.sm, backgroundColor: colors.primarySofter, borderColor: colors.primarySoft},
+  publicAccessTitle: {...type.bodyStrong, color: colors.primaryDeep, marginBottom: space.xs},
   loginCard: {backgroundColor: colors.surface, borderRadius: radius.xl, borderWidth: 1, borderColor: colors.line, padding: space.xl, marginTop: space.sm},
   loginTitle: {...type.section, color: colors.text, marginBottom: space.lg},
   errorBox: {backgroundColor: colors.dangerSoft, borderRadius: radius.md, padding: space.md, marginBottom: space.sm},

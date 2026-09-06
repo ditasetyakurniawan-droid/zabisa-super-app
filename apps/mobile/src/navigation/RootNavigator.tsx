@@ -21,6 +21,7 @@ import GuardianStudentScreen from '../features/guardian/GuardianStudentScreen';
 import ContentListScreen from '../features/content/ContentListScreen';
 import ContentDetailScreen from '../features/content/ContentDetailScreen';
 import {AppIcon, type AppIconName} from '../components/AppIcon';
+import {useReducedMotion} from '../components/Motion';
 import {colors, radius, serviceColors, shadowSoft, space} from '../theme/tokens';
 import {useAuth} from '../store/auth';
 import {api} from '../api/client';
@@ -96,6 +97,7 @@ const styles = StyleSheet.create({
 
 export default function RootNavigator() {
   const user = useAuth(s => s.user);
+  const reducedMotion = useReducedMotion();
   const pendingUrl = React.useRef<string | null>(null);
   const initialUrlRead = React.useRef(false);
 
@@ -167,7 +169,7 @@ export default function RootNavigator() {
         }
       }}
       theme={{...DefaultTheme, colors: {...DefaultTheme.colors, primary: colors.primary, background: colors.background, card: colors.surface, text: colors.text, border: colors.line, notification: colors.danger}}}>
-      <Stack.Navigator screenOptions={{headerTintColor: colors.primary, headerStyle: {backgroundColor: colors.surfaceWarm}, headerTitleStyle: {fontWeight: '800', color: colors.text}, headerShadowVisible: false, contentStyle: {backgroundColor: colors.background}}}>
+      <Stack.Navigator screenOptions={{headerTintColor: colors.primary, headerStyle: {backgroundColor: colors.surfaceWarm}, headerTitleStyle: {fontWeight: '800', color: colors.text}, headerShadowVisible: false, contentStyle: {backgroundColor: colors.background}, animation: reducedMotion ? 'none' : 'fade_from_bottom'}}>
         <Stack.Screen name="Main" component={Tabs} options={{headerShown: false}} />
         <Stack.Screen name="Login" component={LoginScreen} options={{title: 'Masuk ke Zabisa'}} />
         <Stack.Screen name="KajianDetail" component={KajianDetailScreen} options={{title: 'Detail Kajian'}} />

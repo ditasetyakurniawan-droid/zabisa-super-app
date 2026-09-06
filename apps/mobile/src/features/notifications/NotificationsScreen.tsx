@@ -53,9 +53,9 @@ export default function NotificationsScreen({navigation}: MainTabScreenProps<'No
 
   return (
     <Screen>
-      <AppHeader eyebrow="INBOX" title="Notifikasi" subtitle="Informasi penting tetap tersimpan meskipun push notification terlewat." />
-      {!user ? <View style={styles.body}><Empty icon="notification" text="Login melalui menu Akun untuk melihat notifikasi pribadi." /></View> : null}
-      {user && query.isLoading ? <Loading label="Memuat notifikasi..." /> : null}
+      <AppHeader mascot="notification" eyebrow="INBOX" title="Notifikasi" subtitle="Informasi penting tetap tersimpan meskipun push notification terlewat." />
+      {!user ? <View style={styles.body}><Empty icon="notification" mascot="notification" text="Login melalui menu Akun untuk melihat notifikasi pribadi." /></View> : null}
+      {user && query.isLoading ? <Loading label="Memuat notifikasi..." mascot="notification" /> : null}
       {user && query.isError ? <View style={styles.body}><ErrorState message={userMessage(query.error)} onRetry={() => query.refetch()} /></View> : null}
       {user && !query.isLoading && !query.isError ? (
         <FlatList
@@ -67,7 +67,7 @@ export default function NotificationsScreen({navigation}: MainTabScreenProps<'No
               {unreadCount ? `${unreadCount} belum dibaca` : 'Semua sudah dibaca'}
             </SectionTitle>
           ) : undefined}
-          ListEmptyComponent={<Empty icon="notification" text="Belum ada notifikasi." />}
+          ListEmptyComponent={<Empty icon="notification" mascot="notification" text="Belum ada notifikasi." />}
           renderItem={({item}) => (
             <Card style={!item.read ? styles.unreadCard : undefined} onPress={() => openNotification(item)}>
               <View style={styles.row}><Pill tone={tone(item.type)} text={notificationTypeLabel(item.type)} />{!item.read ? <View accessibilityLabel="Belum dibaca" style={styles.unreadDot} /> : null}</View>

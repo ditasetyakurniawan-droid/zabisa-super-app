@@ -76,6 +76,7 @@ export const type = {
 
 export const motion = {quick: 160, standard: 280, ambient: 4200} as const;
 export const control = {minimumTapSize: 48, buttonHeight: 54, fieldHeight: 58} as const;
+export const depth = {press: 4, serviceBase: 7, highlight: 2} as const;
 
 export const shadow: ViewStyle = {
   shadowColor: '#0A3475',
@@ -83,6 +84,14 @@ export const shadow: ViewStyle = {
   shadowOpacity: 0.16,
   shadowRadius: 24,
   elevation: 6,
+};
+
+export const shadowMedium: ViewStyle = {
+  shadowColor: '#103B78',
+  shadowOffset: {width: 0, height: 7},
+  shadowOpacity: 0.11,
+  shadowRadius: 18,
+  elevation: 4,
 };
 
 export const shadowSoft: ViewStyle = {
