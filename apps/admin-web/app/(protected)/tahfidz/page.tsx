@@ -1,6 +1,6 @@
 "use client";
 
-import {FormEvent, useState} from "react";
+import {SyntheticEvent, useState} from "react";
 import DataTable from "../../../components/DataTable";
 import {Card, PageHeader, Pill} from "../../../components/Page";
 import {api} from "../../../lib/client";
@@ -22,7 +22,7 @@ export default function TahfidzPage() {
     message ||
     queryErrorMessage(studentsQuery.error, entriesQuery.error, targetsQuery.error);
 
-  async function createEntry(event: FormEvent<HTMLFormElement>) {
+  async function createEntry(event: SyntheticEvent<HTMLFormElement>) {
     event.preventDefault();
     const formEl = event.currentTarget;
     const form = new FormData(formEl);
@@ -55,7 +55,7 @@ export default function TahfidzPage() {
     }
   }
 
-  async function saveTarget(event: FormEvent<HTMLFormElement>) {
+  async function saveTarget(event: SyntheticEvent<HTMLFormElement>) {
     event.preventDefault();
     const formEl = event.currentTarget;
     const form = new FormData(formEl);

@@ -63,8 +63,8 @@ export default function GuardianStudentScreen({route}: RootStackScreenProps<'Gua
       {attendance.isLoading ? <Loading label="Memuat kehadiran..." /> : null}
       {attendance.isError ? <ErrorState message={userMessage(attendance.error)} onRetry={() => attendance.refetch()} /> : null}
       {!attendance.isLoading && !attendance.isError && !attendance.data?.length ? <Empty icon="attendance" text="Belum ada data kehadiran." /> : null}
-      {attendance.data?.slice(0, 10).map((item, index) => (
-        <Card key={`${item.date}-${index}`}>
+      {attendance.data?.slice(0, 10).map(item => (
+        <Card key={`${item.date}-${item.status}-${item.note ?? ''}`}>
           <View style={styles.rowBetween}>
             <Text style={styles.itemTitle}>{formatDateID(item.date)}</Text>
             <Pill tone={item.status === 'PRESENT' ? 'success' : item.status === 'ABSENT' ? 'danger' : 'warning'} text={formatAttendanceStatus(item.status)} />

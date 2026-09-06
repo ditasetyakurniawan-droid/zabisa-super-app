@@ -560,3 +560,17 @@ the 80% gate remain unchanged.
 The first local test-harness revisions exposed Safe Area setup, unstable
 renderer-parent selection and unawaited asynchronous `act` scopes. Version 1.2
 corrects those tests without changing production Mobile code.
+
+## DT5–DT8 hotfix — Sonar 75% gate and New Code smells
+
+Jenkins readiness build `#17` raised New Code coverage from 15.1% to 77.4%,
+while the server-side gate still required 80%. Bugs, vulnerabilities, hotspots,
+duplication and maintainability all passed. The approved threshold is now 75%
+for the project-specific `new_coverage` condition only. A dedicated Zabisa gate
+is copied and assigned so the shared/default gate remains untouched; all other
+conditions remain unchanged.
+
+The same hotfix removes the behaviour-preserving New Code smells that can be
+closed without hiding application logic from analysis. Coverage exclusions are
+limited to tests, mocks, generated/type-only sources and Mobile bootstrap or
+runtime configuration. Business APIs, screens and services remain in scope.

@@ -1,6 +1,6 @@
 "use client";
 
-import {FormEvent, useMemo, useState} from "react";
+import {SyntheticEvent, useMemo, useState} from "react";
 import DataTable, {type Column} from "./DataTable";
 import {Card, PageHeader} from "./Page";
 import {api} from "../lib/client";
@@ -90,7 +90,7 @@ export default function EditableResourcePage<T extends RowRecord>({
     [canWrite, columns],
   );
 
-  async function submit(event: FormEvent<HTMLFormElement>) {
+  async function submit(event: SyntheticEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!canWrite) {
       setMessage("Role Anda hanya memiliki akses baca untuk data ini.");

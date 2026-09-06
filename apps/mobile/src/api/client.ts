@@ -74,7 +74,7 @@ async function request<T>(path: string, init: RequestInit = {}, allowRefresh = t
       const err = body.error;
       throw new ApiError(err?.message ?? `HTTP ${response.status}`, response.status, err?.code, err?.trace_id);
     }
-    return body.data as T;
+    return body.data;
   } finally {
     clearTimeout(timeout);
   }

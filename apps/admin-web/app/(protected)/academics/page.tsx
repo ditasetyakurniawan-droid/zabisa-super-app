@@ -1,6 +1,6 @@
 "use client";
 
-import {FormEvent, useState} from "react";
+import {SyntheticEvent, useState} from "react";
 import DataTable from "../../../components/DataTable";
 import {Card, PageHeader, Pill} from "../../../components/Page";
 import {api, dateTime} from "../../../lib/client";
@@ -38,7 +38,7 @@ export default function AcademicsPage() {
       sessionQuery.error,
     );
 
-  async function saveSubject(event: FormEvent<HTMLFormElement>) {
+  async function saveSubject(event: SyntheticEvent<HTMLFormElement>) {
     if (!canWrite) { setMessage("Role Anda hanya memiliki akses baca akademik."); return; }
     event.preventDefault();
     const formEl = event.currentTarget;
@@ -69,7 +69,7 @@ export default function AcademicsPage() {
     }
   }
 
-  async function saveGrade(event: FormEvent<HTMLFormElement>) {
+  async function saveGrade(event: SyntheticEvent<HTMLFormElement>) {
     if (!canWrite) { setMessage("Role Anda hanya memiliki akses baca akademik."); return; }
     event.preventDefault();
     const formEl = event.currentTarget;
@@ -120,7 +120,7 @@ export default function AcademicsPage() {
     }
   }
 
-  async function createReport(event: FormEvent<HTMLFormElement>) {
+  async function createReport(event: SyntheticEvent<HTMLFormElement>) {
     if (!canWrite) { setMessage("Role Anda hanya memiliki akses baca akademik."); return; }
     event.preventDefault();
     const formEl = event.currentTarget;

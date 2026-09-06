@@ -1,6 +1,6 @@
 "use client";
 
-import {FormEvent, useState} from "react";
+import {SyntheticEvent, useState} from "react";
 import DataTable, {type Column} from "./DataTable";
 import {Card, PageHeader} from "./Page";
 import {api} from "../lib/client";
@@ -53,7 +53,7 @@ export default function ResourcePage<T extends RowRecord>({
   const rows = query.data ?? [];
   const errorMessage = message || queryErrorMessage(query.error);
 
-  async function submit(event: FormEvent<HTMLFormElement>) {
+  async function submit(event: SyntheticEvent<HTMLFormElement>) {
     event.preventDefault();
     setMessage("");
 

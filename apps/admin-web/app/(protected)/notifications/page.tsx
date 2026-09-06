@@ -1,6 +1,6 @@
 "use client";
 
-import {FormEvent, useState} from "react";
+import {SyntheticEvent, useState} from "react";
 import DataTable from "../../../components/DataTable";
 import {Card, PageHeader, Pill} from "../../../components/Page";
 import {api, dateTime} from "../../../lib/client";
@@ -35,7 +35,7 @@ export default function NotificationsPage() {
       sessionQuery.error,
     );
 
-  async function submit(event: FormEvent<HTMLFormElement>) {
+  async function submit(event: SyntheticEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!canWrite) { setMessage("Role Anda hanya memiliki akses baca notifikasi."); return; }
     const formEl = event.currentTarget;

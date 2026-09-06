@@ -1,6 +1,6 @@
 "use client";
 
-import {FormEvent, useState} from "react";
+import {SyntheticEvent, useState} from "react";
 import DataTable from "../../../components/DataTable";
 import {Card, PageHeader, Pill} from "../../../components/Page";
 import {api, dateTime, money} from "../../../lib/client";
@@ -29,7 +29,7 @@ export default function DonationPage() {
   const methods = methodsQuery.data ?? [];
   const errorMessage = message || queryErrorMessage(campaignsQuery.error, donationsQuery.error, methodsQuery.error);
 
-  async function saveCampaign(event: FormEvent<HTMLFormElement>) {
+  async function saveCampaign(event: SyntheticEvent<HTMLFormElement>) {
     event.preventDefault();
     const formEl = event.currentTarget;
     const form = new FormData(formEl);
@@ -70,7 +70,7 @@ export default function DonationPage() {
     }
   }
 
-  async function savePaymentMethod(event: FormEvent<HTMLFormElement>) {
+  async function savePaymentMethod(event: SyntheticEvent<HTMLFormElement>) {
     event.preventDefault();
     const formEl = event.currentTarget;
     const form = new FormData(formEl);
@@ -97,7 +97,7 @@ export default function DonationPage() {
     }
   }
 
-  async function createCampaignUpdate(event: FormEvent<HTMLFormElement>) {
+  async function createCampaignUpdate(event: SyntheticEvent<HTMLFormElement>) {
     event.preventDefault();
     const formEl = event.currentTarget;
     const form = new FormData(formEl);

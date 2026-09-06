@@ -1,6 +1,6 @@
 "use client";
 
-import {FormEvent, useMemo, useState} from "react";
+import {SyntheticEvent, useMemo, useState} from "react";
 import DataTable from "../../../components/DataTable";
 import {Card, PageHeader, Pill} from "../../../components/Page";
 import {api} from "../../../lib/client";
@@ -36,7 +36,7 @@ export default function GuardiansPage() {
       sessionQuery.error,
     );
 
-  async function createGuardian(event: FormEvent<HTMLFormElement>) {
+  async function createGuardian(event: SyntheticEvent<HTMLFormElement>) {
     event.preventDefault();
     const formEl = event.currentTarget;
     const form = new FormData(formEl);
@@ -73,7 +73,7 @@ export default function GuardiansPage() {
     }
   }
 
-  async function submit(event: FormEvent<HTMLFormElement>) {
+  async function submit(event: SyntheticEvent<HTMLFormElement>) {
     event.preventDefault();
     const form = new FormData(event.currentTarget);
     try {

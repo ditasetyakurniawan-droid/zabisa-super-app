@@ -1,7 +1,7 @@
 "use client";
 
 import {useQueryClient} from "@tanstack/react-query";
-import {FormEvent, useState} from "react";
+import {SyntheticEvent, useState} from "react";
 import DataTable from "../../../components/DataTable";
 import {Card, PageHeader, Pill} from "../../../components/Page";
 import {api} from "../../../lib/client";
@@ -48,7 +48,7 @@ export default function AccessPage() {
     ]);
   }
 
-  async function create(event: FormEvent<HTMLFormElement>) {
+  async function create(event: SyntheticEvent<HTMLFormElement>) {
     event.preventDefault();
     const formEl = event.currentTarget;
     const form = new FormData(formEl);
@@ -73,7 +73,7 @@ export default function AccessPage() {
     }
   }
 
-  async function update(event: FormEvent<HTMLFormElement>) {
+  async function update(event: SyntheticEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!selected) return;
 
@@ -229,7 +229,7 @@ export default function AccessPage() {
               label: "Role",
               render: row => (
                 <Pill tone="info">
-                  {roleLabels[row.role as keyof typeof roleLabels] || row.role}
+                  {roleLabels[row.role] || row.role}
                 </Pill>
               ),
             },

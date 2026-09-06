@@ -212,9 +212,31 @@ export function IconTile({icon, label, subtitle, onPress, color = colors.primary
   );
 }
 
-export function Pill({text, tone = 'neutral'}: {text: string; tone?: 'neutral' | 'success' | 'warning' | 'danger' | 'primary'}) {
-  const toneStyle = tone === 'success' ? styles.pillSuccess : tone === 'warning' ? styles.pillWarning : tone === 'danger' ? styles.pillDanger : tone === 'primary' ? styles.pillPrimary : styles.pillNeutral;
-  const toneText = tone === 'primary' ? styles.pillTextPrimary : tone === 'success' ? styles.pillTextSuccess : tone === 'warning' ? styles.pillTextWarning : tone === 'danger' ? styles.pillTextDanger : undefined;
+type PillTone = 'neutral' | 'success' | 'warning' | 'danger' | 'primary';
+
+function pillToneStyle(tone: PillTone) {
+  switch (tone) {
+    case 'success': return styles.pillSuccess;
+    case 'warning': return styles.pillWarning;
+    case 'danger': return styles.pillDanger;
+    case 'primary': return styles.pillPrimary;
+    default: return styles.pillNeutral;
+  }
+}
+
+function pillTextStyle(tone: PillTone) {
+  switch (tone) {
+    case 'success': return styles.pillTextSuccess;
+    case 'warning': return styles.pillTextWarning;
+    case 'danger': return styles.pillTextDanger;
+    case 'primary': return styles.pillTextPrimary;
+    default: return undefined;
+  }
+}
+
+export function Pill({text, tone = 'neutral'}: {text: string; tone?: PillTone}) {
+  const toneStyle = pillToneStyle(tone);
+  const toneText = pillTextStyle(tone);
   return <View style={[styles.pill, toneStyle]}><Text style={[styles.pillText, toneText]}>{text}</Text></View>;
 }
 

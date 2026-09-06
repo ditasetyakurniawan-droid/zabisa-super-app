@@ -35,7 +35,7 @@ export default function HomeScreen({navigation}: MainTabScreenProps<'Home'>) {
           <Text style={styles.heroTitle}>Ilmu tumbuh. Adab berlabuh.</Text>
           <Text style={styles.heroBody}>Dekat dengan perjalanan santri dan kebaikan Zabisa, setiap hari.</Text>
           {guardian && students.data?.length ? (
-            <Pressable accessibilityRole="button" onPress={() => navigation.navigate('GuardianStudent', {student: students.data![0]})} style={({pressed}) => [styles.heroAction, pressed && styles.heroActionPressed]}>
+            <Pressable accessibilityRole="button" onPress={() => navigation.navigate('GuardianStudent', {student: students.data[0]})} style={({pressed}) => [styles.heroAction, pressed && styles.heroActionPressed]}>
               <Text style={styles.heroActionText}>Lihat ananda</Text>
               <Text style={styles.heroActionArrow}>›</Text>
             </Pressable>

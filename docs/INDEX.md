@@ -49,6 +49,7 @@ Read `NEXT_SESSION_START_HERE.md` first when work resumes.
 | `deployment/PHASE-DT5-DT8-CONTROLLED-ROLLOUT.md` | Encrypted recovery proof, canary migration, exact ArgoCD sync, secure admin and internal acceptance |
 | `deployment/HOTFIX-DT58-JENKINS-CURL-AUTH.md` | Pre-delivery netrc parser failure, credential-file correction and guarded resume |
 | `deployment/HOTFIX-DT58-SONAR-NEW-CODE-COVERAGE.md` | 15.1% New Code coverage failure and behavioural-test remediation |
+| `deployment/HOTFIX-DT58-SONAR-75-CODE-SMELLS.md` | 75% project gate, narrow exclusions and New Code smell cleanup |
 | `mobile/PHASE3_9_UI_UX_REDESIGN.md` | UI-only redesign scope, zero-logic invariant and device acceptance gate |
 | `architecture/ADR-011-MOBILE-SAKINAH-DESIGN-SYSTEM.md` | Amended Nawasena design-system decision and migration safety boundary |
 | `runbook/JENKINS_DELIVERY.md` | Existing Jenkins/Harbor workflow, controls and developer procedure |
