@@ -84,3 +84,14 @@ func TestMigrateModeRequiresDBButNotApplicationAuthSecrets(t *testing.T) {
 		t.Fatal("migration-only mode flags are inconsistent")
 	}
 }
+
+func TestEnvUsesTrimmedValueAndFallback(t *testing.T) {
+	t.Setenv("ZABISA_TEST_ENV", "  configured  ")
+	if got := Env("ZABISA_TEST_ENV", "fallback"); got != "configured" {
+		t.Fatalf("Env configured value = %q", got)
+	}
+	t.Setenv("ZABISA_TEST_ENV", "")
+	if got := Env("ZABISA_TEST_ENV", "fallback"); got != "fallback" {
+		t.Fatalf("Env fallback = %q", got)
+	}
+}

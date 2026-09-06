@@ -8,10 +8,8 @@ import (
 	"time"
 
 	"github.com/zabisa/platform/packages/go/platform/auditx"
-	"github.com/zabisa/platform/packages/go/platform/auth"
-	"github.com/zabisa/platform/packages/go/platform/authz"
+	"github.com/zabisa/platform/packages/go/platform/database"
 	"github.com/zabisa/platform/packages/go/platform/httpx"
-	"github.com/zabisa/platform/packages/go/platform/router"
 )
 
 type adminNotificationIn struct {
@@ -23,23 +21,8 @@ type adminNotificationIn struct {
 	ScheduledAt string `json:"scheduled_at"`
 }
 
-func (a *app) requirePermission(permission authz.Permission, h router.HandlerFunc) router.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request, p map[string]string) {
-		c, err := auth.Verify(a.cfg.JWTKey, strings.TrimSpace(strings.TrimPrefix(r.Header.Get("Authorization"), "Bearer ")))
-		if err != nil {
-			httpx.Fail(w, r, 401, "UNAUTHORIZED", "Authentication required")
-			return
-		}
-		if !authz.Has(c.Role, permission) {
-			httpx.Fail(w, r, 403, "FORBIDDEN", "Insufficient permission")
-			return
-		}
-		h(w, r, p)
-	}
-}
-
 func (a *app) createAdminNotification(w http.ResponseWriter, r *http.Request, _ map[string]string) {
-	actor, _ := a.claims(r)
+	actor, _ := a.access.Claims(r)
 	var in adminNotificationIn
 	if !httpx.Decode(w, r, &in) {
 		return
@@ -62,7 +45,7 @@ func (a *app) createAdminNotification(w http.ResponseWriter, r *http.Request, _ 
 			return
 		}
 		defer tx.Rollback()
-		if _, err = tx.ExecContext(r.Context(), `INSERT INTO scheduled_notifications(id,user_id,type,title,message,deep_link,scheduled_at) VALUES(?,?,?,?,?,?,?)`, id, n(in.UserID), in.Type, in.Title, in.Message, n(in.DeepLink), t.UTC()); err != nil {
+		if _, err = tx.ExecContext(r.Context(), `INSERT INTO scheduled_notifications(id,user_id,type,title,message,deep_link,scheduled_at) VALUES(?,?,?,?,?,?,?)`, id, database.NullString(in.UserID), in.Type, in.Title, in.Message, database.NullString(in.DeepLink), t.UTC()); err != nil {
 			httpx.Fail(w, r, 500, "SAVE_FAILED", "Could not schedule notification")
 			return
 		}
@@ -85,7 +68,7 @@ func (a *app) createAdminNotification(w http.ResponseWriter, r *http.Request, _ 
 		return
 	}
 	defer tx.Rollback()
-	if _, err = tx.ExecContext(r.Context(), `INSERT INTO notifications(id,user_id,type,title,message,deep_link) VALUES(?,?,?,?,?,?)`, id, n(in.UserID), in.Type, in.Title, in.Message, n(in.DeepLink)); err != nil {
+	if _, err = tx.ExecContext(r.Context(), `INSERT INTO notifications(id,user_id,type,title,message,deep_link) VALUES(?,?,?,?,?,?)`, id, database.NullString(in.UserID), in.Type, in.Title, in.Message, database.NullString(in.DeepLink)); err != nil {
 		httpx.Fail(w, r, 500, "SAVE_FAILED", "Could not create notification")
 		return
 	}

@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/zabisa/platform/packages/go/platform/auditx"
+	"github.com/zabisa/platform/packages/go/platform/database"
 	"github.com/zabisa/platform/packages/go/platform/httpx"
 )
 
@@ -33,14 +34,14 @@ func (a *app) listGradesAdmin(w http.ResponseWriter, r *http.Request, _ map[stri
 		var published bool
 		var created time.Time
 		if rows.Scan(&id, &student, &subjectID, &code, &name, &year, &semester, &typ, &score, &grade, &note, &published, &teacher, &created) == nil {
-			out = append(out, map[string]any{"id": id, "student_id": student, "subject_id": subjectID, "subject_code": code, "subject_name": name, "academic_year": year, "semester": semester, "assessment_type": typ, "score": nullableFloat(score), "grade": grade.String, "teacher_note": note.String, "published": published, "teacher_user_id": teacher, "created_at": created})
+			out = append(out, map[string]any{"id": id, "student_id": student, "subject_id": subjectID, "subject_code": code, "subject_name": name, "academic_year": year, "semester": semester, "assessment_type": typ, "score": database.NullableFloat(score), "grade": grade.String, "teacher_note": note.String, "published": published, "teacher_user_id": teacher, "created_at": created})
 		}
 	}
 	httpx.JSON(w, 200, out)
 }
 
 func (a *app) createReport(w http.ResponseWriter, r *http.Request, _ map[string]string) {
-	actor, _ := a.claims(r)
+	actor, _ := a.access.Claims(r)
 	var in reportIn
 	if !httpx.Decode(w, r, &in) {
 		return

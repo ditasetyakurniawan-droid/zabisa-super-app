@@ -4,29 +4,26 @@ import (
 	"context"
 	"database/sql"
 	"embed"
+	"net/http"
+	"strings"
+
+	"github.com/zabisa/platform/packages/go/platform/access"
 	"github.com/zabisa/platform/packages/go/platform/auditx"
-	"github.com/zabisa/platform/packages/go/platform/auth"
 	"github.com/zabisa/platform/packages/go/platform/authz"
 	"github.com/zabisa/platform/packages/go/platform/config"
 	"github.com/zabisa/platform/packages/go/platform/database"
-	"github.com/zabisa/platform/packages/go/platform/health"
 	"github.com/zabisa/platform/packages/go/platform/httpx"
-	"github.com/zabisa/platform/packages/go/platform/migrate"
 	"github.com/zabisa/platform/packages/go/platform/outbox"
-	"github.com/zabisa/platform/packages/go/platform/router"
-	"github.com/zabisa/platform/packages/go/platform/server"
-	"log/slog"
-	"net/http"
-	"os"
-	"strings"
+	"github.com/zabisa/platform/packages/go/platform/service"
 )
 
 //go:embed migrations/*.sql
 var migrationFS embed.FS
 
 type app struct {
-	db  *sql.DB
-	cfg config.Config
+	db     *sql.DB
+	cfg    config.Config
+	access access.Control
 }
 type subjectIn struct {
 	Code     string `json:"code"`
@@ -46,78 +43,30 @@ type gradeIn struct {
 }
 
 func main() {
-	cfg := config.Load("academic-service", "academic_db", 8085)
-	if err := cfg.ValidateRuntime(true); err != nil {
-		slog.Error("invalid config", "error", err)
-		os.Exit(1)
-	}
-	db, err := database.Open(context.Background(), cfg.DSN(), database.TLSOptions{Mode: cfg.MySQLTLSMode, CAFile: cfg.MySQLTLSCAFile, ServerName: cfg.MySQLTLSServerName})
-	if err != nil {
-		panic(err)
-	}
-	defer db.Close()
-	if cfg.ShouldMigrate() {
-		if err = migrate.Apply(context.Background(), db, migrationFS, "migrations"); err != nil {
-			panic(err)
-		}
-		if cfg.MigrateOnly() {
-			slog.Info("database migrations complete", "service", cfg.Service, "database", cfg.DBName)
-			return
-		}
-	}
-	a := &app{db, cfg}
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-	go outbox.Worker{DB: db, Endpoint: envURL("NOTIFICATION_SERVICE_URL", "http://notification:8087/internal/v1/events"), AuditEndpoint: envURL("AUDIT_SERVICE_URL", "http://identity:8081/internal/v1/audit-events"), InternalKey: cfg.InternalServiceKey, Service: cfg.Service}.Run(ctx)
-	rt := router.New()
-	rt.Handle("GET", "/health/live", health.Live)
-	rt.Handle("GET", "/health/ready", health.Ready(db))
-	rt.Handle("POST", "/api/v1/admin/subjects", a.requirePermission(authz.AcademicsWrite, a.createSubject))
-	rt.Handle("GET", "/api/v1/subjects", a.authed(a.listSubjects))
-	rt.Handle("GET", "/api/v1/admin/subjects", a.requirePermission(authz.AcademicsRead, a.listSubjectsAdmin))
-	rt.Handle("PATCH", "/api/v1/admin/subjects/{id}", a.requirePermission(authz.AcademicsWrite, a.updateSubject))
-	rt.Handle("POST", "/api/v1/grades", a.requirePermission(authz.AcademicsWrite, a.createGrade))
-	rt.Handle("GET", "/api/v1/students/{id}/grades", a.studentScoped(authz.AcademicsRead, a.listGrades))
-	rt.Handle("GET", "/api/v1/admin/grades", a.requirePermission(authz.AcademicsRead, a.listGradesAdmin))
-	rt.Handle("PATCH", "/api/v1/admin/grades/{id}", a.requirePermission(authz.AcademicsWrite, a.updateGradeDraft))
-	rt.Handle("PATCH", "/api/v1/admin/grades/{id}/publish", a.requirePermission(authz.AcademicsPublish, a.publishGrade))
-	rt.Handle("POST", "/api/v1/admin/reports", a.requirePermission(authz.AcademicsWrite, a.createReport))
-	rt.Handle("GET", "/api/v1/admin/reports", a.requirePermission(authz.AcademicsRead, a.listReportsAdmin))
-	rt.Handle("PATCH", "/api/v1/admin/reports/{id}/publish", a.requirePermission(authz.AcademicsPublish, a.publishReportWithNotification))
-	rt.Handle("GET", "/api/v1/students/{id}/reports", a.studentScoped(authz.AcademicsRead, a.listReportsStudent))
-	if err = server.Run(cfg.Port, httpx.Middleware(cfg.Service, cfg.AllowedOrigins, rt)); err != nil {
-		slog.Error("server", "error", err)
-		os.Exit(1)
-	}
+	service.MustRun(service.Options{Name: "academic-service", Database: "academic_db", Port: 8085, Migrations: migrationFS, Build: buildService})
 }
-func (a *app) claims(r *http.Request) (auth.Claims, error) {
-	return auth.Verify(a.cfg.JWTKey, strings.TrimSpace(strings.TrimPrefix(r.Header.Get("Authorization"), "Bearer ")))
-}
-func (a *app) authed(h router.HandlerFunc) router.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request, p map[string]string) {
-		if _, err := a.claims(r); err != nil {
-			httpx.Fail(w, r, 401, "UNAUTHORIZED", "Authentication required")
-			return
-		}
-		h(w, r, p)
-	}
-}
-func (a *app) requirePermission(permission authz.Permission, h router.HandlerFunc) router.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request, p map[string]string) {
-		c, err := a.claims(r)
-		if err != nil {
-			httpx.Fail(w, r, 401, "UNAUTHORIZED", "Authentication required")
-			return
-		}
-		if !authz.Has(c.Role, permission) {
-			httpx.Fail(w, r, 403, "FORBIDDEN", "Insufficient permission")
-			return
-		}
-		h(w, r, p)
-	}
+
+func buildService(ctx context.Context, db *sql.DB, cfg config.Config) (http.Handler, error) {
+	a := &app{db: db, cfg: cfg, access: access.Control{JWTKey: cfg.JWTKey, InternalKey: cfg.InternalServiceKey, StudentServiceURL: config.Env("STUDENT_SERVICE_URL", "http://student:8083")}}
+	go outbox.Worker{DB: db, Endpoint: config.Env("NOTIFICATION_SERVICE_URL", "http://notification:8087/internal/v1/events"), AuditEndpoint: config.Env("AUDIT_SERVICE_URL", "http://identity:8081/internal/v1/audit-events"), InternalKey: cfg.InternalServiceKey, Service: cfg.Service}.Run(ctx)
+	routes := service.Router(db)
+	routes.Handle("POST", "/api/v1/admin/subjects", a.access.RequirePermission(authz.AcademicsWrite, a.createSubject))
+	routes.Handle("GET", "/api/v1/subjects", a.access.Authenticated(a.listSubjects))
+	routes.Handle("GET", "/api/v1/admin/subjects", a.access.RequirePermission(authz.AcademicsRead, a.listSubjectsAdmin))
+	routes.Handle("PATCH", "/api/v1/admin/subjects/{id}", a.access.RequirePermission(authz.AcademicsWrite, a.updateSubject))
+	routes.Handle("POST", "/api/v1/grades", a.access.RequirePermission(authz.AcademicsWrite, a.createGrade))
+	routes.Handle("GET", "/api/v1/students/{id}/grades", a.access.StudentScoped(authz.AcademicsRead, a.listGrades))
+	routes.Handle("GET", "/api/v1/admin/grades", a.access.RequirePermission(authz.AcademicsRead, a.listGradesAdmin))
+	routes.Handle("PATCH", "/api/v1/admin/grades/{id}", a.access.RequirePermission(authz.AcademicsWrite, a.updateGradeDraft))
+	routes.Handle("PATCH", "/api/v1/admin/grades/{id}/publish", a.access.RequirePermission(authz.AcademicsPublish, a.publishGrade))
+	routes.Handle("POST", "/api/v1/admin/reports", a.access.RequirePermission(authz.AcademicsWrite, a.createReport))
+	routes.Handle("GET", "/api/v1/admin/reports", a.access.RequirePermission(authz.AcademicsRead, a.listReportsAdmin))
+	routes.Handle("PATCH", "/api/v1/admin/reports/{id}/publish", a.access.RequirePermission(authz.AcademicsPublish, a.publishReportWithNotification))
+	routes.Handle("GET", "/api/v1/students/{id}/reports", a.access.StudentScoped(authz.AcademicsRead, a.listReportsStudent))
+	return routes, nil
 }
 func (a *app) createSubject(w http.ResponseWriter, r *http.Request, _ map[string]string) {
-	actor, _ := a.claims(r)
+	actor, _ := a.access.Claims(r)
 	var in subjectIn
 	if !httpx.Decode(w, r, &in) {
 		return
@@ -168,7 +117,7 @@ func (a *app) listSubjects(w http.ResponseWriter, r *http.Request, _ map[string]
 	httpx.JSON(w, 200, out)
 }
 func (a *app) createGrade(w http.ResponseWriter, r *http.Request, _ map[string]string) {
-	c, _ := a.claims(r)
+	c, _ := a.access.Claims(r)
 	var in gradeIn
 	if !httpx.Decode(w, r, &in) {
 		return
@@ -180,7 +129,7 @@ func (a *app) createGrade(w http.ResponseWriter, r *http.Request, _ map[string]s
 	id := httpx.NewID()
 	tx, err := a.db.BeginTx(r.Context(), nil)
 	if err == nil {
-		_, err = tx.ExecContext(r.Context(), `INSERT INTO grades(id,student_id,subject_id,academic_year,semester,assessment_type,score,grade,teacher_note,published,teacher_user_id) VALUES(?,?,?,?,?,?,?,?,?,?,?)`, id, in.StudentID, in.SubjectID, in.AcademicYear, in.Semester, in.AssessmentType, in.Score, n(in.Grade), n(in.TeacherNote), in.Published, c.Sub)
+		_, err = tx.ExecContext(r.Context(), `INSERT INTO grades(id,student_id,subject_id,academic_year,semester,assessment_type,score,grade,teacher_note,published,teacher_user_id) VALUES(?,?,?,?,?,?,?,?,?,?,?)`, id, in.StudentID, in.SubjectID, in.AcademicYear, in.Semester, in.AssessmentType, in.Score, database.NullString(in.Grade), database.NullString(in.TeacherNote), in.Published, c.Sub)
 	}
 	if err == nil && in.Published {
 		err = outbox.Add(r.Context(), tx, "GradePublished", map[string]any{"student_id": in.StudentID, "grade_id": id, "deep_link": "zabisa://guardian/students/" + in.StudentID + "/academic/" + id})
@@ -214,27 +163,8 @@ func (a *app) listGrades(w http.ResponseWriter, r *http.Request, p map[string]st
 		var grade, note sql.NullString
 		var created any
 		if rows.Scan(&id, &code, &name, &year, &semester, &typ, &score, &grade, &note, &created) == nil {
-			out = append(out, map[string]any{"id": id, "subject_code": code, "subject_name": name, "academic_year": year, "semester": semester, "assessment_type": typ, "score": nullableFloat(score), "grade": grade.String, "teacher_note": note.String, "created_at": created})
+			out = append(out, map[string]any{"id": id, "subject_code": code, "subject_name": name, "academic_year": year, "semester": semester, "assessment_type": typ, "score": database.NullableFloat(score), "grade": grade.String, "teacher_note": note.String, "created_at": created})
 		}
 	}
 	httpx.JSON(w, 200, out)
-}
-func n(v string) any {
-	if strings.TrimSpace(v) == "" {
-		return nil
-	}
-	return strings.TrimSpace(v)
-}
-func nullableFloat(v sql.NullFloat64) any {
-	if !v.Valid {
-		return nil
-	}
-	return v.Float64
-}
-
-func envURL(key, fallback string) string {
-	if v := strings.TrimSpace(os.Getenv(key)); v != "" {
-		return v
-	}
-	return fallback
 }

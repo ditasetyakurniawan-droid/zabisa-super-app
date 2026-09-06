@@ -16,7 +16,7 @@ type updateTargetIn struct {
 }
 
 func (a *app) updateTarget(w http.ResponseWriter, r *http.Request, p map[string]string) {
-	actor, _ := a.claims(r)
+	actor, _ := a.access.Claims(r)
 	var in updateTargetIn
 	if !httpx.Decode(w, r, &in) {
 		return

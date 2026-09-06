@@ -4,30 +4,27 @@ import (
 	"context"
 	"database/sql"
 	"embed"
+	"net/http"
+	"strings"
+	"time"
+
+	"github.com/zabisa/platform/packages/go/platform/access"
 	"github.com/zabisa/platform/packages/go/platform/auditx"
-	"github.com/zabisa/platform/packages/go/platform/auth"
 	"github.com/zabisa/platform/packages/go/platform/authz"
 	"github.com/zabisa/platform/packages/go/platform/config"
 	"github.com/zabisa/platform/packages/go/platform/database"
-	"github.com/zabisa/platform/packages/go/platform/health"
 	"github.com/zabisa/platform/packages/go/platform/httpx"
-	"github.com/zabisa/platform/packages/go/platform/migrate"
 	"github.com/zabisa/platform/packages/go/platform/outbox"
-	"github.com/zabisa/platform/packages/go/platform/router"
-	"github.com/zabisa/platform/packages/go/platform/server"
-	"log/slog"
-	"net/http"
-	"os"
-	"strings"
-	"time"
+	"github.com/zabisa/platform/packages/go/platform/service"
 )
 
 //go:embed migrations/*.sql
 var migrationFS embed.FS
 
 type app struct {
-	db  *sql.DB
-	cfg config.Config
+	db     *sql.DB
+	cfg    config.Config
+	access access.Control
 }
 type kajianIn struct {
 	Title       string     `json:"title"`
@@ -44,62 +41,24 @@ type kajianIn struct {
 }
 
 func main() {
-	cfg := config.Load("content-service", "content_db", 8082)
-	if err := cfg.ValidateRuntime(true); err != nil {
-		slog.Error("invalid config", "error", err)
-		os.Exit(1)
-	}
-	db, err := database.Open(context.Background(), cfg.DSN(), database.TLSOptions{Mode: cfg.MySQLTLSMode, CAFile: cfg.MySQLTLSCAFile, ServerName: cfg.MySQLTLSServerName})
-	if err != nil {
-		slog.Error("db", "error", err)
-		os.Exit(1)
-	}
-	defer db.Close()
-	if cfg.ShouldMigrate() {
-		if err = migrate.Apply(context.Background(), db, migrationFS, "migrations"); err != nil {
-			slog.Error("migration", "error", err)
-			os.Exit(1)
-		}
-		if cfg.MigrateOnly() {
-			slog.Info("database migrations complete", "service", cfg.Service, "database", cfg.DBName)
-			return
-		}
-	}
-	a := &app{db, cfg}
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-	go outbox.Worker{DB: db, Endpoint: envURL("NOTIFICATION_SERVICE_URL", "http://notification:8087/internal/v1/events"), AuditEndpoint: envURL("AUDIT_SERVICE_URL", "http://identity:8081/internal/v1/audit-events"), InternalKey: cfg.InternalServiceKey, Service: cfg.Service}.Run(ctx)
-	rt := router.New()
-	rt.Handle("GET", "/health/live", health.Live)
-	rt.Handle("GET", "/health/ready", health.Ready(db))
-	rt.Handle("GET", "/api/v1/kajian", a.listKajian)
-	rt.Handle("GET", "/api/v1/kajian/{id}", a.getKajian)
-	rt.Handle("POST", "/api/v1/admin/kajian", a.requirePermission(authz.KajianWrite, a.createKajian))
-	rt.Handle("GET", "/api/v1/admin/kajian", a.requirePermission(authz.KajianRead, a.listKajianAdmin))
-	rt.Handle("PATCH", "/api/v1/admin/kajian/{id}", a.requirePermission(authz.KajianWrite, a.updateKajian))
-	rt.Handle("GET", "/api/v1/content", a.listContent)
-	rt.Handle("GET", "/api/v1/content/{id}", a.getContent)
-	rt.Handle("GET", "/api/v1/admin/content", a.requirePermission(authz.ContentRead, a.listContentAdmin))
-	rt.Handle("POST", "/api/v1/admin/content", a.requirePermission(authz.ContentWrite, a.createContent))
-	rt.Handle("PATCH", "/api/v1/admin/content/{id}", a.requirePermission(authz.ContentWrite, a.updateContent))
-	if err = server.Run(cfg.Port, httpx.Middleware(cfg.Service, cfg.AllowedOrigins, rt)); err != nil {
-		panic(err)
-	}
+	service.MustRun(service.Options{Name: "content-service", Database: "content_db", Port: 8082, Migrations: migrationFS, Build: buildService})
 }
-func (a *app) requirePermission(permission authz.Permission, h router.HandlerFunc) router.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request, p map[string]string) {
-		raw := strings.TrimSpace(strings.TrimPrefix(r.Header.Get("Authorization"), "Bearer "))
-		c, err := auth.Verify(a.cfg.JWTKey, raw)
-		if err != nil {
-			httpx.Fail(w, r, 401, "UNAUTHORIZED", "Authentication required")
-			return
-		}
-		if !authz.Has(c.Role, permission) {
-			httpx.Fail(w, r, 403, "FORBIDDEN", "Insufficient permission")
-			return
-		}
-		h(w, r, p)
-	}
+
+func buildService(ctx context.Context, db *sql.DB, cfg config.Config) (http.Handler, error) {
+	a := &app{db: db, cfg: cfg, access: access.Control{JWTKey: cfg.JWTKey, InternalKey: cfg.InternalServiceKey}}
+	go outbox.Worker{DB: db, Endpoint: config.Env("NOTIFICATION_SERVICE_URL", "http://notification:8087/internal/v1/events"), AuditEndpoint: config.Env("AUDIT_SERVICE_URL", "http://identity:8081/internal/v1/audit-events"), InternalKey: cfg.InternalServiceKey, Service: cfg.Service}.Run(ctx)
+	routes := service.Router(db)
+	routes.Handle("GET", "/api/v1/kajian", a.listKajian)
+	routes.Handle("GET", "/api/v1/kajian/{id}", a.getKajian)
+	routes.Handle("POST", "/api/v1/admin/kajian", a.access.RequirePermission(authz.KajianWrite, a.createKajian))
+	routes.Handle("GET", "/api/v1/admin/kajian", a.access.RequirePermission(authz.KajianRead, a.listKajianAdmin))
+	routes.Handle("PATCH", "/api/v1/admin/kajian/{id}", a.access.RequirePermission(authz.KajianWrite, a.updateKajian))
+	routes.Handle("GET", "/api/v1/content", a.listContent)
+	routes.Handle("GET", "/api/v1/content/{id}", a.getContent)
+	routes.Handle("GET", "/api/v1/admin/content", a.access.RequirePermission(authz.ContentRead, a.listContentAdmin))
+	routes.Handle("POST", "/api/v1/admin/content", a.access.RequirePermission(authz.ContentWrite, a.createContent))
+	routes.Handle("PATCH", "/api/v1/admin/content/{id}", a.access.RequirePermission(authz.ContentWrite, a.updateContent))
+	return routes, nil
 }
 func (a *app) listKajian(w http.ResponseWriter, r *http.Request, _ map[string]string) {
 	rows, err := a.db.QueryContext(r.Context(), `SELECT id,title,slug,description,speaker,start_at,end_at,location,map_url,live_url,poster_url,status FROM kajian WHERE published=TRUE ORDER BY start_at DESC LIMIT 100`)
@@ -117,7 +76,7 @@ func (a *app) listKajian(w http.ResponseWriter, r *http.Request, _ map[string]st
 		if rows.Scan(&id, &title, &slug, &desc, &speaker, &start, &end, &location, &mapURL, &liveURL, &posterURL, &status) != nil {
 			continue
 		}
-		items = append(items, map[string]any{"id": id, "title": title, "slug": slug, "description": desc, "speaker": speaker.String, "start_at": start, "end_at": nullableTime(end), "location": location.String, "map_url": mapURL.String, "live_url": liveURL.String, "poster_url": posterURL.String, "status": status.String})
+		items = append(items, map[string]any{"id": id, "title": title, "slug": slug, "description": desc, "speaker": speaker.String, "start_at": start, "end_at": database.NullableTime(end), "location": location.String, "map_url": mapURL.String, "live_url": liveURL.String, "poster_url": posterURL.String, "status": status.String})
 	}
 	httpx.JSON(w, 200, items)
 }
@@ -135,11 +94,10 @@ func (a *app) getKajian(w http.ResponseWriter, r *http.Request, p map[string]str
 		httpx.Fail(w, r, 500, "QUERY_FAILED", "Could not load kajian")
 		return
 	}
-	httpx.JSON(w, 200, map[string]any{"id": id, "title": title, "slug": slug, "description": desc, "speaker": speaker.String, "start_at": start, "end_at": nullableTime(end), "location": location.String, "map_url": mapURL.String, "live_url": liveURL.String, "poster_url": posterURL.String, "status": status.String})
+	httpx.JSON(w, 200, map[string]any{"id": id, "title": title, "slug": slug, "description": desc, "speaker": speaker.String, "start_at": start, "end_at": database.NullableTime(end), "location": location.String, "map_url": mapURL.String, "live_url": liveURL.String, "poster_url": posterURL.String, "status": status.String})
 }
 func (a *app) createKajian(w http.ResponseWriter, r *http.Request, _ map[string]string) {
-	raw := strings.TrimSpace(strings.TrimPrefix(r.Header.Get("Authorization"), "Bearer "))
-	actor, _ := auth.Verify(a.cfg.JWTKey, raw)
+	actor, _ := a.access.Claims(r)
 	var in kajianIn
 	if !httpx.Decode(w, r, &in) {
 		return
@@ -189,7 +147,7 @@ func (a *app) listContent(w http.ResponseWriter, r *http.Request, _ map[string]s
 		var summary, image sql.NullString
 		var pub sql.NullTime
 		if rows.Scan(&id, &t, &title, &slug, &summary, &image, &pub) == nil {
-			out = append(out, map[string]any{"id": id, "type": t, "title": title, "slug": slug, "summary": summary.String, "image_url": image.String, "published_at": nullableTime(pub)})
+			out = append(out, map[string]any{"id": id, "type": t, "title": title, "slug": slug, "summary": summary.String, "image_url": image.String, "published_at": database.NullableTime(pub)})
 		}
 	}
 	httpx.JSON(w, 200, out)
@@ -199,17 +157,4 @@ func null(v string) any {
 		return nil
 	}
 	return strings.TrimSpace(v)
-}
-func nullableTime(v sql.NullTime) any {
-	if !v.Valid {
-		return nil
-	}
-	return v.Time
-}
-
-func envURL(key, fallback string) string {
-	if v := strings.TrimSpace(os.Getenv(key)); v != "" {
-		return v
-	}
-	return fallback
 }

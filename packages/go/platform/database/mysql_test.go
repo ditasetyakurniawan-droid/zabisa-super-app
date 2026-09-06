@@ -6,6 +6,7 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"crypto/x509/pkix"
+	"database/sql"
 	"encoding/pem"
 	"math/big"
 	"os"
@@ -13,6 +14,28 @@ import (
 	"testing"
 	"time"
 )
+
+func TestNullableValues(t *testing.T) {
+	if NullString("  ") != nil {
+		t.Fatal("blank string must map to nil")
+	}
+	if got := NullString(" value "); got != "value" {
+		t.Fatalf("trimmed value = %#v", got)
+	}
+	if NullableFloat(sql.NullFloat64{}) != nil || NullableInt(sql.NullInt64{}) != nil || NullableTime(sql.NullTime{}) != nil {
+		t.Fatal("invalid SQL null values must map to nil")
+	}
+	now := time.Now().UTC()
+	if got := NullableFloat(sql.NullFloat64{Float64: 7.5, Valid: true}); got != 7.5 {
+		t.Fatalf("nullable float = %#v", got)
+	}
+	if got := NullableInt(sql.NullInt64{Int64: 7, Valid: true}); got != int64(7) {
+		t.Fatalf("nullable int = %#v", got)
+	}
+	if got := NullableTime(sql.NullTime{Time: now, Valid: true}); got != now {
+		t.Fatalf("nullable time = %#v", got)
+	}
+}
 
 func writeTestCA(t *testing.T) (string, *x509.Certificate, *rsa.PrivateKey) {
 	t.Helper()

@@ -149,6 +149,9 @@ func env(k, fallback string) string {
 	return fallback
 }
 
+// Env returns a trimmed environment value or fallback when it is unset.
+func Env(key, fallback string) string { return env(key, fallback) }
+
 // secret supports the conventional KEY_FILE form used by Vault Agent rendered
 // files. KEY_FILE deliberately takes precedence over KEY so Kubernetes manifests
 // can guarantee Vault is the runtime source of truth while docker-compose/local

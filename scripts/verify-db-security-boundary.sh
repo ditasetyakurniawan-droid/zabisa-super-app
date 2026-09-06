@@ -18,10 +18,16 @@ if grep -q 'tls=skip-verify' packages/go/platform/config/config.go packages/go/p
 fi
 pass 'Go DB client requires explicit non-local TLS and pinned-CA certificate-chain verification'
 
+shared_bootstrap='packages/go/platform/service/service.go'
+grep -q 'cfg.ShouldMigrate()' "$shared_bootstrap" || fail 'shared service bootstrap does not gate migrations by APP_MODE'
+grep -q 'cfg.MigrateOnly()' "$shared_bootstrap" || fail 'shared service bootstrap lacks migrate-only exit path'
+
 for svc in "${db_services[@]}"; do
   f="services/${svc}/main.go"
-  grep -q 'cfg.ShouldMigrate()' "$f" || fail "$svc does not gate migrations by APP_MODE"
-  grep -q 'cfg.MigrateOnly()' "$f" || fail "$svc lacks migrate-only exit path"
+  if ! grep -q 'service.MustRun' "$f"; then
+    grep -q 'cfg.ShouldMigrate()' "$f" || fail "$svc does not gate migrations by APP_MODE"
+    grep -q 'cfg.MigrateOnly()' "$f" || fail "$svc lacks migrate-only exit path"
+  fi
   k="deploy/kubernetes/base/${svc}.yaml"
   grep -A1 -q 'name: APP_MODE' "$k" || fail "$svc runtime APP_MODE missing"
   grep -A1 'name: APP_MODE' "$k" | grep -q 'value: serve' || fail "$svc runtime must use APP_MODE=serve"

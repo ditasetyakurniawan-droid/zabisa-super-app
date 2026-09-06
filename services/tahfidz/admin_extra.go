@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/zabisa/platform/packages/go/platform/auditx"
+	"github.com/zabisa/platform/packages/go/platform/database"
 	"github.com/zabisa/platform/packages/go/platform/httpx"
 )
 
@@ -33,14 +34,14 @@ func (a *app) listEntriesAdmin(w http.ResponseWriter, r *http.Request, _ map[str
 		var score sql.NullFloat64
 		var flu, taj, mak, note sql.NullString
 		if rows.Scan(&id, &sid, &d, &surah, &a1, &a2, &juz, &page, &typ, &score, &flu, &taj, &mak, &note, &teacher, &status, &created) == nil {
-			out = append(out, map[string]any{"id": id, "student_id": sid, "date": d.Format("2006-01-02"), "surah": surah, "ayah_start": a1, "ayah_end": a2, "juz": nullableInt(juz), "page": nullableInt(page), "activity_type": typ, "score": nullableFloat(score), "fluency": flu.String, "tajwid": taj.String, "makhraj": mak.String, "teacher_note": note.String, "teacher_user_id": teacher, "verification_status": status, "created_at": created})
+			out = append(out, map[string]any{"id": id, "student_id": sid, "date": d.Format("2006-01-02"), "surah": surah, "ayah_start": a1, "ayah_end": a2, "juz": database.NullableInt(juz), "page": database.NullableInt(page), "activity_type": typ, "score": database.NullableFloat(score), "fluency": flu.String, "tajwid": taj.String, "makhraj": mak.String, "teacher_note": note.String, "teacher_user_id": teacher, "verification_status": status, "created_at": created})
 		}
 	}
 	httpx.JSON(w, 200, out)
 }
 
 func (a *app) createTarget(w http.ResponseWriter, r *http.Request, _ map[string]string) {
-	actor, _ := a.claims(r)
+	actor, _ := a.access.Claims(r)
 	var in targetIn
 	if !httpx.Decode(w, r, &in) {
 		return
